@@ -87,7 +87,7 @@ docker-compose up
 2. Start the frontend application
    ```bash
    cd frontend
-   expo start
+   npx expo start --web ('to view in web')
    ```
 
 
