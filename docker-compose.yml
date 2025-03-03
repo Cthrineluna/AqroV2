@@ -1,0 +1,59 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: aqro-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - aqro-network
+
+  backend:
+    build:
+      context: ./backend  # ✅ This makes sure Docker can access package.json
+      dockerfile: ../docker/backend/Dockerfile  # ✅ Correct relative path to Dockerfile
+  # Dockerfile is inside backend/
+    container_name: aqro-backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongodb:
+        condition: service_started  # Ensures MongoDB is running first
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/aqro
+      - PORT=5000
+      - NODE_ENV=development
+      - JWT_SECRET=your_jwt_secret_key_change_this_in_production
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - aqro-network
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./frontend  # 👈 Ensure this points to the correct directory
+      dockerfile: ../docker/frontend/Dockerfile
+    container_name: aqro-frontend
+    ports:
+      - "19000:19000"
+      - "19001:19001"
+      - "19002:19002"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - aqro-network
+    environment:
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+    stdin_open: true
+    tty: true
+
+networks:
+  aqro-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
