@@ -1,18 +1,73 @@
 // src/screens/auth/RegisterScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { register } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const RegisterScreen = ({ navigation }) => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { checkAuthState } = useAuth();
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleRegister = () => {
-    console.log('Register attempt with:', { name, email, password });
-    Alert.alert('Register', 'Registration functionality will be implemented soon');
+
+  const handleRegister = async () => {
+    setError('');
+    
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
+      setError('All fields are required');
+      return;
+    }
+  
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+  
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+  
+    setLoading(true);
+  
+    try {
+      const userData = { firstName, lastName, email, password, userType: 'customer' };
+  
+      const response = await register(userData);
+      setLoading(false);
+  
+      if (response) {
+        console.log("User registered successfully:", response);
+  
+        // ✅ Show success message on UI
+        setSuccessMessage("Registration successful! Redirecting to login...");
+  
+        // ✅ Automatically navigate to Login after 2 seconds
+        setTimeout(() => {
+          navigation.replace('Login'); // `replace` prevents going back to Register screen
+        }, 2000);
+        
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setLoading(false);
+      console.error('Registration error:', err);
+      setError(err.message || 'Registration failed. Please try again.');
+    }
   };
+  
+  
 
   return (
+
+    
     <View style={styles.container}>
       <View style={styles.logoContainer}>
         <Text style={styles.logoText}>aQRo</Text>
@@ -20,11 +75,24 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.formContainer}>
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
         <TextInput
           style={styles.input}
-          placeholder="Full Name"
-          value={name}
-          onChangeText={setName}
+          placeholder="First Name"
+          value={firstName}
+          onChangeText={setFirstName}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name"
+          value={lastName}
+          onChangeText={setLastName}
         />
 
         <TextInput
@@ -43,10 +111,19 @@ const RegisterScreen = ({ navigation }) => {
           onChangeText={setPassword}
           secureTextEntry
         />
-
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-          <Text style={styles.registerButtonText}>Register</Text>
-        </TouchableOpacity>
+        {successMessage ? (
+        <View style={styles.successContainer}>
+          <Text style={styles.successText}>{successMessage}</Text>
+        </View>
+      ) : null}
+      
+        {loading ? (
+          <ActivityIndicator size="large" color="#2e7d32" style={styles.loader} />
+        ) : (
+          <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
+            <Text style={styles.registerButtonText}>Register</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.optionsContainer}>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -55,6 +132,10 @@ const RegisterScreen = ({ navigation }) => {
         </View>
       </View>
     </View>
+
+      
+
+    
   );
 };
 
@@ -89,6 +170,14 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
+  errorContainer: {
+    backgroundColor: '#ffebee',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f44336',
+  },
   input: {
     height: 50,
     borderWidth: 1,
@@ -119,6 +208,26 @@ const styles = StyleSheet.create({
   optionText: {
     color: '#2e7d32',
     fontSize: 16,
+  },
+  successContainer: {
+    backgroundColor: '#e8f5e9',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2e7d32',
+  },
+  successText: {
+    color: '#2e7d32',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },  
+  errorText: {
+    color: '#d32f2f',
+    fontSize: 14,
+  },
+  loader: {
+    marginVertical: 15,
   },
 });
 

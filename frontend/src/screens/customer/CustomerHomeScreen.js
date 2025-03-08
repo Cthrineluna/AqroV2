@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
-const ScannerScreen = ({ navigation }) => {
+const CustomerHomeScreen = ({ navigation }) => {
   const dashboardItems = [
     { 
       title: 'My Containers', 
@@ -92,4 +92,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default ScannerScreen;
+export default CustomerHomeScreen;

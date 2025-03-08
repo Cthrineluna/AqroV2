@@ -1,34 +1,45 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { ActivityIndicator, View } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 
 // Auth screens
-import LoginScreen from '../screens/auth/LoginScreen.js';
-import RegisterScreen from '../screens/auth/RegisterScreen.js';
-import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen.js';
+import LoginScreen from '../screens/auth/LoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
 // Customer screens
-import CustomerHomeScreen from '../screens/customer/HomeScreen.js';
-import ScannerScreen from '../screens/customer/ScannerScreen.js';
+import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
+import ScannerScreen from '../screens/customer/ScannerScreen';
 
 // Staff screens
-import StaffLoginScreen from '../screens/staff/LoginScreen';
 import StaffDashboardScreen from '../screens/staff/DashboardScreen';
 
 // Admin screens
-import AdminLoginScreen from '../screens/admin/LoginScreen';
 import AdminDashboardScreen from '../screens/admin/DashboardScreen';
 
 const Stack = createStackNavigator();
 
+
+
 const AppNavigator = () => {
-  const isLoggedIn = false; // Simulate authentication status
-  const userType = null; // Possible values: 'customer', 'staff', 'admin'
+  const { userToken, userType, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#2e7d32" />
+      </View>
+    );
+  }
+
+
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isLoggedIn ? (
+        {!userToken ? (
           // Auth screens
           <>
             <Stack.Screen name="Login" component={LoginScreen} />

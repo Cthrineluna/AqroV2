@@ -23,7 +23,13 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/aqro')
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Routes (to be added)
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+
+// Use routes
+app.use('/api/auth', authRoutes);
+
+// Default route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to aQRo API' });
 });

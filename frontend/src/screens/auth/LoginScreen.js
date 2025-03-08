@@ -1,17 +1,60 @@
 // src/screens/auth/LoginScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { login } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { checkAuthState } = useAuth();
 
-  const handleLogin = () => {
-    // Here you would add API call to your backend
-    console.log('Login attempt with:', { email, password });
-    Alert.alert('Login', 'Login functionality will be implemented soon');
-    // For testing navigation:
-    // navigation.navigate('CustomerHome');
+  const handleLogin = async () => {
+    // Clear previous errors
+    setError('');
+    
+    // Basic validation
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+    
+    // Simple email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await login(email, password);
+      console.log('Login response:', response);
+      
+      // Only refresh auth state if login was successful
+      await checkAuthState();
+    } catch (err) {
+      console.error('Login error details:', err);
+      
+      // Make sure to set a meaningful error message
+      if (err.message) {
+        setError(err.message);
+      } else if (typeof err === 'string') {
+        setError(err);
+      } else {
+        setError('Login failed. Please check your credentials and try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,6 +65,12 @@ const LoginScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.formContainer}>
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+        
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -39,9 +88,13 @@ const LoginScreen = ({ navigation }) => {
           secureTextEntry
         />
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Login</Text>
-        </TouchableOpacity>
+        {loading ? (
+          <ActivityIndicator size="large" color="#2e7d32" style={styles.loader} />
+        ) : (
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+            <Text style={styles.loginButtonText}>Login</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.optionsContainer}>
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
@@ -88,6 +141,14 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
+  errorContainer: {
+    backgroundColor: '#ffebee',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f44336',
+  },
   input: {
     height: 50,
     borderWidth: 1,
@@ -118,6 +179,13 @@ const styles = StyleSheet.create({
   optionText: {
     color: '#2e7d32',
     fontSize: 16,
+  },
+  errorText: {
+    color: '#d32f2f',
+    fontSize: 14,
+  },
+  loader: {
+    marginVertical: 15,
   },
 });
 
