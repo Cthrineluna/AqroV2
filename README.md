@@ -41,7 +41,7 @@ aQRo is a mobile application supporting reusable food and beverage containers to
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/yourusername/aqro-app.git
+   git clone https://github.com/wabbit12/aqro-initital-testing
    cd aqro-app
    ```
 
