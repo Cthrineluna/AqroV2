@@ -275,12 +275,12 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f5', // Off-white background to match login screen
+    backgroundColor: '#F0F8FF', // Off-white background to match login screen
   },
   header: {
     width: '100%',
     height: Platform.OS === 'ios' ? 50 : 60,
-    backgroundColor: '#f8f8f5',
+    backgroundColor: '#F0F8FF',
     zIndex: 10,
     elevation: 2,
     flexDirection: 'row',
@@ -308,8 +308,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
   },
   heading: {
     marginBottom: 30,

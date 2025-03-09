@@ -11,6 +11,22 @@ import {
 } from 'react-native';
 import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 
+//for debugging, clear storage
+import { Button } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
+const clearStorage = async () => {
+  try {
+    await AsyncStorage.clear();
+    alert('Storage cleared!');
+  } catch (e) {
+    alert('Failed to clear storage');
+  }
+};
+
+//
+
 const { width, height } = Dimensions.get('window');
 
 const LandingScreen = ({ navigation }) => {
@@ -65,6 +81,11 @@ const LandingScreen = ({ navigation }) => {
             <Text style={styles.signUpText}>SIGN UP</Text>
           </TouchableOpacity>
         </View>
+
+        {/* for debugging, clearing storage */}
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Button title="Clear Storage" onPress={clearStorage} />
+        </View>
         
         {/* Bottom Info */}
         <View style={styles.infoContainer}>
@@ -80,7 +101,7 @@ const LandingScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f5',
+    backgroundColor: '#F0F8FF',
   },
   contentContainer: {
     flex: 1,

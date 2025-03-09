@@ -1,5 +1,4 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +8,6 @@ import LandingScreen from '../screens/auth/LandingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
-
 
 // Customer screens
 import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
@@ -23,8 +21,6 @@ import AdminDashboardScreen from '../screens/admin/DashboardScreen';
 
 const Stack = createStackNavigator();
 
-
-
 const AppNavigator = () => {
   const { userToken, userType, isLoading } = useAuth();
 
@@ -36,38 +32,34 @@ const AppNavigator = () => {
     );
   }
 
-
-
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!userToken ? (
-          // Auth screens
-          <>
-            <Stack.Screen name="Landing" component={LandingScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          </>
-        ) : userType === 'customer' ? (
-          // Customer screens
-          <>
-            <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
-            <Stack.Screen name="Scanner" component={ScannerScreen} />
-          </>
-        ) : userType === 'staff' ? (
-          // Staff screens
-          <>
-            <Stack.Screen name="StaffDashboard" component={StaffDashboardScreen} />
-          </>
-        ) : (
-          // Admin screens
-          <>
-            <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!userToken ? (
+        // Auth screens
+        <>
+          <Stack.Screen name="Landing" component={LandingScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        </>
+      ) : userType === 'customer' ? (
+        // Customer screens
+        <>
+          <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
+          <Stack.Screen name="Scanner" component={ScannerScreen} />
+        </>
+      ) : userType === 'staff' ? (
+        // Staff screens
+        <>
+          <Stack.Screen name="StaffDashboard" component={StaffDashboardScreen} />
+        </>
+      ) : (
+        // Admin screens
+        <>
+          <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+        </>
+      )}
+    </Stack.Navigator>
   );
 };
 

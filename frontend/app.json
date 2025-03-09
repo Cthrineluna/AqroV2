@@ -7,6 +7,20 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "fonts": [
+      {
+        "asset": "./assets/fonts/Poppins-Regular.ttf",
+        "family": "Poppins-Regular"
+      },
+      {
+        "asset": "./assets/fonts/Poppins-Bold.ttf",
+        "family": "Poppins-Bold"
+      },
+      {
+        "asset": "./assets/fonts/Poppins-SemiBold.ttf",
+        "family": "Poppins-SemiBold"
+      }
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",

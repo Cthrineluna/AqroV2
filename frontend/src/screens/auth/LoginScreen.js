@@ -32,23 +32,6 @@ const LoginScreen = ({ navigation }) => {
     'Poppins-Bold': Poppins_700Bold,
   });
 
-  // For manual font loading if not using Expo
-  /*
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-  
-  useEffect(() => {
-    async function loadFonts() {
-      await Font.loadAsync({
-        'Poppins-Regular': require('../../assets/fonts/Poppins-Regular.ttf'),
-        'Poppins-Medium': require('../../assets/fonts/Poppins-Medium.ttf'),
-        'Poppins-SemiBold': require('../../assets/fonts/Poppins-SemiBold.ttf'),
-        'Poppins-Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
-      });
-      setFontsLoaded(true);
-    }
-    loadFonts();
-  }, []);
-  */
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -226,12 +209,12 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f5', // Off-white background
+    backgroundColor: '#F0F8FF', // Off-white background
   },
   header: {
     width: '100%',
     height: Platform.OS === 'ios' ? 50 : 60,
-    backgroundColor: '#f8f8f5',
+    backgroundColor: '#F0F8FF',
     zIndex: 10,
     elevation: 2,
     flexDirection: 'row',
@@ -259,8 +242,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40, // Add padding around logo
   },
   logo: {
-    width: 240,
-    height: 240,
+    width: 160,
+    height: 160,
   },
   heading: {
     marginBottom: 40,
