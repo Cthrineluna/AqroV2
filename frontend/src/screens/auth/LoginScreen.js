@@ -31,6 +31,7 @@ const LoginScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const { checkAuthState } = useAuth();
   const { theme, isDark } = useTheme();
+  const iconColor = isDark ? '#00df82' : theme.text;
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -129,52 +130,58 @@ const LoginScreen = ({ navigation }) => {
             ) : null}
 
             <View style={styles.loginForm}>
-              <View style={styles.formInput}>
-                <View style={styles.circularIcon}>
-                  <Ionicons name="mail-outline" size={18} color={theme.text} />
-                </View>
-                <View style={styles.inputContainer}>
-                  <MediumText style={styles.inputLabel}>EMAIL</MediumText>
+            <View style={styles.formInput}>
+              <Ionicons 
+                name="mail-outline" 
+                size={18} 
+                color={isDark ? '#00df82' : theme.text} 
+                style={styles.inputIcon}
+              />
+              <View style={styles.inputContainer}>
+                <MediumText style={styles.inputLabel}>EMAIL</MediumText>
+                <TextInput
+                  style={[styles.input, {color: theme.text}]}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Enter your email"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor="#9e9e9e"
+                />
+              </View>
+            </View>
+
+            <View style={styles.formInput}>
+              <Ionicons 
+                name="lock-closed-outline" 
+                size={18} 
+                color={isDark ? '#00df82' : theme.text} 
+                style={styles.inputIcon}
+              />
+              <View style={styles.inputContainer}>
+                <MediumText style={styles.inputLabel}>PASSWORD</MediumText>
+                <View style={styles.passwordContainer}>
                   <TextInput
-                    style={[styles.input, {color: theme.text}]}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Enter your email"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
+                    style={[styles.input, styles.passwordInput, {color: theme.text}]}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
+                    secureTextEntry={!showPassword}
                     placeholderTextColor="#9e9e9e"
                   />
-                </View>
-              </View>
-
-              <View style={styles.formInput}>
-                <View style={styles.circularIcon}>
-                  <Ionicons name="lock-closed-outline" size={18} color={theme.text} />
-                </View>
-                <View style={styles.inputContainer}>
-                  <MediumText style={styles.inputLabel}>PASSWORD</MediumText>
-                  <View style={styles.passwordContainer}>
-                    <TextInput
-                      style={[styles.input, styles.passwordInput, {color: theme.text}]}
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="Enter your password"
-                      secureTextEntry={!showPassword}
-                      placeholderTextColor="#9e9e9e"
+                  <TouchableOpacity 
+                    style={styles.passwordToggle} 
+                    onPress={togglePasswordVisibility}
+                  >
+                    <Ionicons 
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                      size={18} 
+                      color={isDark ? '#00df82' : theme.text} 
                     />
-                    <TouchableOpacity 
-                      style={styles.passwordToggle} 
-                      onPress={togglePasswordVisibility}
-                    >
-                      <Ionicons 
-                        name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                        size={18} 
-                        color={theme.text} 
-                      />
-                    </TouchableOpacity>
-                  </View>
+                  </TouchableOpacity>
                 </View>
               </View>
+            </View>
             </View>
 
             <View style={styles.actionButtons}>
@@ -274,17 +281,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
     paddingBottom: 8,
   },
-  circularIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 18,
-    borderWidth: 0.2, // Thickness of the black outline
-    borderColor: 'black', // Color of the outline
-    backgroundColor: 'transparent', // No fill color
-    justifyContent: 'center',
-    alignItems: 'center',
+  inputIcon: {
     marginRight: 12,
+    marginBottom: 40, 
   },
+ 
   inputContainer: {
     flex: 1,
   },

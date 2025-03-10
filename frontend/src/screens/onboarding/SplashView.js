@@ -70,7 +70,7 @@ const SplashView = ({ onNextClick }) => {
   // Theme-aware interpolations
   const backgroundColor = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#25AF90', isDark ? theme.background : 'white'],
+    outputRange: ['#25AF90', isDark ? theme.background : '#F0F8FF'],
   });
 
   // Text color interpolations based on theme

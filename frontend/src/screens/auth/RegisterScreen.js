@@ -37,6 +37,7 @@ const RegisterScreen = ({ navigation }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const { checkAuthState } = useAuth();
   const { theme, isDark } = useTheme();
+  const iconColor = isDark ? '#00df82' : theme.text;
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -215,7 +216,7 @@ const RegisterScreen = ({ navigation }) => {
                       <Ionicons 
                         name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
                         size={18} 
-                        color={theme.text} 
+                        color={iconColor} 
                       />
                     </TouchableOpacity>
                   </View>
@@ -242,7 +243,7 @@ const RegisterScreen = ({ navigation }) => {
                       <Ionicons 
                         name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} 
                         size={18} 
-                        color={theme.text} 
+                        color={iconColor} 
                       />
                     </TouchableOpacity>
                   </View>
