@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   View, 
-  Text, 
   TextInput, 
   TouchableOpacity, 
   StyleSheet, 
@@ -15,7 +14,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { register } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
-import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
+import { useTheme } from '../../context/ThemeContext';
+import { 
+  RegularText, 
+  MediumText, 
+  BoldText, 
+  SemiBoldText,
+  ThemedView,
+  ThemeToggle
+} from '../../components/StyledComponents';
 
 const RegisterScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -29,13 +36,7 @@ const RegisterScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const { checkAuthState } = useAuth();
-  
-  const [fontsLoaded] = useFonts({
-    'Poppins-Regular': Poppins_400Regular,
-    'Poppins-Medium': Poppins_500Medium,
-    'Poppins-SemiBold': Poppins_600SemiBold,
-    'Poppins-Bold': Poppins_700Bold,
-  });
+  const { theme, isDark } = useTheme();
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -98,22 +99,23 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
-  if (!fontsLoaded) {
-    return null; // Or a loading spinner
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#f8f8f5" barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
+      <StatusBar 
+        backgroundColor={theme.background} 
+        barStyle={isDark ? "light-content" : "dark-content"} 
+      />
       
-      {/* Header with back button */}
-      <View style={styles.header}>
+      {/* Header with back button and theme toggle */}
+      <View style={[styles.header, {backgroundColor: theme.background}]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.navigate('Login')}
         >
-          <Ionicons name="chevron-back-outline" size={24} color="#030f0f" />
+          <Ionicons name="chevron-back-outline" size={24} color={theme.text} />
         </TouchableOpacity>
+        
+        
       </View>
 
       <KeyboardAvoidingView
@@ -124,36 +126,37 @@ const RegisterScreen = ({ navigation }) => {
           <View style={styles.registerSection}>
             <View style={styles.logoContainer}>
               <Image 
-                source={require('../../../assets/images/aqro-logo.png')} 
+                source={isDark 
+                  ? require('../../../assets/images/aqro-logo-dark.png') 
+                  : require('../../../assets/images/aqro-logo.png')} 
                 style={styles.logo} 
                 resizeMode="contain" 
               />
             </View>
 
             <View style={styles.heading}>
-              <Text style={styles.headingTitle}>Register!</Text>
+              <BoldText style={styles.headingTitle}>Register!</BoldText>
             </View>
             
             {error ? (
               <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
+                <RegularText style={styles.errorText}>{error}</RegularText>
               </View>
             ) : null}
             
             {successMessage ? (
               <View style={styles.successContainer}>
-                <Text style={styles.successText}>{successMessage}</Text>
+                <MediumText style={styles.successText}>{successMessage}</MediumText>
               </View>
             ) : null}
 
             <View style={styles.registerForm}>
               {/* First Name Input */}
               <View style={styles.formInput}>
-                
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>FIRST NAME</Text>
+                  <MediumText style={styles.inputLabel}>FIRST NAME</MediumText>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, {color: theme.text}]}
                     value={firstName}
                     onChangeText={setFirstName}
                     placeholder="Enter your first name"
@@ -165,9 +168,9 @@ const RegisterScreen = ({ navigation }) => {
               {/* Last Name Input */}
               <View style={styles.formInput}>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>LAST NAME</Text>
+                  <MediumText style={styles.inputLabel}>LAST NAME</MediumText>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, {color: theme.text}]}
                     value={lastName}
                     onChangeText={setLastName}
                     placeholder="Enter your last name"
@@ -179,9 +182,9 @@ const RegisterScreen = ({ navigation }) => {
               {/* Email Input */}
               <View style={styles.formInput}>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>EMAIL</Text>
+                  <MediumText style={styles.inputLabel}>EMAIL</MediumText>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, {color: theme.text}]}
                     value={email}
                     onChangeText={setEmail}
                     placeholder="Enter your email"
@@ -195,10 +198,10 @@ const RegisterScreen = ({ navigation }) => {
               {/* Password Input */}
               <View style={styles.formInput}>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>PASSWORD</Text>
+                  <MediumText style={styles.inputLabel}>PASSWORD</MediumText>
                   <View style={styles.passwordContainer}>
                     <TextInput
-                      style={[styles.input, styles.passwordInput]}
+                      style={[styles.input, styles.passwordInput, {color: theme.text}]}
                       value={password}
                       onChangeText={setPassword}
                       placeholder="Enter your password"
@@ -212,7 +215,7 @@ const RegisterScreen = ({ navigation }) => {
                       <Ionicons 
                         name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
                         size={18} 
-                        color="#030f0f" 
+                        color={theme.text} 
                       />
                     </TouchableOpacity>
                   </View>
@@ -222,10 +225,10 @@ const RegisterScreen = ({ navigation }) => {
               {/* Confirm Password Input */}
               <View style={styles.formInput}>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>CONFIRM PASSWORD</Text>
+                  <MediumText style={styles.inputLabel}>CONFIRM PASSWORD</MediumText>
                   <View style={styles.passwordContainer}>
                     <TextInput
-                      style={[styles.input, styles.passwordInput]}
+                      style={[styles.input, styles.passwordInput, {color: theme.text}]}
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
                       placeholder="Confirm your password"
@@ -239,7 +242,7 @@ const RegisterScreen = ({ navigation }) => {
                       <Ionicons 
                         name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} 
                         size={18} 
-                        color="#030f0f" 
+                        color={theme.text} 
                       />
                     </TouchableOpacity>
                   </View>
@@ -253,15 +256,15 @@ const RegisterScreen = ({ navigation }) => {
                 onPress={handleRegister}
                 disabled={loading}
               >
-                <Text style={styles.registerButtonText}>
+                <BoldText style={styles.registerButtonText}>
                   {loading ? 'Registering...' : 'SIGN UP'}
-                </Text>
+                </BoldText>
               </TouchableOpacity>
               
               <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Already have an account? </Text>
+                <RegularText style={styles.loginText}>Already have an account? </RegularText>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                  <Text style={styles.loginLinkText}>Sign-In!</Text>
+                  <SemiBoldText style={styles.loginLinkText}>Sign-In!</SemiBoldText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -275,20 +278,22 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F8FF', // Off-white background to match login screen
   },
   header: {
     width: '100%',
     height: Platform.OS === 'ios' ? 50 : 60,
-    backgroundColor: '#F0F8FF',
     zIndex: 10,
     elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
+    justifyContent: 'space-between', // Add this to position the theme toggle to the right
   },
   backButton: {
     padding: 8,
+  },
+  themeToggle: {
+    marginRight: 10,
   },
   keyboardAvoidView: {
     flex: 1,
@@ -317,8 +322,6 @@ const styles = StyleSheet.create({
   },
   headingTitle: {
     fontSize: 28,
-    fontFamily: 'Poppins-Bold',
-    color: '#030f0f',
     marginBottom: 8,
   },
   errorContainer: {
@@ -332,7 +335,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#d32f2f',
     fontSize: 14,
-    fontFamily: 'Poppins-Regular',
   },
   successContainer: {
     backgroundColor: '#e8f5e9',
@@ -345,7 +347,6 @@ const styles = StyleSheet.create({
   successText: {
     color: '#2e7d32',
     fontSize: 14,
-    fontFamily: 'Poppins-Medium',
   },
   registerForm: {
     marginBottom: 25,
@@ -363,16 +364,13 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 12,
-    fontFamily: 'Poppins-Medium',
-    color: '#030f0f',
     opacity: 0.7,
     marginBottom: 4,
   },
   input: {
     fontSize: 16,
-    fontFamily: 'Poppins-Regular',
-    color: '#030f0f',
     paddingVertical: 8,
+    fontFamily: 'Poppins-Regular',
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -403,7 +401,6 @@ const styles = StyleSheet.create({
   registerButtonText: {
     color: '#030f0f',
     fontSize: 24,
-    fontFamily: 'Poppins-Bold',
   },
   loginContainer: {
     flexDirection: 'row',
@@ -411,13 +408,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loginText: {
-    fontFamily: 'Poppins-Regular',
     fontSize: 16,
-    color: '#030f0f',
     opacity: 0.8,
   },
   loginLinkText: {
-    fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
     color: '#00df82',
   }

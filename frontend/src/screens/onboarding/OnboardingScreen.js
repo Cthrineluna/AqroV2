@@ -11,9 +11,9 @@ import Animated, {
   Extrapolation
 } from 'react-native-reanimated';
 import SplashView from './SplashView';
-import TopBackSkipView from './TopBackSkipView';
-import CenterNextButton from './CenterNextButton';
-import RenderItem from './components/RenderItem';
+import TopBackSkipView from '../../components/TopBackSkipView';
+import CenterNextButton from '../../components/CenterNextButton';
+import RenderItem from '../../components/RenderItem';
 
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');

@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
   interpolateColor,
 } from 'react-native-reanimated';
-import NextButtonArrow from './components/NextButtonArrow';
+import NextButtonArrow from './NextButtonArrow';
 import { Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons'; // Make sure to install @expo/vector-icons if not already
 

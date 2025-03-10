@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
-  Text, 
   TextInput, 
   TouchableOpacity, 
   StyleSheet, 
@@ -12,11 +11,17 @@ import {
   Image,
   StatusBar
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Assuming you're using Expo or have installed react-native-vector-icons
-import { login } from '../../services/authService'; // Keep your existing auth service
-import { useAuth } from '../../context/AuthContext'; // Keep your existing auth context
-import * as Font from 'expo-font';
-import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
+import { Ionicons } from '@expo/vector-icons';
+import { login } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext'; 
+import { useTheme } from '../../context/ThemeContext';
+import { 
+  RegularText, 
+  MediumText, 
+  BoldText, 
+  ThemedView, 
+  SemiBoldText
+} from '../../components/StyledComponents';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -25,13 +30,7 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { checkAuthState } = useAuth();
-  const [fontsLoaded] = useFonts({
-    'Poppins-Regular': Poppins_400Regular,
-    'Poppins-Medium': Poppins_500Medium,
-    'Poppins-SemiBold': Poppins_600SemiBold,
-    'Poppins-Bold': Poppins_700Bold,
-  });
-
+  const { theme, isDark } = useTheme();
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -86,21 +85,20 @@ const LoginScreen = ({ navigation }) => {
     setShowPassword(false);
   };
 
-  if (!fontsLoaded) {
-    return null; // Or a loading spinner
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#f8f8f5" barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
+      <StatusBar 
+        backgroundColor={theme.background} 
+        barStyle={isDark ? "light-content" : "dark-content"} 
+      />
       
       {/* Header with back button */}
-      <View style={styles.header}>
+      <View style={[styles.header, {backgroundColor: theme.background}]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.navigate('Landing')}
         >
-          <Ionicons name="chevron-back-outline" size={24} color="#030f0f" />
+          <Ionicons name="chevron-back-outline" size={24} color={theme.text} />
         </TouchableOpacity>
       </View>
 
@@ -112,31 +110,33 @@ const LoginScreen = ({ navigation }) => {
           <View style={styles.loginSection}>
             <View style={styles.logoContainer}>
               <Image 
-                source={require('../../../assets/images/aqro-logo.png')} 
+                source={isDark 
+                  ? require('../../../assets/images/aqro-logo-dark.png') 
+                  : require('../../../assets/images/aqro-logo.png')} 
                 style={styles.logo} 
                 resizeMode="contain" 
               />
             </View>
 
             <View style={styles.heading}>
-              <Text style={styles.headingTitle}>Welcome!</Text>
+              <BoldText style={styles.headingTitle}>Welcome!</BoldText>
             </View>
             
             {error ? (
               <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
+                <RegularText style={styles.errorText}>{error}</RegularText>
               </View>
             ) : null}
 
             <View style={styles.loginForm}>
               <View style={styles.formInput}>
                 <View style={styles.circularIcon}>
-                  <Ionicons name="mail-outline" size={18} color="#030f0f" />
+                  <Ionicons name="mail-outline" size={18} color={theme.text} />
                 </View>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>EMAIL</Text>
+                  <MediumText style={styles.inputLabel}>EMAIL</MediumText>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, {color: theme.text}]}
                     value={email}
                     onChangeText={setEmail}
                     placeholder="Enter your email"
@@ -149,13 +149,13 @@ const LoginScreen = ({ navigation }) => {
 
               <View style={styles.formInput}>
                 <View style={styles.circularIcon}>
-                  <Ionicons name="lock-closed-outline" size={18} color="#030f0f" />
+                  <Ionicons name="lock-closed-outline" size={18} color={theme.text} />
                 </View>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>PASSWORD</Text>
+                  <MediumText style={styles.inputLabel}>PASSWORD</MediumText>
                   <View style={styles.passwordContainer}>
                     <TextInput
-                      style={[styles.input, styles.passwordInput]}
+                      style={[styles.input, styles.passwordInput, {color: theme.text}]}
                       value={password}
                       onChangeText={setPassword}
                       placeholder="Enter your password"
@@ -169,7 +169,7 @@ const LoginScreen = ({ navigation }) => {
                       <Ionicons 
                         name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
                         size={18} 
-                        color="#030f0f" 
+                        color={theme.text} 
                       />
                     </TouchableOpacity>
                   </View>
@@ -183,19 +183,19 @@ const LoginScreen = ({ navigation }) => {
                 onPress={handleLogin}
                 disabled={loading}
               >
-                <Text style={styles.loginButtonText}>
+                <BoldText style={styles.loginButtonText}>
                   {loading ? 'Logging in...' : 'SIGN IN'}
-                </Text>
+                </BoldText>
               </TouchableOpacity>
               
               <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                <RegularText style={styles.forgotPasswordText}>Forgot password?</RegularText>
               </TouchableOpacity>
               
               <View style={styles.signupContainer}>
-                <Text style={styles.signupText}>Don't have an account? </Text>
+                <RegularText style={styles.signupText}>Don't have an account? </RegularText>
                 <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                  <Text style={styles.signupLinkText}>Sign-Up!</Text>
+                  <SemiBoldText style={styles.signupLinkText}>Sign-Up!</SemiBoldText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -209,12 +209,10 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F8FF', // Off-white background
   },
   header: {
     width: '100%',
     height: Platform.OS === 'ios' ? 50 : 60,
-    backgroundColor: '#F0F8FF',
     zIndex: 10,
     elevation: 2,
     flexDirection: 'row',
@@ -251,15 +249,7 @@ const styles = StyleSheet.create({
   },
   headingTitle: {
     fontSize: 28,
-    fontFamily: 'Poppins-Bold',
-    color: '#030f0f', // Dark theme color
     marginBottom: 8,
-  },
-  headingSubtitle: {
-    fontSize: 16,
-    fontFamily: 'Poppins-Regular',
-    color: '#030f0f',
-    opacity: 0.7,
   },
   errorContainer: {
     backgroundColor: '#ffebee',
@@ -272,7 +262,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#d32f2f',
     fontSize: 14,
-    fontFamily: 'Poppins-Regular',
   },
   loginForm: {
     marginBottom: 35,
@@ -301,15 +290,12 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 12,
-    fontFamily: 'Poppins-Medium',
-    color: '#030f0f',
     opacity: 0.7,
     marginBottom: 4,
   },
   input: {
     fontSize: 16,
     fontFamily: 'Poppins-Regular',
-    color: '#030f0f',
     paddingVertical: 8,
   },
   passwordContainer: {
@@ -341,12 +327,9 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: '#030f0f',
     fontSize: 24,
-    fontFamily: 'Poppins-Bold',
   },
   forgotPasswordText: {
-    color: '#030f0f',
     fontSize: 16,
-    fontFamily: 'Poppins-Regular',
     marginBottom: 30,
     opacity: 0.8,
   },
@@ -356,13 +339,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signupText: {
-    fontFamily: 'Poppins-Regular',
     fontSize: 16,
-    color: '#030f0f',
     opacity: 0.8,
   },
   signupLinkText: {
-    fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
     color: '#00df82',
   }

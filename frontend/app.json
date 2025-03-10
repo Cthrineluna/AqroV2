@@ -5,12 +5,17 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    
     "fonts": [
       {
         "asset": "./assets/fonts/Poppins-Regular.ttf",
         "family": "Poppins-Regular"
+      },
+      {
+        "asset": "./assets/fonts/Poppins-Medium.ttf.ttf",
+        "family": "Poppins-Medium"
       },
       {
         "asset": "./assets/fonts/Poppins-Bold.ttf",
@@ -26,13 +31,16 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "userInterfaceStyle": "automatic"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+        "userInterfaceStyle": "automatic"
       }
     },
     "web": {
