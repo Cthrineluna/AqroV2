@@ -8,7 +8,10 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
-import { BoldText, RegularText } from '../components/StyledText';
+import { 
+  BoldText, 
+  RegularText, 
+} from '../components/StyledComponents';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
