@@ -18,6 +18,7 @@ import {
 } from '../../components/StyledComponents';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+//for debugging
 const clearStorage = async () => {
   try {
     await AsyncStorage.clear();

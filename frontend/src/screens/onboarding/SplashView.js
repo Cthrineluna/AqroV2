@@ -1,16 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View, Text, Dimensions, Image } from 'react-native';
 import { useFonts } from 'expo-font';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
 const SplashView = ({ onNextClick }) => {
+  const { theme, isDark } = useTheme();
   const logoAnimation = useRef(new Animated.Value(0)).current;
   const qrAnimation = useRef(new Animated.Value(0)).current;
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
 
   const [fontsLoaded] = useFonts({
-    Blanka: require('../../../assets/fonts/Blanka-Regular.otf'), // Ensure path is correct
+    Blanka: require('../../../assets/fonts/Blanka-Regular.otf'),
   });
 
   useEffect(() => {
@@ -65,28 +67,26 @@ const SplashView = ({ onNextClick }) => {
     outputRange: [0, 1, 1],
   });
 
+  // Theme-aware interpolations
   const backgroundColor = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#25AF90', 'white'],
+    outputRange: ['#25AF90', isDark ? theme.background : 'white'],
   });
 
-  const textColor = backgroundAnimation.interpolate({
-    inputRange: [0, 0.7, 1],
-    outputRange: ['white', '#25AF90', '#25AF90'],
-  });
+  // Text color interpolations based on theme
   const textColorA = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#F0F8FF', '#030f0f'], // White to black
+    outputRange: ['#F0F8FF', isDark ? '#F0F8FF' : '#030f0f'], // White to theme-dependent
   });
   
   const textColorQR = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#FFFFFF', '#00df82'], // White to green
+    outputRange: ['#FFFFFF', '#00df82'], // Always white to green
   });
   
   const textColorO = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#FFFFFF', '#030f0f'], // White to black
+    outputRange: ['#FFFFFF', isDark ? '#F0F8FF' : '#030f0f'], // White to theme-dependent
   });
   
   return (
@@ -110,7 +110,9 @@ const SplashView = ({ onNextClick }) => {
 
         <Animated.View style={[styles.qrContainer, { opacity: qrOpacity }]}>
           <Image
-            source={require('../../../assets/images/aqro-logo.png')}
+            source={isDark 
+              ? require('../../../assets/images/aqro-logo-dark.png') 
+              : require('../../../assets/images/aqro-logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />
