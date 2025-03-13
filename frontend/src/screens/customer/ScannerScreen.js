@@ -1,26 +1,47 @@
 // frontend/src/screens/customer/ScannerScreen.js
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApiUrl } from '../../services/apiConfig'; // Use your API config approach
+import { getApiUrl } from '../../services/apiConfig';
+import * as Clipboard from 'expo-clipboard';
+
+// Conditionally import BarCodeScanner
+let BarCodeScanner;
+try {
+  BarCodeScanner = require('expo-barcode-scanner').BarCodeScanner;
+} catch (error) {
+  // BarCodeScanner not available
+}
 
 const ScannerScreen = ({ navigation }) => {
+  const { theme, isDark } = useTheme();
+  const [mockQRCode, setMockQRCode] = useState('AQRO-123456');
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [scanning, setScanning] = useState(true);
-  const { theme, isDark } = useTheme();
+  
+  // Determine if we're on iOS Expo Go where barcode scanner won't work
+  const isIOS = Platform.OS === 'ios';
+  const isWeb = Platform.OS === 'web';
+  const useNativeScanner = BarCodeScanner && (!isIOS || isWeb);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
+    if (useNativeScanner) {
+      (async () => {
+        try {
+          const { status } = await BarCodeScanner.requestPermissionsAsync();
+          setHasPermission(status === 'granted');
+        } catch (error) {
+          console.log('Error requesting camera permissions:', error);
+          setHasPermission(false);
+        }
+      })();
+    }
+  }, [useNativeScanner]);
 
   const handleBarCodeScanned = async ({ type, data }) => {
     try {
@@ -28,8 +49,15 @@ const ScannerScreen = ({ navigation }) => {
       setScanning(false);
       
       console.log(`Bar code with type ${type} and data ${data} has been scanned!`);
-      
-      // Verify the QR code format (you can implement your own validation logic)
+      processQRCode(data);
+    } catch (error) {
+      console.error('Error in scanning:', error);
+    }
+  };
+
+  const processQRCode = async (data) => {
+    try {
+      // Verify the QR code format
       if (!data.startsWith('AQRO-')) {
         Alert.alert('Invalid QR Code', 'This does not appear to be an aQRo container QR code.');
         return;
@@ -71,11 +99,40 @@ const ScannerScreen = ({ navigation }) => {
     }
   };
 
-  if (hasPermission === null) {
-    return <Text>Requesting for camera permission</Text>;
-  }
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
+  const handleMockSubmit = () => {
+    processQRCode(mockQRCode);
+  };
+
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await Clipboard.getStringAsync();
+      if (text) {
+        setMockQRCode(text);
+      }
+    } catch (error) {
+      console.error('Failed to paste from clipboard:', error);
+    }
+  };
+
+  if (useNativeScanner) {
+    if (hasPermission === null) {
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+          <Text style={{ color: theme.text, textAlign: 'center', margin: 20 }}>
+            Requesting camera permission...
+          </Text>
+        </SafeAreaView>
+      );
+    }
+    if (hasPermission === false) {
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+          <Text style={{ color: theme.text, textAlign: 'center', margin: 20 }}>
+            No access to camera. Please enable camera permissions.
+          </Text>
+        </SafeAreaView>
+      );
+    }
   }
 
   return (
@@ -87,47 +144,98 @@ const ScannerScreen = ({ navigation }) => {
         >
           <Ionicons name="close" size={28} color={isDark ? '#fff' : '#000'} />
         </TouchableOpacity>
-        <Text style={[styles.headerText, { color: theme.text }]}>Scan Container</Text>
+        <Text style={[styles.headerText, { color: theme.text }]}>
+          {useNativeScanner ? 'Scan Container' : 'Manual Scanner'}
+        </Text>
       </View>
       
-      <View style={styles.scannerContainer}>
-        {scanning && (
-          <BarCodeScanner
-            onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-            style={StyleSheet.absoluteFillObject}
-          />
-        )}
-        <View style={styles.overlay}>
-          <View style={styles.unfocusedContainer}></View>
-          <View style={styles.middleContainer}>
+      {useNativeScanner ? (
+        // Real Scanner for Web and Android
+        <View style={styles.scannerContainer}>
+          {scanning && (
+            <BarCodeScanner
+              onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+              style={StyleSheet.absoluteFillObject}
+            />
+          )}
+          <View style={styles.overlay}>
             <View style={styles.unfocusedContainer}></View>
-            <View style={styles.focusedContainer}>
-              {/* Scanner focus area */}
-              <View style={styles.cornerTopLeft} />
-              <View style={styles.cornerTopRight} />
-              <View style={styles.cornerBottomLeft} />
-              <View style={styles.cornerBottomRight} />
+            <View style={styles.middleContainer}>
+              <View style={styles.unfocusedContainer}></View>
+              <View style={styles.focusedContainer}>
+                <View style={styles.cornerTopLeft} />
+                <View style={styles.cornerTopRight} />
+                <View style={styles.cornerBottomLeft} />
+                <View style={styles.cornerBottomRight} />
+              </View>
+              <View style={styles.unfocusedContainer}></View>
             </View>
             <View style={styles.unfocusedContainer}></View>
           </View>
-          <View style={styles.unfocusedContainer}></View>
         </View>
-      </View>
+      ) : (
+        // Mock Scanner for iOS Expo Go
+        <View style={styles.mockScannerContainer}>
+          <View style={[styles.mockScanner, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
+            <Text style={[styles.mockText, { color: theme.text }]}>
+              {isIOS ? 'Camera Scanner Not Available in iOS Expo Go' : 'Camera Not Available'}
+            </Text>
+            <Ionicons name="qr-code" size={100} color={isDark ? '#555' : '#ddd'} style={styles.qrIcon} />
+            <Text style={[styles.infoText, { color: theme.text }]}>
+              Enter a mock QR code for testing:
+            </Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, { 
+                  backgroundColor: isDark ? '#444' : '#fff',
+                  color: theme.text,
+                  borderColor: isDark ? '#555' : '#ddd'
+                }]}
+                value={mockQRCode}
+                onChangeText={setMockQRCode}
+                placeholder="AQRO-123456"
+                placeholderTextColor={isDark ? '#aaa' : '#999'}
+              />
+              <TouchableOpacity style={styles.pasteButton} onPress={pasteFromClipboard}>
+                <Ionicons name="clipboard-outline" size={24} color="#00df82" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
       
       <View style={styles.footer}>
-        <Text style={[styles.instructions, { color: theme.text }]}>
-          Position the QR code within the frame to scan
-        </Text>
-        {scanned && (
-          <TouchableOpacity
-            style={styles.scanAgainButton}
-            onPress={() => {
-              setScanned(false);
-              setScanning(true);
-            }}
-          >
-            <Text style={styles.scanAgainText}>Scan Again</Text>
-          </TouchableOpacity>
+        {useNativeScanner ? (
+          <>
+            <Text style={[styles.instructions, { color: theme.text }]}>
+              Position the QR code within the frame to scan
+            </Text>
+            {scanned && (
+              <TouchableOpacity
+                style={styles.scanAgainButton}
+                onPress={() => {
+                  setScanned(false);
+                  setScanning(true);
+                }}
+              >
+                <Text style={styles.scanAgainText}>Scan Again</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        ) : (
+          <>
+            <Text style={[styles.instructions, { color: theme.text }]}>
+              {isIOS ? 
+                'This is a manual entry mode for iOS Expo Go development.' : 
+                'Camera is not available. Use manual entry instead.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.scanAgainButton}
+              onPress={handleMockSubmit}
+            >
+              <Text style={styles.scanAgainText}>Process QR Code</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     </SafeAreaView>
@@ -157,6 +265,51 @@ const styles = StyleSheet.create({
   scannerContainer: {
     flex: 1,
     position: 'relative',
+  },
+  mockScannerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  mockScanner: {
+    width: '100%',
+    height: 350,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  mockText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  qrIcon: {
+    marginBottom: 30,
+  },
+  infoText: {
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  inputContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  pasteButton: {
+    position: 'absolute',
+    right: 12,
+    top: 9,
   },
   overlay: {
     position: 'absolute',

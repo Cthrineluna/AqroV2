@@ -55,14 +55,20 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font",
-      [
-        "expo-barcode-scanner",
-        {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
-        }
-      ]
-    ],
+  "expo-font",
+  [
+    "expo-camera",
+    {
+      "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for scanning QR codes."
+    }
+  ],
+  [
+    "expo-barcode-scanner",
+    {
+      "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+    }
+  ]
+],
     "extra": {
       "eas": {
         "projectId": "52660d14-6ca9-4b07-b8f0-21a625d07de2"

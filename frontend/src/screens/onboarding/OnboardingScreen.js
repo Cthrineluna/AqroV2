@@ -14,7 +14,9 @@ import SplashView from './SplashView';
 import TopBackSkipView from '../../components/TopBackSkipView';
 import CenterNextButton from '../../components/CenterNextButton';
 import RenderItem from '../../components/RenderItem';
-
+import * as NavigationBar from 'expo-navigation-bar';
+import { useDerivedValue } from 'react-native-reanimated';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -46,7 +48,34 @@ const onboardingData = [
   },
 ];
 
+// Helper function to convert hex color to RGB object
+const hexToRgb = (hex) => {
+  // Remove the hash if it exists
+  hex = hex.replace(/^#/, '');
+  
+  // Parse the hex values
+  const bigint = parseInt(hex, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  
+  return { r, g, b };
+};
+
+// Function for linear interpolation between colors
+const lerpColor = (colorA, colorB, t) => {
+  const rgbA = hexToRgb(colorA);
+  const rgbB = hexToRgb(colorB);
+  
+  const r = Math.round(rgbA.r + (rgbB.r - rgbA.r) * t);
+  const g = Math.round(rgbA.g + (rgbB.g - rgbA.g) * t);
+  const b = Math.round(rgbA.b + (rgbB.b - rgbA.b) * t);
+  
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 const OnboardingScreen = ({ navigation, onComplete, skipSplash = false }) => {
+  const { theme, isDark } = useTheme();
   const [showSplash, setShowSplash] = useState(!skipSplash);
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef(null);
@@ -57,6 +86,48 @@ const OnboardingScreen = ({ navigation, onComplete, skipSplash = false }) => {
   // Handle platform-specific layout adjustments
   const isWeb = Platform.OS === 'web';
   const isIOS = Platform.OS === 'ios';
+  
+  // Create derived value for navigation bar color
+  const navBarColor = useDerivedValue(() => {
+    // Get current position and calculate the progress between pages
+    const position = x.value / SCREEN_WIDTH;
+    const currentIndex = Math.floor(position);
+    const nextIndex = Math.min(currentIndex + 1, onboardingData.length - 1);
+    const progress = position - currentIndex;
+    
+    // Get colors for interpolation
+    const currentColor = onboardingData[currentIndex]?.backgroundColor || '#FFFFFF';
+    const nextColor = onboardingData[nextIndex]?.backgroundColor || '#FFFFFF';
+    
+    // Return interpolated color
+    return { currentColor, nextColor, progress };
+  });
+  
+  // Effect to update navigation bar color based on scroll position
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      // Update navigation bar color when navBarColor changes
+      const updateNavBarColor = async () => {
+        const { currentColor, nextColor, progress } = navBarColor.value;
+        const interpolatedColor = lerpColor(currentColor, nextColor, progress);
+        await NavigationBar.setBackgroundColorAsync(interpolatedColor);
+      };
+      
+      // Create a frame-based update for smooth transitions
+      const interval = setInterval(updateNavBarColor, 16); // ~60fps
+      return () => clearInterval(interval);
+    }
+  }, [navBarColor]);
+  
+  // Initialize navbar color on mount
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const initNavBarColor = async () => {
+        await NavigationBar.setBackgroundColorAsync(onboardingData[0].backgroundColor);
+      };
+      initNavBarColor();
+    }
+  }, []);
 
   // Create an animated background style using interpolateColor
   const animatedBackgroundStyle = useAnimatedStyle(() => {
@@ -74,7 +145,7 @@ const OnboardingScreen = ({ navigation, onComplete, skipSplash = false }) => {
       backgroundColor,
     };
   });
-
+  
   // Get current page text color
   const getCurrentPageColor = () => {
     const index = Math.min(Math.max(Math.round(activeIndex), 0), onboardingData.length - 1);
@@ -83,6 +154,14 @@ const OnboardingScreen = ({ navigation, onComplete, skipSplash = false }) => {
 
   const finishOnboarding = async () => {
     try {
+      // Set navigation bar color to match Landing screen before navigating
+      if (Platform.OS === 'android') {
+        await NavigationBar.setBackgroundColorAsync(theme.background);
+        
+        // Add a small delay to ensure the color change completes
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       await AsyncStorage.setItem('@has_seen_onboarding', 'true');
       console.log('Onboarding completed, token saved');
       if (onComplete) {
@@ -145,8 +224,17 @@ const OnboardingScreen = ({ navigation, onComplete, skipSplash = false }) => {
     }
   };
 
-  const onSkipClick = () => {
+  const onSkipClick = async () => {
     console.log('Skip button clicked');
+    
+    // Update navigation bar color before navigating
+    if (Platform.OS === 'android') {
+      await NavigationBar.setBackgroundColorAsync(theme.background);
+      
+      // Add a small delay to ensure the color change completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     finishOnboarding();
   };
 
@@ -170,7 +258,7 @@ const OnboardingScreen = ({ navigation, onComplete, skipSplash = false }) => {
       flatListIndex.value = index;
     },
   });
-
+  
   // Update the active index for UI color changes
   useEffect(() => {
     const updateIndex = () => {
@@ -183,6 +271,16 @@ const OnboardingScreen = ({ navigation, onComplete, skipSplash = false }) => {
     const interval = setInterval(updateIndex, 100);
     return () => clearInterval(interval);
   }, [flatListIndex.value, activeIndex]);
+
+  // Cleanup when leaving the screen
+  useEffect(() => {
+    return () => {
+      if (Platform.OS === 'android') {
+        // Set navigation bar color to match landing screen when unmounting
+        NavigationBar.setBackgroundColorAsync(theme.background);
+      }
+    };
+  }, [theme.background]);
 
   // Manually ensure FlatList is properly sized for web
   useEffect(() => {

@@ -23,6 +23,8 @@ import {
   ThemedView,
   ThemeToggle
 } from '../../components/StyledComponents';
+import * as NavigationBar from 'expo-navigation-bar';
+import { useEffect } from 'react';
 
 const RegisterScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -38,6 +40,7 @@ const RegisterScreen = ({ navigation }) => {
   const { checkAuthState } = useAuth();
   const { theme, isDark } = useTheme();
   const iconColor = isDark ? '#00df82' : theme.text;
+  
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -99,6 +102,13 @@ const RegisterScreen = ({ navigation }) => {
       setError(err.message || 'Registration failed. Please try again.');
     }
   };
+
+  useEffect(() => {
+      const setNavBarColor = async () => {
+        await NavigationBar.setBackgroundColorAsync(theme.background); 
+      };
+      setNavBarColor();
+    }, [theme.background]);
 
   return (
     <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
@@ -282,9 +292,10 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    height: Platform.OS === 'ios' ? 50 : 60,
-    zIndex: 10,
-    elevation: 2,
+    height: Platform.OS === 'ios' ? 50 : 70,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, 
+    // zIndex: 10,
+    // elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,

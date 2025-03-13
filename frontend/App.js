@@ -4,13 +4,17 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppNavigator from './src/navigation/AppNavigator';
 import OnboardingScreen from './src/screens/onboarding/OnboardingScreen';
 import SplashView from './src/screens/onboarding/SplashView';
 import { View, ActivityIndicator, Animated } from 'react-native';
 import * as Font from 'expo-font';
+
+// Import these for Android compatibility
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { NavigationBar } from 'expo-navigation-bar';
 
 const Stack = createStackNavigator();
 
@@ -82,7 +86,7 @@ const MainContent = () => {
           />
         )}
       </Stack.Navigator>
-      <StatusBar style="auto" />
+      <StatusBar translucent backgroundColor="transparent" />
     </NavigationContainer>
   );
 };
@@ -123,10 +127,12 @@ export default function App() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <MainContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <MainContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

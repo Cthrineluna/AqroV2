@@ -6,7 +6,8 @@ import {
   ScrollView, 
   TouchableOpacity,
   RefreshControl,
-  StatusBar
+  StatusBar,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,6 +20,7 @@ import {
 } from '../../components/StyledComponents';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
@@ -76,7 +78,12 @@ const CustomerHomeScreen = ({ navigation }) => {
       });
     }
   };
-
+  useEffect(() => {
+      const setNavBarColor = async () => {
+        await NavigationBar.setBackgroundColorAsync(theme.background); 
+      };
+      setNavBarColor();
+    }, [theme.background]);
   useEffect(() => {
     fetchContainerStats();
   }, []);
@@ -192,7 +199,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 2 : 0,
   },
   headerTitle: {
     fontSize: 24,

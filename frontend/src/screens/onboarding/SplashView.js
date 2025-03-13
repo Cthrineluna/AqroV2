@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View, Text, Dimensions, Image } from 'react-native';
+import { Animated, StyleSheet, View, Text, Dimensions, Image, Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 import { useTheme } from '../../context/ThemeContext';
+import * as NavigationBar from 'expo-navigation-bar';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,6 +16,36 @@ const SplashView = ({ onNextClick }) => {
     Blanka: require('../../../assets/fonts/Blanka-Regular.otf'),
   });
 
+  // Setup initial navigation bar color
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync('#25AF90'); // Initial splash color
+    }
+  }, []);
+  
+  // Listen to background animation changes to update navigation bar
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      const animationListener = backgroundAnimation.addListener(({ value }) => {
+        // Linear interpolation to calculate the current color
+        const startColor = hexToRgb('#25AF90');
+        const endColor = hexToRgb(isDark ? theme.background : '#F0F8FF');
+        
+        const r = Math.round(startColor.r + (endColor.r - startColor.r) * value);
+        const g = Math.round(startColor.g + (endColor.g - startColor.g) * value);
+        const b = Math.round(startColor.b + (endColor.b - startColor.b) * value);
+        
+        const interpolatedColor = `rgb(${r}, ${g}, ${b})`;
+        NavigationBar.setBackgroundColorAsync(interpolatedColor);
+      });
+      
+      // Clean up listener on unmount
+      return () => {
+        backgroundAnimation.removeListener(animationListener);
+      };
+    }
+  }, [backgroundAnimation, theme, isDark]);
+  
   useEffect(() => {
     if (!fontsLoaded) return;
 
@@ -122,6 +153,20 @@ const SplashView = ({ onNextClick }) => {
   );
 };
 
+// Helper function to convert hex color to RGB object
+const hexToRgb = (hex) => {
+  // Remove the hash if it exists
+  hex = hex.replace(/^#/, '');
+  
+  // Parse the hex values
+  const bigint = parseInt(hex, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  
+  return { r, g, b };
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -133,7 +178,6 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: 'absolute',
-    
   },
   logoText: {
     fontSize: 30,
@@ -143,12 +187,10 @@ const styles = StyleSheet.create({
     includeFontPadding: false,  // Force no extra padding (Android-only)
     textAlignVertical: 'center' // Ensure vertical alignment
   },
-
   qrContainer: {
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-   
   },
   logo: {
     width: 160,

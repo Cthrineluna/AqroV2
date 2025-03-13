@@ -17,6 +17,9 @@ import {
   SecondaryButton 
 } from '../../components/StyledComponents';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as NavigationBar from 'expo-navigation-bar';
+import { useEffect } from 'react';
+
 
 //for debugging
 const clearStorage = async () => {
@@ -28,10 +31,20 @@ const clearStorage = async () => {
   }
 };
 
+
+
+
 const { width, height } = Dimensions.get('window');
+
 
 const LandingScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
+  useEffect(() => {
+    const setNavBarColor = async () => {
+      await NavigationBar.setBackgroundColorAsync(theme.background); 
+    };
+    setNavBarColor();
+  }, [theme.background]);
 
   return (
     <ThemedView style={styles.container}>
@@ -102,7 +115,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20, // Reduce from 30 if needed
     paddingBottom: 20,
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -118,16 +131,19 @@ const styles = StyleSheet.create({
   headingContainer: {
     alignItems: 'center',
     marginTop: height * 0.02,
+    width: '100%', // Add this to ensure full width
   },
   mainHeading: {
     fontSize: 32,
     textAlign: 'center',
     marginBottom: 2,
+    width: '100%', // Add this to ensure text takes full width
   },
   subHeading: {
     fontSize: 14,
     opacity: 0.7,
     textAlign: 'center',
+    width: '100%', // Add this to ensure text takes full width
   },
   buttonContainer: {
     width: '90%',

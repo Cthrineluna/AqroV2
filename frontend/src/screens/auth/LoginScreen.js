@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   TextInput, 
@@ -22,6 +22,11 @@ import {
   ThemedView, 
   SemiBoldText
 } from '../../components/StyledComponents';
+import AndroidStatusBar from '../../components/AndroidStatusBar';
+import { getStatusBarHeight } from 'react-native-status-bar-height';
+import * as NavigationBar from 'expo-navigation-bar';
+import { useEffect } from 'react';
+
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -86,6 +91,14 @@ const LoginScreen = ({ navigation }) => {
     setShowPassword(false);
   };
 
+  useEffect(() => {
+    const setNavBarColor = async () => {
+      await NavigationBar.setBackgroundColorAsync(theme.background); 
+    };
+    setNavBarColor();
+  }, [theme.background]);
+
+<AndroidStatusBar color={theme.background} />
   return (
     <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
       <StatusBar 
@@ -217,11 +230,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+   header: {
     width: '100%',
-    height: Platform.OS === 'ios' ? 50 : 60,
-    zIndex: 10,
-    elevation: 2,
+    height: Platform.OS === 'ios' ? 50 : 70,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Add this line
+    // zIndex: 10,
+    // elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
@@ -251,7 +265,7 @@ const styles = StyleSheet.create({
     height: 160,
   },
   heading: {
-    marginBottom: 40,
+    marginBottom: Platform.OS === 'ios' ? 40 : 10,
     alignItems: 'center',
   },
   headingTitle: {
