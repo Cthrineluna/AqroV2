@@ -1,95 +1,244 @@
-// src/screens/customer/DashboardScreen.js
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+// frontend/src/screens/customer/ScannerScreen.js
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { BarCodeScanner } from 'expo-barcode-scanner';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiUrl } from '../../services/apiConfig'; // Use your API config approach
 
 const ScannerScreen = ({ navigation }) => {
-  const dashboardItems = [
-    { 
-      title: 'My Containers', 
-      screen: 'MyContainers',
-      icon: '🥡'
-    },
-    { 
-      title: 'Scan QR Code', 
-      screen: 'QRScanner',
-      icon: '📱'
-    },
-    { 
-      title: 'Rewards', 
-      screen: 'Rewards',
-      icon: '🏆'
-    },
-    { 
-      title: 'Participating Pansiterias', 
-      screen: 'PansiteriaList',
-      icon: '🍽️'
-    },
-    { 
-      title: 'Environmental Impact', 
-      screen: 'EnvironmentalImpact',
-      icon: '🌍'
+  const [hasPermission, setHasPermission] = useState(null);
+  const [scanned, setScanned] = useState(false);
+  const [scanning, setScanning] = useState(true);
+  const { theme, isDark } = useTheme();
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      setHasPermission(status === 'granted');
+    })();
+  }, []);
+
+  const handleBarCodeScanned = async ({ type, data }) => {
+    try {
+      setScanned(true);
+      setScanning(false);
+      
+      console.log(`Bar code with type ${type} and data ${data} has been scanned!`);
+      
+      // Verify the QR code format (you can implement your own validation logic)
+      if (!data.startsWith('AQRO-')) {
+        Alert.alert('Invalid QR Code', 'This does not appear to be an aQRo container QR code.');
+        return;
+      }
+      
+      // Get auth token
+      const token = await AsyncStorage.getItem('aqro_token');
+      if (!token) {
+        Alert.alert('Authentication Error', 'Please log in again.');
+        return;
+      }
+      
+      // Send QR code to backend
+      const response = await axios.post(
+        `${getApiUrl('/containers/register')}`,
+        { qrCode: data },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.status === 200) {
+        Alert.alert(
+          'Container Registered!',
+          'The container has been successfully registered to your account.',
+          [{ text: 'OK', onPress: () => navigation.navigate('CustomerHome') }]
+        );
+      }
+    } catch (error) {
+      console.error('Error registering container:', error);
+      let errorMessage = 'Failed to register container. Please try again.';
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      Alert.alert('Registration Error', errorMessage, [
+        { text: 'Try Again', onPress: () => setScanned(false) },
+        { text: 'Cancel', onPress: () => navigation.navigate('CustomerHome') }
+      ]);
     }
-  ];
+  };
+
+  if (hasPermission === null) {
+    return <Text>Requesting for camera permission</Text>;
+  }
+  if (hasPermission === false) {
+    return <Text>No access to camera</Text>;
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome, Customer!</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.closeButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="close" size={28} color={isDark ? '#fff' : '#000'} />
+        </TouchableOpacity>
+        <Text style={[styles.headerText, { color: theme.text }]}>Scan Container</Text>
+      </View>
       
-      <ScrollView contentContainerStyle={styles.dashboardGrid}>
-        {dashboardItems.map((item, index) => (
-          <TouchableOpacity 
-            key={index}
-            style={styles.dashboardItem}
-            onPress={() => navigation.navigate(item.screen)}
+      <View style={styles.scannerContainer}>
+        {scanning && (
+          <BarCodeScanner
+            onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+            style={StyleSheet.absoluteFillObject}
+          />
+        )}
+        <View style={styles.overlay}>
+          <View style={styles.unfocusedContainer}></View>
+          <View style={styles.middleContainer}>
+            <View style={styles.unfocusedContainer}></View>
+            <View style={styles.focusedContainer}>
+              {/* Scanner focus area */}
+              <View style={styles.cornerTopLeft} />
+              <View style={styles.cornerTopRight} />
+              <View style={styles.cornerBottomLeft} />
+              <View style={styles.cornerBottomRight} />
+            </View>
+            <View style={styles.unfocusedContainer}></View>
+          </View>
+          <View style={styles.unfocusedContainer}></View>
+        </View>
+      </View>
+      
+      <View style={styles.footer}>
+        <Text style={[styles.instructions, { color: theme.text }]}>
+          Position the QR code within the frame to scan
+        </Text>
+        {scanned && (
+          <TouchableOpacity
+            style={styles.scanAgainButton}
+            onPress={() => {
+              setScanned(false);
+              setScanning(true);
+            }}
           >
-            <Text style={styles.dashboardItemIcon}>{item.icon}</Text>
-            <Text style={styles.dashboardItemText}>{item.title}</Text>
+            <Text style={styles.scanAgainText}>Scan Again</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 20
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center'
-  },
-  dashboardGrid: {
+  header: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between'
-  },
-  dashboardItem: {
-    width: '45%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 15,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3
+    justifyContent: 'center',
+    padding: 15,
+    position: 'relative',
   },
-  dashboardItemIcon: {
-    fontSize: 50,
-    marginBottom: 10
+  closeButton: {
+    position: 'absolute',
+    left: 15,
+    padding: 5,
   },
-  dashboardItemText: {
+  headerText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  scannerContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    flexDirection: 'column',
+  },
+  unfocusedContainer: {
+    flex: 1,
+  },
+  middleContainer: {
+    flexDirection: 'row',
+    height: 250,
+  },
+  focusedContainer: {
+    flex: 10,
+    position: 'relative',
+  },
+  cornerTopLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: 40,
+    width: 40,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: '#00df82',
+  },
+  cornerTopRight: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    height: 40,
+    width: 40,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: '#00df82',
+  },
+  cornerBottomLeft: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: 40,
+    width: 40,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: '#00df82',
+  },
+  cornerBottomRight: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    height: 40,
+    width: 40,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: '#00df82',
+  },
+  footer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  instructions: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  scanAgainButton: {
+    backgroundColor: '#00df82',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+  },
+  scanAgainText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center'
-  }
+  },
 });
 
 export default ScannerScreen;

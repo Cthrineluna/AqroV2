@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
-
+const containerRoutes = require('./routes/containerRoutes');
 // Load environment variables
 dotenv.config();
 
@@ -17,6 +17,7 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api/containers', containerRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/aqro')

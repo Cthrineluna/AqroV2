@@ -133,15 +133,17 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: 'absolute',
-    top: '47.5%',
-    left:'36.75%', 
+    
   },
   logoText: {
     fontSize: 30,
     fontWeight: '500',
     letterSpacing: 6,
-    fontFamily: 'Blanka', // Use the Blanka font here
+    fontFamily: 'Blanka',
+    includeFontPadding: false,  // Force no extra padding (Android-only)
+    textAlignVertical: 'center' // Ensure vertical alignment
   },
+
   qrContainer: {
     position: 'absolute',
     justifyContent: 'center',

@@ -1,19 +1,28 @@
 import React from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, Switch, View, TouchableOpacity, Platform} from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 import { 
   ThemedView, 
   BoldText, 
   RegularText 
 } from '../../components/StyledComponents';
 
-const SettingsScreen = () => {
+const SettingsScreen = ({ navigation }) => {
   const { theme, isDark, toggleTheme, followSystem, setFollowSystem } = useTheme();
 
   return (
     <ThemedView style={styles.container}>
+      <View style={[styles.header, {backgroundColor: theme.background}]}>
+      <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.navigate('CustomerHome')}
+              >
+                <Ionicons name="chevron-back-outline" size={24} color={theme.text} />
+              </TouchableOpacity>
       <BoldText style={styles.title}>Settings</BoldText>
-      
+      </View>
+
       <View style={styles.section}>
         <BoldText style={styles.sectionTitle}>Appearance</BoldText>
         
@@ -48,9 +57,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  header: {
+      width: '100%',
+      height: Platform.OS === 'ios' ? 70 : 60,
+      zIndex: 10,
+      elevation: 2,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 15,
+    },
   title: {
     fontSize: 24,
-    marginBottom: 20,
   },
   section: {
     marginBottom: 30,

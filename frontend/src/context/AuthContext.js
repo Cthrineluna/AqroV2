@@ -5,6 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext(null);
 
+
+//for debugging
 const clearStorageOnStart = async () => {
     try {
       await AsyncStorage.removeItem('aqro_token');
@@ -24,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on mount
   useEffect(() => {
-    clearStorageOnStart(); // Clears stored data every time the app starts
+    // clearStorageOnStart(); // Clears stored data every time the app starts
     checkAuthState();
   }, []);
 

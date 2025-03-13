@@ -7,7 +7,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    
     "fonts": [
       {
         "asset": "./assets/fonts/Poppins-Regular.ttf",
@@ -31,23 +30,43 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    
     "ios": {
       "supportsTablet": true,
-      "userInterfaceStyle": "automatic"
+      "userInterfaceStyle": "automatic",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to scan QR codes.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.wabbit12.frontend"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff",
         "userInterfaceStyle": "automatic"
-      }
+      },
+      "permissions": [
+        "CAMERA",
+        "android.permission.CAMERA"
+      ],
+      "package": "com.wabbit12.frontend"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-font",
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "52660d14-6ca9-4b07-b8f0-21a625d07de2"
+      }
+    }
   }
 }

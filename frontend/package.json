@@ -19,6 +19,8 @@
     "axios": "^1.8.1",
     "expo": "~52.0.37",
     "expo-barcode-scanner": "^13.0.1",
+    "expo-camera": "^16.0.18",
+    "expo-dev-client": "~5.0.13",
     "expo-font": "~13.0.4",
     "expo-status-bar": "~2.0.1",
     "lottie-react-native": "^7.2.2",
@@ -39,5 +41,6 @@
     "@babel/core": "^7.20.0",
     "expo-module-scripts": "^4.0.4"
   },
-  "private": true
+  "private": true,
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
