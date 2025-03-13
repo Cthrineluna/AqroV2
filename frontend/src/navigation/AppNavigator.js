@@ -16,6 +16,7 @@ import SettingsScreen from '../screens/customer/SettingsScreen';
 
 // Staff screens
 import StaffDashboardScreen from '../screens/staff/DashboardScreen';
+import GenerateQRScreen from '../screens/staff/GenerateQRScreen';
 
 // Admin screens
 import AdminDashboardScreen from '../screens/admin/DashboardScreen';
@@ -54,7 +55,9 @@ const AppNavigator = () => {
       ) : userType === 'staff' ? (
         // Staff screens
         <>
+          <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
           <Stack.Screen name="StaffDashboard" component={StaffDashboardScreen} />
+          
         </>
       ) : (
         // Admin screens

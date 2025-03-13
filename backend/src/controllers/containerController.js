@@ -1,6 +1,39 @@
 const Container = require('../models/Container');
 const ContainerType = require('../models/ContainerType');
 const Rebate = require('../models/Rebate');
+const QRCode = require('qrcode');
+
+// Generate QR code image
+exports.getQRCodeImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const container = await Container.findById(id);
+    
+    if (!container) {
+        return res.status(404).json({ message: 'Container not found' });
+    }
+
+    // Generate QR code as PNG buffer instead of data URL
+    const qrCodeBuffer = await QRCode.toBuffer(container.qrCode);
+    
+    // Set appropriate headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');  // Add this line
+    
+    // Send image buffer directly
+    res.send(qrCodeBuffer);
+} catch (error) {
+    console.error('Error generating QR code image:', error);
+    res.status(500).json({ message: 'Server error' });
+}
+};
+
+
+
+
 
 // Get container stats for a customer
 exports.getContainerStats = async (req, res) => {
@@ -81,3 +114,52 @@ exports.registerContainer = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Generate a QR code for a new container
+exports.generateContainer = async (req, res) => {
+  try {
+    const { containerTypeId } = req.body;
+    
+    // Validate container type
+    const containerType = await ContainerType.findById(containerTypeId);
+    if (!containerType) {
+      return res.status(404).json({ message: 'Container type not found' });
+    }
+    
+    // Generate a unique QR code
+    const timestamp = Date.now().toString();
+    const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const qrCode = `AQRO-${randomString}-${timestamp.slice(-6)}`;
+    
+    // Create a new container (NO customerId assigned)
+    const container = new Container({
+      qrCode,
+      containerTypeId,
+      status: 'available'  // 🔹 Mark as 'available' for scanning later
+    });
+    
+    await container.save();
+    
+    res.status(201).json({
+      container,
+      qrCode,
+      qrCodeUrl: `/api/containers/qrcode/${container._id}`
+    });
+    
+  } catch (error) {
+    console.error('Error generating container:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+  exports.getContainerTypes = async (req, res) => {
+    try {
+      const containerTypes = await ContainerType.find(); // Adjust based on your schema
+      res.status(200).json(containerTypes);
+    } catch (error) {
+      console.error('Error fetching container types:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };
+  
