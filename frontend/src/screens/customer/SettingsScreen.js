@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Switch, View, TouchableOpacity, Platform} from 'react-native';
+import { StyleSheet, Switch, View, TouchableOpacity, Platform, StatusBar} from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { 

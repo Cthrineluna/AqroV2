@@ -371,6 +371,12 @@ const ContainersList = ({ navigation }) => {
   const openContainerDetail = (container) => {
     setSelectedContainer(container);
     setModalVisible(true);
+
+    if (Platform.OS === 'android') {
+      const navBarColor = isDark ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.9)';
+      NavigationBar.setBackgroundColorAsync(navBarColor);
+    }
+
     Animated.parallel([
       Animated.timing(modalAnimation, {
         toValue: 1,
@@ -400,6 +406,10 @@ const ContainersList = ({ navigation }) => {
     ]).start(() => {
       setModalVisible(false);
       setSelectedContainer(null);
+
+      if (Platform.OS === 'android') {
+        NavigationBar.setBackgroundColorAsync(theme.background); 
+      }
     });
   };
 
@@ -533,7 +543,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    height: 56,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 2 : 10,
+    height: Platform.OS === 'android' ? 76 : 56,
   },
   headerTitle: {
     fontSize: 20,
