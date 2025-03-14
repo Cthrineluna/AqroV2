@@ -132,20 +132,20 @@ const CustomerHomeScreen = ({ navigation }) => {
           </TouchableOpacity>
           
           <View style={styles.cardsContainer}>
-            <ContainerCard 
-              title="Active Containers" 
+          <ContainerCard 
+              title="Active" 
               value={containerStats.activeContainers}
               icon="cube-outline"
-              backgroundColor="#e3f2fd"
-              textColor="#0277bd"
+              backgroundColor="#e8f5e9"
+              textColor="#2e7d32"
             />
             
             <ContainerCard 
               title="Returned" 
               value={containerStats.returnedContainers}
               icon="refresh-outline"
-              backgroundColor="#e8f5e9"
-              textColor="#2e7d32"
+              backgroundColor="#e3f2fd"
+              textColor="#0277bd"
             />
             
             <ContainerCard 

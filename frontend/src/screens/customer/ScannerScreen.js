@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'transparent',
     flexDirection: 'column',
   },
   unfocusedContainer: {
@@ -274,9 +274,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   focusedContainer: {
-    aspectRatio: 1, // Makes it square
+    aspectRatio: 1, 
     position: 'relative',
-    backgroundColor: 'rgba(0,0,0,0.1)', // Very light tint for scanning area
+    backgroundColor: 'rgba(0,0,0,0.2)', 
   },
   cornerTopLeft: {
     position: 'absolute',

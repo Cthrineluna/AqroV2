@@ -67,7 +67,7 @@ const ContainerItem = ({ container, onPress }) => {
       case 'active':
         return { name: 'cube-outline', color: '#2e7d32' };
       case 'returned':
-        return { name: 'archive-outline', color: '#c62828' }; 
+        return { name: 'archive-outline', color: '#0277bd' }; 
       case 'lost':
         return { name: 'help-circle-outline', color: '#ff9800' };
       case 'damaged':
@@ -84,7 +84,7 @@ const ContainerItem = ({ container, onPress }) => {
       case 'active':
         return '#e8f5e9';
       case 'returned':
-        return '#ffebee';
+        return '#e3f2fd';
       case 'lost':
         return '#fff3e0';
       case 'damaged':
@@ -159,7 +159,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         case 'active':
           return { name: 'cube-outline', color: '#2e7d32' };
         case 'returned':
-          return { name: 'archive-outline', color: '#c62828' }; 
+          return { name: 'archive-outline', color: '#0277bd' }; 
         case 'lost':
           return { name: 'help-circle-outline', color: '#ff9800' };
         case 'damaged':
@@ -176,7 +176,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         case 'active':
           return '#e8f5e9';
         case 'returned':
-          return '#ffebee';
+          return '#e3f2fd';
         case 'lost':
           return '#fff3e0';
         case 'damaged':
@@ -193,7 +193,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         case 'active':
           return '#2e7d32'; 
         case 'returned':
-          return '#c62828'; 
+          return '#0277bd'; 
         case 'lost':
           return '#ff9800'; 
         case 'damaged':
@@ -434,19 +434,19 @@ const ContainersList = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.cardsContainer}>
             <ContainerCard 
-              title="Active Containers" 
+              title="Active" 
               value={containerStats.activeContainers}
               icon="cube-outline"
-              backgroundColor="#e3f2fd"
-              textColor="#0277bd"
+              backgroundColor="#e8f5e9"
+              textColor="#2e7d32"
             />
             
             <ContainerCard 
               title="Returned" 
               value={containerStats.returnedContainers}
               icon="refresh-outline"
-              backgroundColor="#e8f5e9"
-              textColor="#2e7d32"
+              backgroundColor="#e3f2fd"
+              textColor="#0277bd"
             />
             
             <ContainerCard 
@@ -663,7 +663,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(0,0,0,0.90)', 
     opacity: 0.95,
     zIndex: 10,
   },
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(112, 111, 111, 0.05)',
     marginBottom: 16,
   },
   detailRow: {

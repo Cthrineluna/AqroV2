@@ -16,7 +16,7 @@ const SettingsScreen = ({ navigation }) => {
       <View style={[styles.header, {backgroundColor: theme.background}]}>
       <TouchableOpacity
                 style={styles.backButton}
-                onPress={() => navigation.navigate('CustomerHome')}
+                onPress={() => navigation.goBack()}
               >
                 <Ionicons name="chevron-back-outline" size={24} color={theme.text} />
               </TouchableOpacity>
@@ -58,13 +58,10 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-      width: '100%',
-      height: Platform.OS === 'ios' ? 70 : 60,
-      zIndex: 10,
-      elevation: 2,
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 15,
+      paddingBottom: 16, 
+      paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 2 : 32,
     },
   title: {
     fontSize: 24,
