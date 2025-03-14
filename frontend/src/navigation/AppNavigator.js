@@ -12,6 +12,7 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 // Customer screens
 import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
 import ScannerScreen from '../screens/customer/ScannerScreen';
+import ContainersList from '../screens/customer/ContainersList';
 import SettingsScreen from '../screens/customer/SettingsScreen';
 
 // Staff screens
@@ -20,6 +21,7 @@ import GenerateQRScreen from '../screens/staff/GenerateQRScreen';
 
 // Admin screens
 import AdminDashboardScreen from '../screens/admin/DashboardScreen';
+
 
 
 const Stack = createStackNavigator();
@@ -50,6 +52,7 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
           <Stack.Screen name="Scanner" component={ScannerScreen} />
+          <Stack.Screen name="ContainersList" component={ContainersList} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
         </>
       ) : userType === 'staff' ? (

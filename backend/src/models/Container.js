@@ -9,11 +9,11 @@ const containerSchema = new mongoose.Schema({
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: null  // 🔹 Make it optional for unregistered containers
+    default: null  
   },
   status: {
     type: String,
-    enum: ['available', 'active', 'returned', 'lost', 'damaged'], // 🔹 Add 'available' status
+    enum: ['available', 'active', 'returned', 'lost', 'damaged'], 
     default: 'available'
   },
   containerTypeId: {
@@ -27,7 +27,7 @@ const containerSchema = new mongoose.Schema({
   },
   registrationDate: {
     type: Date,
-    default: null  // 🔹 Will be set when a user registers it
+    default: null  
   },
   lastUsed: {
     type: Date,

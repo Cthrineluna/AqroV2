@@ -16,7 +16,7 @@ export const darkTheme = {
   background: '#121212',  // Dark background
   text: '#F0F8FF',        // Light text
   primary: '#00df82',     // Keep the same green
-  secondary: '#1f1f1f',   // Dark secondary
+  secondary: '#a3a2a2',   // Dark secondary
   card: '#1e1e1e',
   border: 'rgba(240, 248, 255, 0.1)',
 };

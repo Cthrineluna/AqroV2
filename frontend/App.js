@@ -10,8 +10,12 @@ import AppNavigator from './src/navigation/AppNavigator';
 import OnboardingScreen from './src/screens/onboarding/OnboardingScreen';
 import SplashView from './src/screens/onboarding/SplashView';
 import { View, ActivityIndicator, Animated } from 'react-native';
-import * as Font from 'expo-font';
+import { enableLayoutAnimations } from 'react-native-reanimated';
 
+
+
+import * as Font from 'expo-font';
+enableLayoutAnimations(true);
 // Import these for Android compatibility
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationBar } from 'expo-navigation-bar';

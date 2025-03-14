@@ -110,7 +110,7 @@ const LoginScreen = ({ navigation }) => {
       <View style={[styles.header, {backgroundColor: theme.background}]}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.navigate('Landing')}
+          onPress={() => navigation.goBack()}
         >
           <Ionicons name="chevron-back-outline" size={24} color={theme.text} />
         </TouchableOpacity>

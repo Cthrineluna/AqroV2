@@ -70,12 +70,12 @@ const CustomerHomeScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error fetching container stats:', error);
-      // For development, use some dummy data
-      setContainerStats({
-        activeContainers: 3,
-        returnedContainers: 5,
-        totalRebate: 15.50
-      });
+      // dummy data
+      // setContainerStats({
+      //   activeContainers: 3,
+      //   returnedContainers: 5,
+      //   totalRebate: 15.50
+      // });
     }
   };
   useEffect(() => {
@@ -120,7 +120,6 @@ const CustomerHomeScreen = ({ navigation }) => {
           />
         }
       >
-        {/* Container Section */}
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
@@ -129,7 +128,7 @@ const CustomerHomeScreen = ({ navigation }) => {
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
               Containers
             </SemiBoldText>
-            <Ionicons name="chevron-forward" size={20} color={theme.text} />
+            <Ionicons name="chevron-forward" style={styles.arrow} size={20} color={theme.text} />
           </TouchableOpacity>
           
           <View style={styles.cardsContainer}>
@@ -170,7 +169,7 @@ const CustomerHomeScreen = ({ navigation }) => {
         
         {/* Recent Activity Section - You can add this later */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <View style={styles.sectionRecent}>
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
               Recent Activity
             </SemiBoldText>
@@ -199,7 +198,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 2 : 0,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 2 : 10,
   },
   headerTitle: {
     fontSize: 24,
@@ -212,13 +211,22 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  sectionRecent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    justifyContent: 'space-between',
   },
   sectionTitle: {
     fontSize: 18,
   },
+  arrow: {
+    opacity: 0.5,
+  },
+
   viewAllText: {
     fontSize: 14,
     color: '#00df82',

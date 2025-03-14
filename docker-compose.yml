@@ -11,15 +11,15 @@ services:
 
   backend:
     build:
-      context: ./backend  # ✅ This makes sure Docker can access package.json
-      dockerfile: ../docker/backend/Dockerfile  # ✅ Correct relative path to Dockerfile
+      context: ./backend 
+      dockerfile: ../docker/backend/Dockerfile  
   # Dockerfile is inside backend/
     container_name: aqro-backend
     ports:
       - "5000:5000"
     depends_on:
       mongodb:
-        condition: service_started  # Ensures MongoDB is running first
+        condition: service_started  
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/aqro
       - PORT=5000
@@ -34,7 +34,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend  # 👈 Ensure this points to the correct directory
+      context: ./frontend 
       dockerfile: ../docker/frontend/Dockerfile
     container_name: aqro-frontend
     ports:

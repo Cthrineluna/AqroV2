@@ -3,7 +3,7 @@ import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 
-// Styled Text components
+
 export const RegularText = ({ style, children, ...props }) => {
   const { theme } = useTheme();
   
@@ -20,6 +20,7 @@ export const RegularText = ({ style, children, ...props }) => {
     </Text>
   );
 };
+
 
 export const MediumText = ({ style, children, ...props }) => {
   const { theme } = useTheme();
