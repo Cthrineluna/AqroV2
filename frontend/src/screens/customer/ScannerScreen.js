@@ -1,13 +1,18 @@
-// frontend/src/screens/customer/ScannerScreen.js
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions  } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApiUrl } from '../../services/apiConfig'; // Use your API config approach
+import { getApiUrl } from '../../services/apiConfig'; 
+import { 
+  RegularText, 
+  MediumText, 
+  BoldText, 
+  SemiBoldText 
+} from '../../components/StyledComponents';
 
 const ScannerScreen = ({ navigation }) => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -15,17 +20,82 @@ const ScannerScreen = ({ navigation }) => {
   const [scanning, setScanning] = useState(true);
   const { theme, isDark } = useTheme();
   const [facing, setFacing] = useState('back');
+  const isProcessing = useRef(false);
+  const lastScannedCode = useRef('');
+  const lastScanTime = useRef(0);
+  const SCAN_COOLDOWN = 3000;
 
-  const handleBarCodeScanned = async (data) => {
+  const screenWidth = Dimensions.get('window').width;
+  const scanAreaSize = screenWidth * 0.7; 
+  
+  // Define the scan area bounds
+  const scanBounds = {
+    x: (screenWidth - scanAreaSize) / 2,
+    y: (Dimensions.get('window').height - scanAreaSize) / 2,
+    width: scanAreaSize,
+    height: scanAreaSize,
+  };
+
+  // Check if the barcode is within our scan area
+  const isWithinScanArea = (cornerPoints) => {
+    // If cornerPoints is not available, we can't determine position
+    if (!cornerPoints || !Array.isArray(cornerPoints) || cornerPoints.length < 4) {
+      return false;
+    }
+    
+    // Get the center point of the QR code
+    let totalX = 0;
+    let totalY = 0;
+    
+    for (const point of cornerPoints) {
+      totalX += point.x;
+      totalY += point.y;
+    }
+    
+    const centerX = totalX / cornerPoints.length;
+    const centerY = totalY / cornerPoints.length;
+    
+    // Check if the center point is within our scan area
+    return (
+      centerX >= scanBounds.x &&
+      centerX <= scanBounds.x + scanBounds.width &&
+      centerY >= scanBounds.y &&
+      centerY <= scanBounds.y + scanBounds.height
+    );
+  };
+
+
+  const handleBarCodeScanned = async (result) => {
+    const { data, cornerPoints } = result;
+    const currentTime = Date.now();
+    
+    // Only process QR codes within our scan area
+    if (!isWithinScanArea(cornerPoints)) {
+      return; // Ignore QR codes outside the scan area
+    }
+    
+    // Don't process if we're already handling a scan
+    if (
+      isProcessing.current || 
+      scanned || 
+      data === lastScannedCode.current ||
+      currentTime - lastScanTime.current < SCAN_COOLDOWN
+    ) {
+      return;
+    }
+    
+    isProcessing.current = true;
+    lastScannedCode.current = data;
+    lastScanTime.current = currentTime;
+
+    setScanned(true);
+    setScanning(false);
+    
     try {
-      if (scanned) return;
-      
-      setScanned(true);
-      setScanning(false);
       
       console.log(`QR code scanned with data: ${data}`);
       
-      // Verify the QR code format (you can implement your own validation logic)
+      // Your existing QR code processing logic
       if (!data.startsWith('AQRO-')) {
         Alert.alert('Invalid QR Code', 'This does not appear to be an aQRo container QR code.');
         return;
@@ -61,17 +131,30 @@ const ScannerScreen = ({ navigation }) => {
       }
       
       Alert.alert('Registration Error', errorMessage, [
-        { text: 'Try Again', onPress: () => setScanned(false) },
+        { text: 'Try Again', onPress: () => {
+          resetScanState();
+        }},
         { text: 'Cancel', onPress: () => navigation.navigate('CustomerHome') }
       ]);
+    } finally {
+      isProcessing.current = false;
     }
   };
 
+  const resetScanState = () => {
+    setScanned(false);
+    setScanning(true);
+    isProcessing.current = false;
+    // Don't reset lastScannedCode to prevent immediate re-scanning of the same code
+    // The cooldown timer will still apply
+  };
+
+  
   if (!permission) {
     // Camera permissions are still loading
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: theme.text }}>Loading camera permissions...</Text>
+        <RegularText style={{ color: theme.text }}>Loading camera permissions...</RegularText>
       </SafeAreaView>
     );
   }
@@ -80,14 +163,14 @@ const ScannerScreen = ({ navigation }) => {
     // Camera permissions are not granted yet
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: theme.text, textAlign: 'center', marginBottom: 20 }}>
+        <RegularText style={{ color: theme.text, textAlign: 'center', marginBottom: 20 }}>
           We need your permission to use the camera for scanning QR codes
-        </Text>
+        </RegularText>
         <TouchableOpacity 
           style={styles.scanAgainButton}
           onPress={requestPermission}
         >
-          <Text style={styles.scanAgainText}>Grant Permission</Text>
+          <RegularText style={styles.scanAgainText}>Grant Permission</RegularText>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -102,7 +185,7 @@ const ScannerScreen = ({ navigation }) => {
         >
           <Ionicons name="close" size={28} color={isDark ? '#fff' : '#000'} />
         </TouchableOpacity>
-        <Text style={[styles.headerText, { color: theme.text }]}>Scan Container</Text>
+        <BoldText style={[styles.headerText, { color: theme.text }]}>Scan Container</BoldText>
       </View>
       
       <View style={styles.scannerContainer}>
@@ -113,15 +196,14 @@ const ScannerScreen = ({ navigation }) => {
             barcodeScannerSettings={{
               barcodeTypes: ["qr"],
             }}
-            onBarcodeScanned={scanned ? undefined : (result) => handleBarCodeScanned(result.data)}
+            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
           />
         )}
         <View style={styles.overlay}>
           <View style={styles.unfocusedContainer}></View>
           <View style={styles.middleContainer}>
             <View style={styles.unfocusedContainer}></View>
-            <View style={styles.focusedContainer}>
-              {/* Scanner focus area */}
+            <View style={[styles.focusedContainer, { width: scanAreaSize }]}>
               <View style={styles.cornerTopLeft} />
               <View style={styles.cornerTopRight} />
               <View style={styles.cornerBottomLeft} />
@@ -134,20 +216,15 @@ const ScannerScreen = ({ navigation }) => {
       </View>
       
       <View style={styles.footer}>
-        <Text style={[styles.instructions, { color: theme.text }]}>
+        <RegularText style={[styles.instructions, { color: theme.text }]}>
           Position the QR code within the frame to scan
-        </Text>
-        {scanned && (
-          <TouchableOpacity
-            style={styles.scanAgainButton}
-            onPress={() => {
-              setScanned(false);
-              setScanning(true);
-            }}
-          >
-            <Text style={styles.scanAgainText}>Scan Again</Text>
-          </TouchableOpacity>
-        )}
+        </RegularText>
+        <TouchableOpacity
+          style={styles.scanAgainButton}
+          onPress={resetScanState}
+        >
+          <RegularText style={styles.scanAgainText}>Scan Again</RegularText>
+    </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -191,50 +268,54 @@ const styles = StyleSheet.create({
   },
   middleContainer: {
     flexDirection: 'row',
-    height: 250,
+    height: 'auto',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   focusedContainer: {
-    flex: 10,
+    aspectRatio: 1, // Makes it square
     position: 'relative',
+    backgroundColor: 'rgba(0,0,0,0.1)', // Very light tint for scanning area
   },
   cornerTopLeft: {
     position: 'absolute',
     top: 0,
     left: 0,
-    height: 40,
-    width: 40,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
+    height: 60,
+    width: 60,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
     borderColor: '#00df82',
   },
   cornerTopRight: {
     position: 'absolute',
     top: 0,
     right: 0,
-    height: 40,
-    width: 40,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
+    height: 60,
+    width: 60,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
     borderColor: '#00df82',
   },
   cornerBottomLeft: {
     position: 'absolute',
     bottom: 0,
     left: 0,
-    height: 40,
-    width: 40,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
+    height: 60,
+    width: 60,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
     borderColor: '#00df82',
   },
   cornerBottomRight: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    height: 40,
-    width: 40,
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
+    height: 60,
+    width: 60,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
     borderColor: '#00df82',
   },
   footer: {
