@@ -14,6 +14,7 @@ import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
 import ScannerScreen from '../screens/customer/ScannerScreen';
 import ContainersList from '../screens/customer/ContainersList';
 import SettingsScreen from '../screens/customer/SettingsScreen';
+import ActivityListScreen from '../screens/customer/ActivityListScreen';
 
 // Staff screens
 import StaffDashboardScreen from '../screens/staff/DashboardScreen';
@@ -53,6 +54,9 @@ const AppNavigator = () => {
           <Stack.Screen name="CustomerHome" component={CustomerHomeScreen} />
           <Stack.Screen name="Scanner" component={ScannerScreen} />
           <Stack.Screen name="ContainersList" component={ContainersList} />
+          <Stack.Screen name="ActivityList" component={ActivityListScreen}options={{ headerShown: false }}
+              />
+
           <Stack.Screen name="Settings" component={SettingsScreen} />
         </>
       ) : userType === 'staff' ? (

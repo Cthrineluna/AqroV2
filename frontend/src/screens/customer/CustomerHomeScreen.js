@@ -22,6 +22,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
+import { getRecentActivities } from '../../services/activityService';
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   const { theme } = useTheme();
@@ -39,6 +40,73 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   );
 };
 
+
+
+const ActivityItem = ({ activity }) => {
+  const { theme } = useTheme();
+  
+  // Format the activity information
+  const getActivityInfo = () => {
+    switch (activity.type) {
+      case 'registration':
+        return {
+          icon: 'add-circle-outline',
+          color: '#4CAF50',
+          title: 'Container Registered',
+          description: `Container registered at ${activity.location || 'Unknown'}`
+        };
+      case 'return':
+        return {
+          icon: 'repeat-outline',
+          color: '#2196F3',
+          title: 'Container Returned',
+          description: `Container returned at ${activity.location || 'Unknown'}`
+        };
+      case 'rebate':
+        return {
+          icon: 'cash-outline',
+          color: '#FF9800',
+          title: 'Rebate Received',
+          description: `₱${activity.amount.toFixed(2)} rebate from ${activity.location || 'Unknown'}`
+        };
+      case 'status_change':
+        return {
+          icon: 'sync-outline',
+          color: '#9C27B0',
+          title: 'Status Changed',
+          description: activity.notes || 'Container status updated'
+        };
+      default:
+        return {
+          icon: 'ellipsis-horizontal-outline',
+          color: '#757575',
+          title: 'Activity',
+          description: 'Container activity recorded'
+        };
+    }
+  };
+  
+  const info = getActivityInfo();
+  const date = new Date(activity.createdAt);
+  const formattedDate = date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric' 
+  });
+  
+  return (
+    <View style={[styles.activityItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <View style={[styles.activityIconContainer, { backgroundColor: info.color + '20' }]}>
+        <Ionicons name={info.icon} size={24} color={info.color} />
+      </View>
+      <View style={styles.activityContent}>
+        <SemiBoldText style={{ color: theme.text }}>{info.title}</SemiBoldText>
+        <RegularText style={{ color: theme.text, opacity: 0.7, fontSize: 12 }}>{info.description}</RegularText>
+      </View>
+      <RegularText style={{ color: theme.text, opacity: 0.5, fontSize: 12 }}>{formattedDate}</RegularText>
+    </View>
+  );
+};
+
 const CustomerHomeScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
@@ -48,6 +116,18 @@ const CustomerHomeScreen = ({ navigation }) => {
     returnedContainers: 0,
     totalRebate: 0
   });
+  const [recentActivities, setRecentActivities] = useState([]);
+
+
+  const fetchRecentActivities = async () => {
+    try {
+      const activities = await getRecentActivities(3); 
+      setRecentActivities(activities);
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+    }
+  };
+  
 
   const fetchContainerStats = async () => {
     try {
@@ -90,10 +170,12 @@ const CustomerHomeScreen = ({ navigation }) => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchContainerStats();
+    await Promise.all([fetchContainerStats(), fetchRecentActivities()]);
     setRefreshing(false);
   };
 
+
+  
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar 
@@ -173,16 +255,24 @@ const CustomerHomeScreen = ({ navigation }) => {
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
               Recent Activity
             </SemiBoldText>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('ActivityList')}>
               <RegularText style={styles.viewAllText}>View All</RegularText>
             </TouchableOpacity>
           </View>
           
-          <View style={[styles.activityPlaceholder, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
-            <RegularText style={{ color: theme.text, textAlign: 'center' }}>
-              Your recent container activity will appear here.
-            </RegularText>
-          </View>
+          {recentActivities.length > 0 ? (
+            <View style={styles.activitiesContainer}>
+              {recentActivities.map((activity, index) => (
+                <ActivityItem key={activity._id || index} activity={activity} />
+              ))}
+            </View>
+          ) : (
+            <View style={[styles.activityPlaceholder, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
+              <RegularText style={{ color: theme.text, textAlign: 'center' }}>
+                Your recent container activity will appear here.
+              </RegularText>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -290,7 +380,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 100,
-  }
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  activityIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activitiesContainer: {
+    marginTop: 8,
+  },
 });
 
 export default CustomerHomeScreen;

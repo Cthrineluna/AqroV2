@@ -1,6 +1,7 @@
 const Container = require('../models/Container');
 const ContainerType = require('../models/ContainerType');
 const Rebate = require('../models/Rebate');
+const Activity = require('../models/Activity');
 const QRCode = require('qrcode');
 
 // Generate QR code image
@@ -108,9 +109,75 @@ exports.registerContainer = async (req, res) => {
     
     await container.save();
     
+    // Record activity
+    const newActivity = new Activity({
+      userId: customerId,
+      containerId: container._id,
+      containerTypeId: container.containerTypeId,
+      type: 'registration',
+      notes: 'Container registered'
+    });
+    
+    await newActivity.save();
+    
     res.json(container);
   } catch (error) {
     console.error('Error registering container:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Add more functions that should record activities...
+// For example, when processing rebates:
+
+exports.processRebate = async (req, res) => {
+  try {
+    const { containerId, amount, location } = req.body;
+    const staffId = req.user._id;
+    
+    // Find the container
+    const container = await Container.findById(containerId);
+    
+    if (!container) {
+      return res.status(404).json({ message: 'Container not found' });
+    }
+    
+    const customerId = container.customerId;
+    
+    // Create rebate record
+    const rebate = new Rebate({
+      containerId,
+      customerId,
+      staffId,
+      amount,
+      location
+    });
+    
+    await rebate.save();
+    
+    // Update container status
+    container.status = 'returned';
+    container.lastUsed = new Date();
+    container.usesCount = (container.usesCount || 0) + 1;
+    
+    await container.save();
+    
+    // Record activity
+    const newActivity = new Activity({
+      userId: customerId,
+      containerId,
+      containerTypeId: container.containerTypeId,
+      type: 'rebate',
+      amount,
+      location,
+      notes: 'Rebate processed and container returned'
+    });
+    
+    await newActivity.save();
+    
+    res.status(201).json(rebate);
+  } catch (error) {
+    console.error('Error processing rebate:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

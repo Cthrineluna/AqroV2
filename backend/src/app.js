@@ -42,6 +42,7 @@ app.use('/api/auth', authRoutes);
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to aQRo API' });
 });
+app.use('/api/activities', require('./routes/activityRoutes'));
 
 // Start server
 const PORT = process.env.PORT || 5000;
