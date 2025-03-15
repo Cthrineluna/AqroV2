@@ -20,6 +20,7 @@ import {
   BoldText, 
   SemiBoldText 
 } from '../../components/StyledComponents';
+import FilterTabs from '../../components/FilterTabs'; 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -213,6 +214,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         styles.modalContainer,
         {
           transform: [
+            { translateY: -height * 0.33 },
             { scale: animation.interpolate({
                 inputRange: [0, 1],
                 outputRange: [0.8, 1]
@@ -220,7 +222,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
             }
           ],
           opacity: animation,
-          backgroundColor: theme.card
+          backgroundColor: theme.card,
         }
       ]}
     >
@@ -299,6 +301,8 @@ const ContainersList = ({ navigation }) => {
   const [modalAnimation] = useState(new Animated.Value(0));
   const [modalVisible, setModalVisible] = useState(false);
   const [modalBackdrop] = useState(new Animated.Value(0));
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [filteredContainers, setFilteredContainers] = useState([]);
 
   const fetchContainerStats = async () => {
     try {
@@ -342,11 +346,42 @@ const ContainersList = ({ navigation }) => {
       
       if (response.data) {
         setContainers(response.data);
+        applyFilter(activeFilter, response.data);  // Apply filter after setting containers
       }
     } catch (error) {
       console.error('Error fetching containers:', error);
     }
   };
+
+  const filterOptions = [
+    { id: 'all', label: 'All' },
+    { id: 'active', label: 'Active' },
+    { id: 'returned', label: 'Returned' },
+    { id: 'lost', label: 'Lost' },
+    { id: 'damaged', label: 'Damaged' },
+  ];
+  
+  // Add this function to handle filtering
+  const applyFilter = (filter, containerList = containers) => {
+    if (filter === 'all') {
+      setFilteredContainers(containerList);
+    } else {
+      const filtered = containerList.filter(item => item.status === filter);
+      setFilteredContainers(filtered);
+    }
+  };
+  
+  // Add this function to handle filter change
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+    applyFilter(filter);
+  };
+  
+  // Add this effect to update filtered containers when containers change
+  useEffect(() => {
+    applyFilter(activeFilter);
+  }, [containers, activeFilter]);
+  
 
   useEffect(() => {
     const setNavBarColor = async () => {
@@ -472,14 +507,23 @@ const ContainersList = ({ navigation }) => {
         {/* Containers List */}
         <View style={styles.section}>
           <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
-            All Containers
+            {filterOptions.find(option => option.id === activeFilter)?.label} Containers
           </SemiBoldText>
-          
-          {containers.length === 0 ? (
+
+
+          <FilterTabs 
+            options={filterOptions}
+            activeFilter={activeFilter}
+            onFilterChange={handleFilterChange}
+            theme={theme}
+          />
+          {filteredContainers.length === 0 ? (
             <View style={[styles.emptyState, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
-              <Ionicons name="cube-outline" size={48} color={theme.textSecondary} />
-              <RegularText style={{ color: theme.textSecondary, textAlign: 'center', marginTop: 12 }}>
-                You don't have any containers yet.
+              <Ionicons name="cube-outline" size={48} color={theme.text} style={{ opacity: 0.4 }} />
+              <RegularText style={{ color: theme.text, textAlign: 'center', marginTop: 12 }}>
+                {containers.length === 0 
+                  ? "You don't have any containers yet." 
+                  : "No containers match the selected filter."}
               </RegularText>
               <TouchableOpacity 
                 style={styles.scanButton}
@@ -491,7 +535,7 @@ const ContainersList = ({ navigation }) => {
             </View>
           ) : (
             <View style={styles.containersList}>
-              {containers.map((container) => (
+              {filteredContainers.map((container) => (
                 <ContainerItem 
                   key={container._id} 
                   container={container} 
@@ -631,6 +675,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   emptyState: {
+    marginTop: 12,
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
@@ -680,15 +725,17 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: width * 0.85,
-    marginLeft: -(width * 0.85) / 2,
-    marginTop: -(height * 0.65) / 2,
-    maxHeight: height * 0.65,
-    borderRadius: 16,
-    zIndex: 11,
-    overflow: 'hidden',
+        top: '50%',
+        left: '50%',
+        width: width * 0.85,
+        marginLeft: -(width * 0.85) / 2,
+        transform: [
+            { translateY: -height * 0.3 }, 
+        ],
+        maxHeight: height * 0.75, 
+        borderRadius: 16,
+        zIndex: 11,
+        overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',

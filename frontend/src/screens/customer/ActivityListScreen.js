@@ -21,6 +21,7 @@ import {
   SemiBoldText, 
   BoldText 
 } from '../../components/StyledComponents';
+import FilterTabs from '../../components/FilterTabs';
 import { getAllActivities } from '../../services/activityService';
 import * as NavigationBar from 'expo-navigation-bar';
 
@@ -353,9 +354,10 @@ const ActivityDetailModal = ({ activity, animation }) => {
           
           <View style={styles.statusChip}>
             <RegularText style={{ color: info.color, fontSize: 16 }}>
-              {activity.type ? activity.type.toUpperCase() : ''}
+                {activity.type ? activity.type.replace(/_/g, ' ').toUpperCase() : ''}
             </RegularText>
           </View>
+
           
           <View style={styles.detailRow}>
             <RegularText style={styles.detailLabel}>Date:</RegularText>
@@ -494,34 +496,14 @@ return (
       </View>
       
       {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScrollContent}
-        >
-          {filterOptions.map(option => (
-            <TouchableOpacity
-              key={option.id}
-              style={[
-                styles.filterTab,
-                activeFilter === option.id && { backgroundColor: theme.primary },
-                { borderColor: theme.primary }
-              ]}
-              onPress={() => handleFilterChange(option.id)}
-            >
-              <RegularText 
-                style={[
-                  styles.filterText,
-                  { color: activeFilter === option.id ? '#fff' : theme.primary }
-                ]}
-              >
-                {option.label}
-              </RegularText>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      <View style={[ { padding: 16 }]}>
+            <FilterTabs 
+                options={filterOptions}
+                activeFilter={activeFilter}
+                onFilterChange={handleFilterChange}
+                theme={theme}
+            />
+        </View>
       
       {/* Main Content */}
       {renderContent()}
@@ -560,24 +542,6 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
       fontSize: 20,
-    },
-    filterContainer: {
-      paddingVertical: 10,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: 'rgba(0,0,0,0.1)',
-    },
-    filterScrollContent: {
-      paddingHorizontal: 16,
-    },
-    filterTab: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 20,
-      marginRight: 8,
-      borderWidth: 1,
-    },
-    filterText: {
-      fontSize: 14,
     },
     listContainer: {
       flex: 1,
@@ -662,9 +626,9 @@ const styles = StyleSheet.create({
         width: width * 0.85,
         marginLeft: -(width * 0.85) / 2,
         transform: [
-            { translateY: -height * 0.3 }, // Changed from marginTop to transform for better positioning
+            { translateY: -height * 0.3 }, 
         ],
-        maxHeight: height * 0.75, // Increased from 0.65 to 0.75
+        maxHeight: height * 0.75, 
         borderRadius: 16,
         zIndex: 11,
         overflow: 'hidden',

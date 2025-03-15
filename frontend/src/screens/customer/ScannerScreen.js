@@ -219,12 +219,15 @@ const ScannerScreen = ({ navigation }) => {
         <RegularText style={[styles.instructions, { color: theme.text }]}>
           Position the QR code within the frame to scan
         </RegularText>
-        <TouchableOpacity
-          style={styles.scanAgainButton}
-          onPress={resetScanState}
-        >
-          <RegularText style={styles.scanAgainText}>Scan Again</RegularText>
-    </TouchableOpacity>
+        {!scanning && (
+          <TouchableOpacity
+            style={styles.scanAgainButton}
+            onPress={resetScanState}
+          >
+            <RegularText style={styles.scanAgainText}>Scan Again</RegularText>
+          </TouchableOpacity>
+        )}
+
       </View>
     </SafeAreaView>
   );
