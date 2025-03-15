@@ -367,21 +367,21 @@ const ActivityDetailModal = ({ activity, animation }) => {
             <RegularText style={{ color: theme.text }}>{formattedTime}</RegularText>
           </View>
           
-          {activity.location && (
+          {activity.type === 'return' && activity.location && (
             <View style={styles.detailRow}>
-              <RegularText style={styles.detailLabel}>Location:</RegularText>
-              <RegularText style={{ color: theme.text }}>{activity.location}</RegularText>
+                <RegularText style={styles.detailLabel}>Location:</RegularText>
+                <RegularText style={{ color: theme.text }}>{activity.location}</RegularText>
             </View>
-          )}
+            )}
           
-          {activity.amount != null && (
+          {activity.type === 'rebate' && activity.amount != null && (
             <View style={styles.detailRow}>
-              <RegularText style={styles.detailLabel}>Amount:</RegularText>
-              <RegularText style={{ color: theme.text }}>
+                <RegularText style={styles.detailLabel}>Amount:</RegularText>
+                <RegularText style={{ color: theme.text }}>
                 ₱{typeof activity.amount === 'number' ? activity.amount.toFixed(2) : '0.00'}
-              </RegularText>
+                </RegularText>
             </View>
-          )}
+            )}
           
           {activity.containerId && (
             <View style={styles.detailRow}>

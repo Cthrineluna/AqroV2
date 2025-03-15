@@ -250,8 +250,8 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         </View>
         
         <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Container ID:</RegularText>
-          <RegularText style={{ color: theme.text }}>{container.qrCode}</RegularText>
+          <RegularText style={styles.detailLabel}>Container Code:</RegularText>
+          <RegularText style={{ color: theme.text, fontSize: 14 }}>{container.qrCode}</RegularText>
         </View>
         
         <View style={styles.detailRow}>
@@ -276,7 +276,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         
         {container.status === 'active' && (
           <View style={styles.detailRow}>
-            <RegularText style={styles.detailLabel}>Estimated Uses Left:</RegularText>
+            <RegularText style={styles.detailLabel}>Uses Left:</RegularText>
             <RegularText style={{ color: theme.text }}>{estimatedUsesLeft}</RegularText>
           </View>
         )}

@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on mount
   useEffect(() => {
-    clearStorageOnStart(); // Clears stored data every time the app starts
+    // clearStorageOnStart(); // Clears stored data every time the app starts
     checkAuthState();
   }, []);
 
