@@ -216,6 +216,7 @@ const processSections = () => {
   };
 
   const closeActivityDetail = () => {
+    
     Animated.parallel([
       Animated.timing(modalAnimation, {
         toValue: 0,
@@ -230,6 +231,10 @@ const processSections = () => {
     ]).start(() => {
       setModalVisible(false);
       setSelectedActivity(null);
+
+      if (Platform.OS === 'android') {
+        NavigationBar.setBackgroundColorAsync(theme.background);
+      }
     });
   };
 
