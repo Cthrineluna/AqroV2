@@ -13,6 +13,7 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import CustomerTabNavigator from './CustomerTabNavigator';
 import ScannerScreen from '../screens/customer/ScannerScreen';
 import SettingsScreen from '../screens/customer/SettingsScreen';
+import ProfileScreen from '../screens/customer/ProfileScreen';
 
 // Staff screens
 import StaffDashboardScreen from '../screens/staff/DashboardScreen';
@@ -49,6 +50,7 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="CustomerTabs" component={CustomerTabNavigator} />
           <Stack.Screen name="Scanner" component={ScannerScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
         </>
       ) : userType === 'staff' ? (

@@ -37,11 +37,14 @@ const CustomerTabNavigator = () => {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.background,
-          borderTopColor: theme.background,
-          height: Platform.OS === 'android' ? 60:80,
-          paddingBottom: 10,
-          paddingTop: 10,
+            backgroundColor: theme.background,
+            borderTopColor: 'transparent', 
+            height: Platform.OS === 'android' ? 60 : 80,
+            paddingBottom: 10,
+            paddingTop: 10,
+            elevation: 0, 
+            shadowOpacity: 0, 
+            borderTopWidth: 0,
         },
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.text + '80', // Adding opacity for inactive
