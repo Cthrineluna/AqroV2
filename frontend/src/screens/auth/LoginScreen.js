@@ -181,6 +181,7 @@ const LoginScreen = ({ navigation }) => {
                     placeholder="Enter your password"
                     secureTextEntry={!showPassword}
                     placeholderTextColor="#9e9e9e"
+                    autoCapitalize="none"
                   />
                   <TouchableOpacity 
                     style={styles.passwordToggle} 

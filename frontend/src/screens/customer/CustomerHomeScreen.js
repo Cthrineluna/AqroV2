@@ -186,9 +186,9 @@ const CustomerHomeScreen = ({ navigation }) => {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
         <BoldText style={[styles.headerTitle, { color: theme.text }]}>aQRo</BoldText>
-        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+        {/* <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="settings-outline" size={24} color={theme.text} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       
       <ScrollView 
@@ -255,7 +255,7 @@ const CustomerHomeScreen = ({ navigation }) => {
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
               Recent Activity
             </SemiBoldText>
-            <TouchableOpacity onPress={() => navigation.navigate('ActivityList')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Activities')}>
               <RegularText style={styles.viewAllText}>View All</RegularText>
             </TouchableOpacity>
           </View>

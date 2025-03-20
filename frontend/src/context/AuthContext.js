@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on mount
   useEffect(() => {
-    clearStorageOnStart(); // Clears stored data every time the app starts
+    // clearStorageOnStart(); // Clears stored data every time the app starts
     checkAuthState();
   }, []);
 
@@ -56,6 +56,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserInfo = async (userData) => {
+    try {
+      setUser(userData);
+      await AsyncStorage.setItem('aqro_user', JSON.stringify(userData));
+    } catch (e) {
+      console.error('Failed to update user info:', e);
+    }
+  };
+
   // Log out function
   const logout = async () => {
     try {
@@ -77,6 +86,7 @@ export const AuthProvider = ({ children }) => {
         user,
         checkAuthState,
         logout,
+        updateUserInfo,
       }}
     >
       {children}

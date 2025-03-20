@@ -25,6 +25,7 @@ import {
 } from '../../components/StyledComponents';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useEffect } from 'react';
+import { ActivityIndicator } from 'react-native';
 
 const RegisterScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -68,7 +69,7 @@ const RegisterScreen = ({ navigation }) => {
       setError('Password must be at least 6 characters');
       return;
     }
-
+  
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -80,21 +81,39 @@ const RegisterScreen = ({ navigation }) => {
       const userData = { firstName, lastName, email, password, userType: 'customer' };
   
       const response = await register(userData);
-      setLoading(false);
-  
+      
       if (response) {
         console.log("User registered successfully:", response);
-  
-        // Show success message on UI
-        setSuccessMessage("Registration successful! Redirecting to login...");
-  
-        // Automatically navigate to Login after 2 seconds
-        setTimeout(() => {
-          navigation.replace('Login'); // `replace` prevents going back to Register screen
-        }, 2000);
         
+        // If the token wasn't returned/saved in the register function,
+        // we can try to log in directly
+        if (!response.token) {
+          try {
+            await login(email, password);
+          } catch (loginErr) {
+            console.error('Auto-login after registration failed:', loginErr);
+            // Even if auto-login fails, we still consider registration successful
+          }
+        }
+        
+        // Refresh the auth state to reflect the logged-in user
+        await checkAuthState();
+        
+        // Navigate back to the previous screen and let auth context handle redirection
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+          
+          // Then after a short delay, trigger the auth check again
+          setTimeout(() => {
+            checkAuthState();
+          }, 100);
+        } else {
+          // If we can't go back (rare case), just go to Login - the auth state refresh will handle the rest
+          navigation.replace('Login');
+        }
       } else {
         setError('Registration failed. Please try again.');
+        setLoading(false);
       }
     } catch (err) {
       setLoading(false);
@@ -218,6 +237,7 @@ const RegisterScreen = ({ navigation }) => {
                       placeholder="Enter your password"
                       secureTextEntry={!showPassword}
                       placeholderTextColor="#9e9e9e"
+                      autoCapitalize="none"
                     />
                     <TouchableOpacity 
                       style={styles.passwordToggle} 
@@ -245,6 +265,7 @@ const RegisterScreen = ({ navigation }) => {
                       placeholder="Confirm your password"
                       secureTextEntry={!showConfirmPassword}
                       placeholderTextColor="#9e9e9e"
+                      autoCapitalize="none"
                     />
                     <TouchableOpacity 
                       style={styles.passwordToggle} 
@@ -262,15 +283,20 @@ const RegisterScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.actionButtons}>
-              <TouchableOpacity 
-                style={styles.registerButton} 
-                onPress={handleRegister}
-                disabled={loading}
-              >
-                <BoldText style={styles.registerButtonText}>
-                  {loading ? 'Registering...' : 'SIGN UP'}
-                </BoldText>
-              </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.registerButton} 
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#030f0f" />
+                  <BoldText style={styles.loadingText}>Creating Account...</BoldText>
+                </View>
+              ) : (
+                <BoldText style={styles.registerButtonText}>SIGN UP</BoldText>
+              )}
+            </TouchableOpacity>
               
               <View style={styles.loginContainer}>
                 <RegularText style={styles.loginText}>Already have an account? </RegularText>
@@ -426,7 +452,17 @@ const styles = StyleSheet.create({
   loginLinkText: {
     fontSize: 16,
     color: '#00df82',
-  }
+  },
+loadingContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+loadingText: {
+  color: '#030f0f',
+  fontSize: 20,
+  marginLeft: 10,
+},
 });
 
 export default RegisterScreen;

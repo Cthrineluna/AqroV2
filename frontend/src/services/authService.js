@@ -19,13 +19,20 @@ const getApiUrl = () => {
 };
 
 // Register user
+// Update the register function in authService.js
 export const register = async (userData) => {
   try {
     const response = await axios.post(`${getApiUrl()}/register`, userData);
     
     console.log('Registration successful:', response.data);
 
-    return response.data; // Return user data but DO NOT store token
+    // Store the token and user data if they are returned from registration
+    if (response.data.token) {
+      await AsyncStorage.setItem('aqro_token', response.data.token);
+      await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data.user));
+    }
+
+    return response.data;
   } catch (error) {
     console.error('Registration error:', error);
     
