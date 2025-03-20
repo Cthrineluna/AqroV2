@@ -2,21 +2,10 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { isAuthenticated, getCurrentUser, logout as authLogout } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { getApiUrl } from '../services/apiConfig';
 
 const AuthContext = createContext(null);
-
-
-//for debugging
-const clearStorageOnStart = async () => {
-    try {
-      await AsyncStorage.removeItem('aqro_token');
-      await AsyncStorage.removeItem('aqro_user');
-      console.log('Local storage cleared on app start.');
-    } catch (e) {
-      console.error('Failed to clear local storage:', e);
-    }
-  };
-  
 
 export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +15,6 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on mount
   useEffect(() => {
-    // clearStorageOnStart(); // Clears stored data every time the app starts
     checkAuthState();
   }, []);
 
@@ -37,10 +25,33 @@ export const AuthProvider = ({ children }) => {
       const authenticated = await isAuthenticated();
       
       if (authenticated) {
-        const userData = await getCurrentUser();
-        setUser(userData);
-        setUserType(userData?.userType || 'customer');
-        setUserToken('token-exists');
+        // First, try to get the user from AsyncStorage for immediate UI update
+        const storedUserData = await AsyncStorage.getItem('aqro_user');
+        if (storedUserData) {
+          const parsedUserData = JSON.parse(storedUserData);
+          setUser(parsedUserData);
+          setUserType(parsedUserData?.userType || 'customer');
+          setUserToken('token-exists');
+        }
+        
+        // Then, fetch fresh data from the server including the profile picture
+        try {
+          const token = await AsyncStorage.getItem('aqro_token');
+          const response = await axios.get(
+            `${getApiUrl('/users/profile')}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          
+          if (response.data) {
+            // Update the user data with the fresh data from the server
+            setUser(response.data);
+            setUserType(response.data?.userType || 'customer');
+            // Save the fresh data to AsyncStorage
+            await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data));
+          }
+        } catch (error) {
+          console.error('Error fetching fresh user data:', error);
+        }
       } else {
         setUser(null);
         setUserType(null);
@@ -69,6 +80,11 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authLogout();
+      // Clear local storage
+      await AsyncStorage.removeItem('aqro_user');
+      await AsyncStorage.removeItem('aqro_token');
+      
+      // Reset state
       setUser(null);
       setUserType(null);
       setUserToken(null);

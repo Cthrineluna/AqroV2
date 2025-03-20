@@ -205,7 +205,7 @@ const CustomerHomeScreen = ({ navigation }) => {
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
-            onPress={() => navigation.navigate('ContainersList')}
+            onPress={() => navigation.navigate('Containers')}
           >
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
               Containers
@@ -259,7 +259,7 @@ const CustomerHomeScreen = ({ navigation }) => {
               <RegularText style={styles.viewAllText}>View All</RegularText>
             </TouchableOpacity>
           </View>
-          
+
           {recentActivities.length > 0 ? (
             <View style={styles.activitiesContainer}>
               {recentActivities.map((activity, index) => (

@@ -14,6 +14,7 @@ import CustomerTabNavigator from './CustomerTabNavigator';
 import ScannerScreen from '../screens/customer/ScannerScreen';
 import SettingsScreen from '../screens/customer/SettingsScreen';
 import ProfileScreen from '../screens/customer/ProfileScreen';
+import SideMenu from '../components/SideMenu';
 
 // Staff screens
 import StaffDashboardScreen from '../screens/staff/DashboardScreen';
@@ -38,7 +39,6 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!userToken ? (
-        // Auth screens
         <>
           <Stack.Screen name="Landing" component={LandingScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -46,21 +46,19 @@ const AppNavigator = () => {
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </>
       ) : userType === 'customer' ? (
-        // Customer screens
         <>
           <Stack.Screen name="CustomerTabs" component={CustomerTabNavigator} />
           <Stack.Screen name="Scanner" component={ScannerScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="SideMenu" component={SideMenu} />
         </>
       ) : userType === 'staff' ? (
-        // Staff screens
         <>
           <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
           <Stack.Screen name="StaffDashboard" component={StaffDashboardScreen} />
         </>
       ) : (
-        // Admin screens
         <>
           <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
         </>

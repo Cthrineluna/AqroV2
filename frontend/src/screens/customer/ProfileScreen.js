@@ -27,25 +27,37 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getApiUrl } from '../../services/apiConfig';
 
-
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
-  const { user, updateUserInfo, logout } = useAuth();
+  const { user, updateUserInfo } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [themeLoaded, setThemeLoaded] = useState(false);
   const [userData, setUserData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    password: '', 
-    confirmPassword: '', 
-    profilePicture: user?.profilePicture || null
+    firstName: '',
+    lastName: '',
+    email: '',
+    profilePicture: null
   });
 
+  // Set theme loaded after initial render
   useEffect(() => {
-    // Fetch user data when component mounts
+    if (theme) {
+      setThemeLoaded(true);
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    if (user) {
+      setUserData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        profilePicture: user.profilePicture || null
+      });
+    }
     fetchUserData();
-  }, []);
+  }, [user]);
 
   const fetchUserData = async () => {
     try {
@@ -85,25 +97,6 @@ const ProfileScreen = ({ navigation }) => {
       [field]: value
     }));
   };
-  const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        { 
-          text: "Logout", 
-          onPress: () => {
-            logout();
-          },
-          style: "destructive"
-        }
-      ]
-    );
-  };
 
   const pickImage = async () => {
     try {
@@ -133,21 +126,8 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const validatePasswordChange = () => {
-    if (userData.password && userData.password !== userData.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return false;
-    }
-    return true;
-  };
-
   const saveProfile = async () => {
     try {
-      // Validate passwords if being changed
-      if (!validatePasswordChange()) {
-        return;
-      }
-      
       setIsLoading(true);
       const token = await AsyncStorage.getItem('aqro_token');
       
@@ -171,9 +151,6 @@ const ProfileScreen = ({ navigation }) => {
           // But you should implement proper image resizing
         }
       }
-      
-      // Remove confirmPassword before sending to API
-      delete optimizedData.confirmPassword;
       
       const response = await axios.put(
         `${getApiUrl('/users/profile')}`,
@@ -204,24 +181,37 @@ const ProfileScreen = ({ navigation }) => {
   const ProfileItem = ({ label, value, editable, field }) => {
     return (
       <View style={styles.profileItem}>
-        <RegularText style={{ color: theme.text, opacity: 0.7 }}>{label}</RegularText>
+        <RegularText style={{ color: theme ? theme.text : '#000', opacity: 0.7 }}>
+          {label || ''}
+        </RegularText>
         {isEditing && editable ? (
           <TextInput
             style={[styles.input, { 
-              color: theme.text,
-              borderColor: theme.border,
+              color: theme ? theme.text : '#000',
+              borderColor: theme ? theme.border : '#ccc',
               backgroundColor: isDark ? '#2c2c2c' : '#f5f5f5' 
             }]}
-            value={value}
+            value={value || ''}
             onChangeText={(text) => handleInputChange(field, text)}
-            placeholderTextColor={theme.text + '60'}
+            placeholderTextColor={theme ? theme.text + '60' : '#00000060'}
           />
         ) : (
-          <SemiBoldText style={{ color: theme.text }}>{value}</SemiBoldText>
+          <SemiBoldText style={{ color: theme ? theme.text : '#000' }}>
+            {value || ''}
+          </SemiBoldText>
         )}
       </View>
     );
   };
+
+  // Show loading state if theme is not loaded yet
+  if (!themeLoaded) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: '#fff' }]}>
+        <ActivityIndicator size="large" color="#00df82" style={{ marginTop: 50 }} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -232,10 +222,13 @@ const ProfileScreen = ({ navigation }) => {
       
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <BoldText style={[styles.headerTitle, { color: theme.text }]}>Profile</BoldText>
-        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-          <Ionicons name="settings-outline" size={24} color={theme.text} />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back-outline" size={24} color={theme.text} />
         </TouchableOpacity>
+        <BoldText style={[styles.headerTitle, { color: theme.text }]}>
+          Profile
+        </BoldText>
+        <View style={{width: 24}} />
       </View>
       
       <ScrollView contentContainerStyle={styles.content}>
@@ -269,7 +262,7 @@ const ProfileScreen = ({ navigation }) => {
               </TouchableOpacity>
               
               <BoldText style={[styles.userName, { color: theme.text }]}>
-                {userData.firstName} {userData.lastName}
+                {`${userData.firstName || ''} ${userData.lastName || ''}`}
               </BoldText>
               <RegularText style={{ color: theme.text, opacity: 0.7 }}>
                 {user?.userType || 'customer'}
@@ -278,59 +271,24 @@ const ProfileScreen = ({ navigation }) => {
             
             {/* Profile Info */}
             <View style={[styles.infoCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <ProfileItem 
+              <ProfileItem 
                 label="First Name" 
                 value={userData.firstName} 
                 editable={true}
                 field="firstName"
-            />
-            <ProfileItem 
+              />
+              <ProfileItem 
                 label="Last Name" 
                 value={userData.lastName} 
                 editable={true}
                 field="lastName"
-            />
-            <ProfileItem 
+              />
+              <ProfileItem 
                 label="Email" 
                 value={userData.email} 
-                editable={true}  // Changed to true
+                editable={true}
                 field="email"
-            />
-            {isEditing && (
-        <>
-          <View style={styles.profileItem}>
-            <RegularText style={{ color: theme.text, opacity: 0.7 }}>New Password</RegularText>
-            <TextInput
-              style={[styles.input, { 
-                color: theme.text,
-                borderColor: theme.border,
-                backgroundColor: isDark ? '#2c2c2c' : '#f5f5f5' 
-              }]}
-              value={userData.password}
-              onChangeText={(text) => handleInputChange('password', text)}
-              placeholderTextColor={theme.text + '60'}
-              placeholder="Enter new password"
-              secureTextEntry={true}
-            />
-          </View>
-          
-          <View style={styles.profileItem}>
-            <RegularText style={{ color: theme.text, opacity: 0.7 }}>Confirm Password</RegularText>
-            <TextInput
-              style={[styles.input, { 
-                color: theme.text,
-                borderColor: theme.border,
-                backgroundColor: isDark ? '#2c2c2c' : '#f5f5f5' 
-              }]}
-              value={userData.confirmPassword}
-              onChangeText={(text) => handleInputChange('confirmPassword', text)}
-              placeholderTextColor={theme.text + '60'}
-              placeholder="Confirm new password"
-              secureTextEntry={true}
-            />
-          </View>
-        </>
-      )}
+              />
             </View>
             
             {/* Buttons */}
@@ -341,16 +299,20 @@ const ProfileScreen = ({ navigation }) => {
                     style={[styles.button, styles.cancelButton]} 
                     onPress={() => {
                       setIsEditing(false);
-                      fetchUserData(); // Reset form
+                      fetchUserData(); 
                     }}
                   >
-                    <RegularText style={styles.buttonText}>Cancel</RegularText>
+                    <RegularText style={styles.buttonText}>
+                      Cancel
+                    </RegularText>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={[styles.button, styles.saveButton, { backgroundColor: theme.primary }]} 
                     onPress={saveProfile}
                   >
-                    <RegularText style={styles.saveButtonText}>Save Changes</RegularText>
+                    <RegularText style={styles.saveButtonText}>
+                      Save Changes
+                    </RegularText>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -358,18 +320,11 @@ const ProfileScreen = ({ navigation }) => {
                   style={[styles.button, styles.editButton, { borderColor: theme.primary }]} 
                   onPress={() => setIsEditing(true)}
                 >
-                  <RegularText style={[styles.editButtonText, { color: theme.primary }]}>Edit Profile</RegularText>
+                  <RegularText style={[styles.editButtonText, { color: theme.primary }]}>
+                    Edit Profile
+                  </RegularText>
                 </TouchableOpacity>
               )}
-            </View>
-            <View style={styles.logoutContainer}>
-              <TouchableOpacity 
-                style={[styles.logoutButton, { borderColor: theme.error || '#ff4d4d' }]} 
-                onPress={handleLogout}
-              >
-                <Ionicons name="log-out-outline" size={20} color={theme.error || '#ff4d4d'} style={styles.logoutIcon} />
-                <RegularText style={[styles.logoutText, { color: theme.error || '#ff4d4d' }]}>Logout</RegularText>
-              </TouchableOpacity>
             </View>
           </>
         )}
@@ -486,26 +441,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFF',
   },
-  logoutContainer: {
-    marginTop: 30,
-    alignItems: 'center',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 30,
-    borderWidth: 2,
-    width: '80%',
-  },
-  logoutIcon: {
-    marginRight: 8,
-  },
-  logoutText: {
-    fontSize: 16,
-  }
 });
 
 export default ProfileScreen;
