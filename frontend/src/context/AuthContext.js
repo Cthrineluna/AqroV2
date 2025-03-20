@@ -1,4 +1,3 @@
-// frontend/src/context/AuthContext.js
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { isAuthenticated, getCurrentUser, logout as authLogout } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';

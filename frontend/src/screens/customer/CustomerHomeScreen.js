@@ -249,7 +249,7 @@ const CustomerHomeScreen = ({ navigation }) => {
           <BoldText style={styles.scanButtonText}>Scan Container</BoldText>
         </TouchableOpacity>
         
-        {/* Recent Activity Section - You can add this later */}
+        {/* Recent Activity Section  */}
         <View style={styles.section}>
           <View style={styles.sectionRecent}>
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>

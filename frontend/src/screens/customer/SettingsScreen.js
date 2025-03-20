@@ -250,7 +250,7 @@ const SettingsScreen = ({ navigation }) => {
                   {isLoading ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <MediumText style={{color: '#fff'}}>Update Password</MediumText>
+                    <MediumText style={{color: '#fff'}}>Update</MediumText>
                   )}
                 </TouchableOpacity>
               </View>
@@ -298,7 +298,7 @@ const SettingsScreen = ({ navigation }) => {
               <View style={styles.settingLabelContainer}>
                 <MediumText style={{color: theme.text}}>App Version</MediumText>
                 <RegularText style={{color: theme.text + '80', fontSize: 12}}>
-                  1.0.0
+                  aQRo 1.0.0
                 </RegularText>
               </View>
             </View>
