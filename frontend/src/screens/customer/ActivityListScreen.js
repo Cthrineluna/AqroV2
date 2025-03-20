@@ -12,7 +12,8 @@ import {
   StatusBar,
   Platform,
   Animated,
-  Dimensions
+  Dimensions,
+  RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -455,10 +456,19 @@ const ActivityDetailModal = ({ activity, animation }) => {
 return (
   <View style={styles.listContainer}>
     <SectionList
+    refreshControl={
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        colors={['#00df82']} 
+        tintColor={isDark ? '#00df82' : '#2e7d32'}
+      />
+    }
       sections={sections}
       keyExtractor={(item) => item._id}
       renderItem={({ item }) => renderActivityItem({ item })}
       renderSectionHeader={({ section: { title } }) => (
+        
         <View style={[styles.sectionHeader, { backgroundColor: theme.background }]}>
           <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
             {title}
@@ -509,6 +519,7 @@ return (
                 theme={theme}
             />
         </View>
+
       
       {/* Main Content */}
       {renderContent()}

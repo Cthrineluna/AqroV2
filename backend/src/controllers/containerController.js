@@ -125,8 +125,7 @@ exports.registerContainer = async (req, res) => {
     container.registrationDate = new Date();
     
     await container.save();
-    
-    // Record activity only for new registrations
+
     const newActivity = new Activity({
       userId: customerId,
       containerId: container._id,
