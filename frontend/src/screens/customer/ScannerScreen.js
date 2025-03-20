@@ -20,6 +20,7 @@ const ScannerScreen = ({ navigation }) => {
   const [scanning, setScanning] = useState(true);
   const { theme, isDark } = useTheme();
   const [facing, setFacing] = useState('back');
+  const [flashEnabled, setFlashEnabled] = useState(false);
   const isProcessing = useRef(false);
   const lastScannedCode = useRef('');
   const lastScanTime = useRef(0);
@@ -34,6 +35,10 @@ const ScannerScreen = ({ navigation }) => {
     y: (Dimensions.get('window').height - scanAreaSize) / 2,
     width: scanAreaSize,
     height: scanAreaSize,
+  };
+
+  const toggleFlash = () => {
+    setFlashEnabled(prev => !prev);
   };
 
   // Check if the barcode is within our scan area
@@ -114,13 +119,40 @@ const ScannerScreen = ({ navigation }) => {
         { qrCode: data },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+      const resetScanState = () => {
+        setScanned(false);
+        setScanning(true);
+        isProcessing.current = false;
+        // Don't reset lastScannedCode to prevent immediate re-scanning of the same code
+        // The cooldown timer will still apply
+      };
       if (response.status === 200) {
-        Alert.alert(
-          'Container Registered!',
-          'The container has been successfully registered to your account.',
-          [{ text: 'OK', onPress: () => navigation.navigate('CustomerHome') }]
-        );
+        // Handle different response scenarios
+        if (response.data.alreadyRegistered) {
+          if (response.data.ownedByCurrentUser) {
+            Alert.alert(
+              'Already Registered',
+              'This container is already registered to your account.',
+              [{ text: 'Try Again', onPress: () => {
+                resetScanState();
+              }}]
+            );
+          } else {
+            Alert.alert(
+              'Already Registered',
+              'This container is already registered to another user.',
+              [{ text: 'Try Again', onPress: () => {
+                resetScanState();
+              }}]
+            );
+          }
+        } else {
+          Alert.alert(
+            'Container Registered!',
+            'The container has been successfully registered to your account.',
+            [{ text: 'OK', onPress: () => navigation.navigate('CustomerTabs', { screen: 'Home' }) }]
+          );
+        }
       }
     } catch (error) {
       console.error('Error registering container:', error);
@@ -134,20 +166,14 @@ const ScannerScreen = ({ navigation }) => {
         { text: 'Try Again', onPress: () => {
           resetScanState();
         }},
-        { text: 'Cancel', onPress: () => navigation.navigate('CustomerHome') }
+        { text: 'Cancel', onPress: () => navigation.navigate('CustomerTabs', { screen: 'Home' }) }
       ]);
     } finally {
       isProcessing.current = false;
     }
   };
 
-  const resetScanState = () => {
-    setScanned(false);
-    setScanning(true);
-    isProcessing.current = false;
-    // Don't reset lastScannedCode to prevent immediate re-scanning of the same code
-    // The cooldown timer will still apply
-  };
+ 
 
   
   if (!permission) {
@@ -186,6 +212,16 @@ const ScannerScreen = ({ navigation }) => {
           <Ionicons name="close" size={28} color={isDark ? '#fff' : '#000'} />
         </TouchableOpacity>
         <BoldText style={[styles.headerText, { color: theme.text }]}>Scan Container</BoldText>
+        <TouchableOpacity 
+          style={styles.flashButton} 
+          onPress={toggleFlash}
+        >
+          <Ionicons 
+            name={flashEnabled ? "flash" : "flash-off"} 
+            size={24} 
+            color={isDark ? '#fff' : '#000'} 
+          />
+        </TouchableOpacity>
       </View>
       
       <View style={styles.scannerContainer}>
@@ -197,6 +233,7 @@ const ScannerScreen = ({ navigation }) => {
               barcodeTypes: ["qr"],
             }}
             onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+            flashMode={flashEnabled ? 'torch' : 'off'}
           />
         )}
         <View style={styles.overlay}>
@@ -219,15 +256,15 @@ const ScannerScreen = ({ navigation }) => {
         <RegularText style={[styles.instructions, { color: theme.text }]}>
           Position the QR code within the frame to scan
         </RegularText>
-        {!scanning && (
+        
+        <View style={styles.buttonRow}>  
           <TouchableOpacity
-            style={styles.scanAgainButton}
-            onPress={resetScanState}
+            style={styles.flipCameraButton}
+            onPress={() => setFacing(prev => prev === 'back' ? 'front' : 'back')}
           >
-            <RegularText style={styles.scanAgainText}>Scan Again</RegularText>
+            <Ionicons name="camera-reverse-outline" size={24} color="#fff" />
           </TouchableOpacity>
-        )}
-
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -247,6 +284,11 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     left: 15,
+    padding: 5,
+  },
+  flashButton: {
+    position: 'absolute',
+    right: 15,
     padding: 5,
   },
   headerText: {
@@ -331,10 +373,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    gap: 15,
+  },
   scanAgainButton: {
     backgroundColor: '#00df82',
     paddingVertical: 12,
     paddingHorizontal: 30,
+    borderRadius: 25,
+  },
+  flipCameraButton: {
+    backgroundColor: '#2e7d32',
+    padding: 12,
     borderRadius: 25,
   },
   scanAgainText: {

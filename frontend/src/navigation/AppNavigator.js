@@ -15,6 +15,7 @@ import ScannerScreen from '../screens/customer/ScannerScreen';
 import SettingsScreen from '../screens/customer/SettingsScreen';
 import ProfileScreen from '../screens/customer/ProfileScreen';
 import SideMenu from '../components/SideMenu';
+import ActivityListScreen from '../screens/customer/ActivityListScreen';
 
 // Staff screens
 import StaffDashboardScreen from '../screens/staff/DashboardScreen';
@@ -48,6 +49,7 @@ const AppNavigator = () => {
       ) : userType === 'customer' ? (
         <>
           <Stack.Screen name="CustomerTabs" component={CustomerTabNavigator} />
+          <Stack.Screen name="Activities" component={ActivityListScreen} />
           <Stack.Screen name="Scanner" component={ScannerScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
