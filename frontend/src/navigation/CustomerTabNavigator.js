@@ -52,15 +52,15 @@ const CustomerTabNavigator = () => {
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Containers') {
-              iconName = focused ? 'cube' : 'cube-outline';
+              iconName = focused ? 'logo-dropbox' : 'cube-outline';
             } else if (route.name === 'Activities') {
-              iconName = focused ? 'list' : 'list-outline';
+              iconName = focused ? 'newspaper' : 'newspaper-outline';
             } else if (route.name === 'Menu') {
               iconName = focused ? 'menu' : 'menu-outline';
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;
-          },
+          },    
         })}
       >
         <Tab.Screen name="Home" component={CustomerHomeScreen} />

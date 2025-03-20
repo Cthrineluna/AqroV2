@@ -44,8 +44,7 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
 
 const ActivityItem = ({ activity }) => {
   const { theme } = useTheme();
-  
-  // Format the activity information
+
   const getActivityInfo = () => {
     switch (activity.type) {
       case 'registration':
@@ -164,8 +163,10 @@ const CustomerHomeScreen = ({ navigation }) => {
       };
       setNavBarColor();
     }, [theme.background]);
+
   useEffect(() => {
     fetchContainerStats();
+    fetchRecentActivities(); 
   }, []);
 
   const onRefresh = async () => {
