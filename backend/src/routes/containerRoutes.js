@@ -24,6 +24,8 @@ router.get('/restaurants', protect, authorize('admin'), containerController.getR
 // Get containers for a specific restaurant (staff and admin)
 router.get('/restaurant/:restaurantId', protect, authorize('staff', 'admin'), containerController.getRestaurantContainers);
 
+router.get('/restaurant/:restaurantId/stats', protect, authorize('staff', 'admin'), containerController.getRestaurantContainerStats);
+
 // Generate new container (staff/admin only)
 router.post(
     '/generate', 

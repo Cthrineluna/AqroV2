@@ -6,6 +6,44 @@ const QRCode = require('qrcode');
 const Restaurant = require('../models/Restaurant');
 
 // Generate QR code image
+// Get container stats for a restaurant
+exports.getRestaurantContainerStats = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    
+    // First check if the staff user belongs to this restaurant
+    if (req.user.userType === 'staff' && req.user.restaurantId.toString() !== restaurantId) {
+      return res.status(403).json({ message: 'Unauthorized access to restaurant data' });
+    }
+    
+    // Get available containers count
+    const availableContainers = await Container.countDocuments({
+      restaurantId,
+      status: 'available'
+    });
+
+    // Get active containers count
+    const activeContainers = await Container.countDocuments({
+      restaurantId,
+      status: 'active'
+    });
+
+    // Get returned containers count
+    const returnedContainers = await Container.countDocuments({
+      restaurantId,
+      status: 'returned'
+    });
+
+    res.json({
+      availableContainers,
+      activeContainers,
+      returnedContainers
+    });
+  } catch (error) {
+    console.error('Error getting restaurant container stats:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 exports.getQRCodeImage = async (req, res) => {
   try {
     const { id } = req.params;
