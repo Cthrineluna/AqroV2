@@ -440,19 +440,24 @@ const StaffContainersList = ({ navigation }) => {
       ? containers 
       : containers.filter(item => item.status === activeFilter);
     
-    // Search by container type name, QR code, or customer name
+    // Search by container type name, QR code, customer name, or restaurant name
     const results = filtered.filter(container => {
       const containerTypeName = container.containerTypeId.name.toLowerCase();
       const qrCode = container.qrCode.toLowerCase();
       const customerName = container.customerId 
         ? `${container.customerId.firstName} ${container.customerId.lastName}`.toLowerCase() 
         : '';
+      // Add restaurant name search
+      const restaurantName = container.restaurantId 
+        ? container.restaurantId.name.toLowerCase() 
+        : '';
       
       const searchLower = query.toLowerCase();
       
       return containerTypeName.includes(searchLower) || 
              qrCode.includes(searchLower) || 
-             customerName.includes(searchLower);
+             customerName.includes(searchLower) ||
+             restaurantName.includes(searchLower);
     });
     
     setFilteredContainers(results);
