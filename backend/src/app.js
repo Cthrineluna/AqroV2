@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const containerRoutes = require('./routes/containerRoutes');
 const userRoutes = require('./routes/userRoutes');
+const restaurantRoutes = require('./routes/restaurantRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/containers', containerRoutes);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/containers/qrcode', cors({
   origin: '*',
   methods: ['GET', 'OPTIONS'],

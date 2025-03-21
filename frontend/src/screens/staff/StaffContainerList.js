@@ -49,7 +49,6 @@ const ContainerItem = ({ container, onPress }) => {
   const { theme } = useTheme();
   const estimatedUsesLeft = container.containerTypeId.maxUses - container.usesCount; 
   
-  // Add customer name display for staff view
   const customerName = container.customerId ? 
     `${container.customerId.firstName} ${container.customerId.lastName}` : 
     'Unregistered';
@@ -154,7 +153,6 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
     ? new Date(container.lastUsed).toLocaleDateString() 
     : 'N/A';
     
-  // Add customer info for staff view
   const customerName = container.customerId ? 
     `${container.customerId.firstName} ${container.customerId.lastName}` : 
     'Unregistered';
@@ -355,7 +353,6 @@ const StaffContainersList = ({ navigation }) => {
         return;
       }
       
-      // This endpoint needs to be created in your backend
       const response = await axios.get(
         `${getApiUrl(`/containers/restaurant/${user.restaurantId}/stats`)}`, 
         {
@@ -373,19 +370,19 @@ const StaffContainersList = ({ navigation }) => {
   const fetchRestaurantDetails = async () => {
     try {
       const token = await AsyncStorage.getItem('aqro_token');
-      
+  
       if (!token || !user.restaurantId) {
         console.error('No auth token or restaurantId found');
         return;
       }
-      
+  
       const response = await axios.get(
         `${getApiUrl(`/restaurants/${user.restaurantId}`)}`, 
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
-      
+  
       if (response.data) {
         setRestaurantName(response.data.name);
       }
@@ -393,6 +390,7 @@ const StaffContainersList = ({ navigation }) => {
       console.error('Error fetching restaurant details:', error);
     }
   };
+  
 
   const fetchContainers = async () => {
     try {
@@ -403,7 +401,6 @@ const StaffContainersList = ({ navigation }) => {
         return;
       }
       
-      // Use the existing endpoint from containerController.js
       const response = await axios.get(
         `${getApiUrl(`/containers/restaurant/${user.restaurantId}`)}`, 
         {
@@ -430,24 +427,20 @@ const StaffContainersList = ({ navigation }) => {
   ];
   const handleSearch = (query) => {
     if (!query.trim()) {
-      // If search is empty, return to normal filtered containers
       applyFilter(activeFilter);
       return;
     }
-    
-    // Search in the containers that match the current filter
+
     const filtered = activeFilter === 'all' 
       ? containers 
       : containers.filter(item => item.status === activeFilter);
-    
-    // Search by container type name, QR code, customer name, or restaurant name
+
     const results = filtered.filter(container => {
       const containerTypeName = container.containerTypeId.name.toLowerCase();
       const qrCode = container.qrCode.toLowerCase();
       const customerName = container.customerId 
         ? `${container.customerId.firstName} ${container.customerId.lastName}`.toLowerCase() 
         : '';
-      // Add restaurant name search
       const restaurantName = container.restaurantId 
         ? container.restaurantId.name.toLowerCase() 
         : '';
@@ -465,7 +458,6 @@ const StaffContainersList = ({ navigation }) => {
   
   const applyFilter = (filter, containerList = containers) => {
     if (searchQuery.trim()) {
-      // If there's an active search, re-run the search with the new filter
       handleSearch(searchQuery);
       return;
     }
@@ -477,7 +469,7 @@ const StaffContainersList = ({ navigation }) => {
       setFilteredContainers(filtered);
     }
   };
-  
+
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
     applyFilter(filter);
@@ -568,7 +560,7 @@ const StaffContainersList = ({ navigation }) => {
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <BoldText style={[styles.headerTitle, { color: theme.text }]}>
-        {user.restaurantId?.name || "Restaurant"} Containers
+        {restaurantName || "Restaurant"} Containers
       </BoldText>
         <View style={{ width: 24 }} />
       </View>
