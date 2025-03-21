@@ -6,6 +6,16 @@ import { getApiUrl } from '../services/apiConfig';
 
 const AuthContext = createContext(null);
 
+const clearStorageOnStart = async () => {
+  try {
+    await AsyncStorage.removeItem('aqro_token');
+    await AsyncStorage.removeItem('aqro_user');
+    console.log('Local storage cleared on app start.');
+  } catch (e) {
+    console.error('Failed to clear local storage:', e);
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [userToken, setUserToken] = useState(null);
@@ -14,6 +24,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on mount
   useEffect(() => {
+    clearStorageOnStart();
     checkAuthState();
   }, []);
 

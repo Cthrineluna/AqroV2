@@ -22,6 +22,11 @@ const containerTypeSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  maxUses: {
+    type: Number,
+    required: true,
+    default: 10
+  },
   isActive: {
     type: Boolean,
     default: true

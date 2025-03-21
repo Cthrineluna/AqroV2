@@ -3,6 +3,7 @@ const ContainerType = require('../models/ContainerType');
 const Rebate = require('../models/Rebate');
 const Activity = require('../models/Activity');
 const QRCode = require('qrcode');
+const Restaurant = require('../models/Restaurant');
 
 // Generate QR code image
 exports.getQRCodeImage = async (req, res) => {
@@ -31,10 +32,6 @@ exports.getQRCodeImage = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
 }
 };
-
-
-
-
 
 // Get container stats for a customer
 exports.getContainerStats = async (req, res) => {
@@ -75,6 +72,7 @@ exports.getCustomerContainers = async (req, res) => {
     
     const containers = await Container.find({ customerId })
       .populate('containerTypeId')
+      .populate('restaurantId', 'name location')
       .sort({ updatedAt: -1 });
     
     res.json(containers);
@@ -85,14 +83,14 @@ exports.getCustomerContainers = async (req, res) => {
 };
 
 // Register a container to a customer
-// Register a container to a customer
 exports.registerContainer = async (req, res) => {
   try {
     const { qrCode } = req.body;
     const customerId = req.user._id;
     
     // Check if container exists
-    const container = await Container.findOne({ qrCode });
+    const container = await Container.findOne({ qrCode })
+      .populate('containerTypeId');
     
     if (!container) {
       return res.status(404).json({ message: 'Container not found' });
@@ -130,6 +128,7 @@ exports.registerContainer = async (req, res) => {
       userId: customerId,
       containerId: container._id,
       containerTypeId: container.containerTypeId,
+      restaurantId: container.restaurantId,
       type: 'registration',
       notes: 'Container registered'
     });
@@ -151,9 +150,7 @@ exports.registerContainer = async (req, res) => {
   }
 };
 
-// Add more functions that should record activities...
-// For example, when processing rebates:
-
+// Process rebate
 exports.processRebate = async (req, res) => {
   try {
     const { containerId, amount, location } = req.body;
@@ -191,6 +188,7 @@ exports.processRebate = async (req, res) => {
       userId: customerId,
       containerId,
       containerTypeId: container.containerTypeId,
+      restaurantId: container.restaurantId,
       type: 'rebate',
       amount,
       location,
@@ -209,12 +207,20 @@ exports.processRebate = async (req, res) => {
 // Generate a QR code for a new container
 exports.generateContainer = async (req, res) => {
   try {
-    const { containerTypeId } = req.body;
+    const { containerTypeId, restaurantId } = req.body;
     
     // Validate container type
     const containerType = await ContainerType.findById(containerTypeId);
     if (!containerType) {
       return res.status(404).json({ message: 'Container type not found' });
+    }
+    
+    // Validate restaurant if provided
+    if (restaurantId) {
+      const restaurant = await mongoose.model('Restaurant').findById(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ message: 'Restaurant not found' });
+      }
     }
     
     // Generate a unique QR code
@@ -226,7 +232,8 @@ exports.generateContainer = async (req, res) => {
     const container = new Container({
       qrCode,
       containerTypeId,
-      status: 'available'  // 🔹 Mark as 'available' for scanning later
+      restaurantId: restaurantId || null,
+      status: 'available'  // Mark as 'available' for scanning later
     });
     
     await container.save();
@@ -243,14 +250,45 @@ exports.generateContainer = async (req, res) => {
   }
 };
 
+exports.getContainerTypes = async (req, res) => {
+  try {
+    const containerTypes = await ContainerType.find({ isActive: true });
+    res.status(200).json(containerTypes);
+  } catch (error) {
+    console.error('Error fetching container types:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
-  exports.getContainerTypes = async (req, res) => {
-    try {
-      const containerTypes = await ContainerType.find(); // Adjust based on your schema
-      res.status(200).json(containerTypes);
-    } catch (error) {
-      console.error('Error fetching container types:', error);
-      res.status(500).json({ message: 'Server error' });
+// Get all restaurants
+exports.getRestaurants = async (req, res) => {
+  try {
+    const restaurants = await mongoose.model('Restaurant').find({ isActive: true });
+    res.status(200).json(restaurants);
+  } catch (error) {
+    console.error('Error fetching restaurants:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get containers for a specific restaurant
+exports.getRestaurantContainers = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    
+    // First check if the staff user belongs to this restaurant
+    if (req.user.userType === 'staff' && req.user.restaurantId.toString() !== restaurantId) {
+      return res.status(403).json({ message: 'Unauthorized access to restaurant data' });
     }
-  };
-  
+    
+    const containers = await Container.find({ restaurantId })
+      .populate('containerTypeId')
+      .populate('customerId', 'firstName lastName email')
+      .sort({ updatedAt: -1 });
+    
+    res.json(containers);
+  } catch (error) {
+    console.error('Error getting restaurant containers:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

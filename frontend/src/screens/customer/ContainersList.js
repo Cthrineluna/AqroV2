@@ -31,7 +31,6 @@ const { width, height } = Dimensions.get('window');
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   const { theme } = useTheme();
   
-  
   return (
     <View style={[styles.card, { backgroundColor }]}>
       <View style={styles.cardContent}>
@@ -47,7 +46,8 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
 
 const ContainerItem = ({ container, onPress }) => {
   const { theme } = useTheme();
-  const estimatedUsesLeft = 10 - container.usesCount; 
+  // Use the maxUses from containerType instead of hardcoded 10
+  const estimatedUsesLeft = container.containerTypeId.maxUses - container.usesCount; 
   const statusMessage = (() => {
     switch (container.status) {
       case 'active':
@@ -104,9 +104,8 @@ const ContainerItem = ({ container, onPress }) => {
     >
       <View style={styles.containerItemContent}>
         <View style={styles.containerItemLeft}>
-        <View style={[styles.containerIcon, { backgroundColor }]}>
+          <View style={[styles.containerIcon, { backgroundColor }]}>
             <Ionicons name={name} size={24} color={color} />
-
           </View>
           <View style={styles.containerInfo}>
             <SemiBoldText style={{ fontSize: 16, color: theme.text }}>
@@ -115,7 +114,11 @@ const ContainerItem = ({ container, onPress }) => {
             <RegularText style={{ color: theme.text }}>
               {statusMessage}
             </RegularText>
-
+            {container.restaurantId && (
+              <RegularText style={{ color: theme.text, fontSize: 12, opacity: 0.7 }}>
+                {container.restaurantId.name}
+              </RegularText>
+            )}
           </View>
         </View>
         <View style={styles.containerItemRight}>
@@ -128,7 +131,8 @@ const ContainerItem = ({ container, onPress }) => {
 
 const ContainerDetailModal = ({ container, animation, closeModal }) => {
   const { theme } = useTheme();
-  const estimatedUsesLeft = 10 - (container?.usesCount || 0);
+  // Use the maxUses from containerType instead of hardcoded 10
+  const estimatedUsesLeft = container?.containerTypeId?.maxUses - (container?.usesCount || 0);
   
   if (!container) return null;
   
@@ -140,74 +144,72 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
     ? new Date(container.lastUsed).toLocaleDateString() 
     : 'N/A';
   
-    const statusMessage = (() => {
-      switch (container.status) {
-        case 'active':
-          return `${estimatedUsesLeft} uses left`;
-        case 'returned':
-          return 'Returned';
-        case 'lost':
-          return 'Lost';
-        case 'damaged':
-          return 'Damaged';
-        default:
-          return 'Unknown status'; 
-      }
-    })();
+  const statusMessage = (() => {
+    switch (container.status) {
+      case 'active':
+        return `${estimatedUsesLeft} uses left`;
+      case 'returned':
+        return 'Returned';
+      case 'lost':
+        return 'Lost';
+      case 'damaged':
+        return 'Damaged';
+      default:
+        return 'Unknown status'; 
+    }
+  })();
   
-    const getContainerIcon = (status) => {
-      switch (status) {
-        case 'active':
-          return { name: 'cube-outline', color: '#2e7d32' };
-        case 'returned':
-          return { name: 'archive-outline', color: '#0277bd' }; 
-        case 'lost':
-          return { name: 'help-circle-outline', color: '#ff9800' };
-        case 'damaged':
-          return { name: 'alert-circle-outline', color: '#d32f2f' }; 
-        default:
-          return { name: 'help-outline', color: '#9e9e9e' }; 
-      }
-    };
+  const getContainerIcon = (status) => {
+    switch (status) {
+      case 'active':
+        return { name: 'cube-outline', color: '#2e7d32' };
+      case 'returned':
+        return { name: 'archive-outline', color: '#0277bd' }; 
+      case 'lost':
+        return { name: 'help-circle-outline', color: '#ff9800' };
+      case 'damaged':
+        return { name: 'alert-circle-outline', color: '#d32f2f' }; 
+      default:
+        return { name: 'help-outline', color: '#9e9e9e' }; 
+    }
+  };
     
-    const { name, color } = getContainerIcon(container.status);
+  const { name, color } = getContainerIcon(container.status);
 
-    const getContainerBackground = (status) => {
-      switch (status) {
-        case 'active':
-          return '#e8f5e9';
-        case 'returned':
-          return '#e3f2fd';
-        case 'lost':
-          return '#fff3e0';
-        case 'damaged':
-          return '#ffebee'; 
-        default:
-          return '#e0e0e0'; 
-      }
-    };
+  const getContainerBackground = (status) => {
+    switch (status) {
+      case 'active':
+        return '#e8f5e9';
+      case 'returned':
+        return '#e3f2fd';
+      case 'lost':
+        return '#fff3e0';
+      case 'damaged':
+        return '#ffebee'; 
+      default:
+        return '#e0e0e0'; 
+    }
+  };
     
-    const backgroundColor = getContainerBackground(container.status);
+  const backgroundColor = getContainerBackground(container.status);
 
-    const getStatusTextColor = (status) => {
-      switch (status) {
-        case 'active':
-          return '#2e7d32'; 
-        case 'returned':
-          return '#0277bd'; 
-        case 'lost':
-          return '#ff9800'; 
-        case 'damaged':
-          return '#d32f2f'; 
-        default:
-          return '#757575'; 
-      }
-    };
+  const getStatusTextColor = (status) => {
+    switch (status) {
+      case 'active':
+        return '#2e7d32'; 
+      case 'returned':
+        return '#0277bd'; 
+      case 'lost':
+        return '#ff9800'; 
+      case 'damaged':
+        return '#d32f2f'; 
+      default:
+        return '#757575'; 
+    }
+  };
     
-    const statusTextColor = getStatusTextColor(container.status);
+  const statusTextColor = getStatusTextColor(container.status);
     
-    
-  
   return (
     <Animated.View 
       style={[
@@ -236,8 +238,8 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
       </View>
       
       <View style={styles.modalBody}>
-      <View style={[styles.containerIconLarge, { backgroundColor }]}>
-        <Ionicons name={name} size={24} color={color} />
+        <View style={[styles.containerIconLarge, { backgroundColor }]}>
+          <Ionicons name={name} size={24} color={color} />
         </View>
         
         <BoldText style={{ fontSize: 24, marginVertical: 8, color: theme.text }}>
@@ -245,10 +247,9 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         </BoldText>
         
         <View style={styles.statusChip}>
-        <RegularText style={{ color: statusTextColor, fontSize: 16 }}>
-          {container.status.toUpperCase()}
-        </RegularText>
-
+          <RegularText style={{ color: statusTextColor, fontSize: 16 }}>
+            {container.status.toUpperCase()}
+          </RegularText>
         </View>
         
         <View style={styles.detailRow}>
@@ -260,6 +261,20 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
           <RegularText style={styles.detailLabel}>Rebate Value:</RegularText>
           <RegularText style={{ color: theme.text }}>₱{container.containerTypeId.rebateValue.toFixed(2)}</RegularText>
         </View>
+        
+        {container.restaurantId && (
+          <View style={styles.detailRow}>
+            <RegularText style={styles.detailLabel}>Restaurant:</RegularText>
+            <RegularText style={{ color: theme.text }}>{container.restaurantId.name}</RegularText>
+          </View>
+        )}
+        
+        {container.restaurantId && container.restaurantId.location && (
+          <View style={styles.detailRow}>
+            <RegularText style={styles.detailLabel}>Location:</RegularText>
+            <RegularText style={{ color: theme.text }}>{container.restaurantId.location}</RegularText>
+          </View>
+        )}
         
         <View style={styles.detailRow}>
           <RegularText style={styles.detailLabel}>Registered:</RegularText>
@@ -725,17 +740,17 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     position: 'absolute',
-        top: '50%',
-        left: '50%',
-        width: width * 0.85,
-        marginLeft: -(width * 0.85) / 2,
-        transform: [
-            { translateY: -height * 0.3 }, 
-        ],
-        maxHeight: height * 0.75, 
-        borderRadius: 16,
-        zIndex: 11,
-        overflow: 'hidden',
+    top: '50%',
+    left: '50%',
+    width: width * 0.85,
+    marginLeft: -(width * 0.85) / 2,
+    transform: [
+      { translateY: -height * 0.3 }, 
+    ],
+    maxHeight: height * 0.75, 
+    borderRadius: 16,
+    zIndex: 11,
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',

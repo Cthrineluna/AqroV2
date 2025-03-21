@@ -200,6 +200,7 @@ const SettingsScreen = ({ navigation }) => {
                   style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border}]}
                   placeholderTextColor={theme.text + '60'}
                   placeholder="Enter current password"
+                  autoCapitalize="none"
                 />
               </View>
               
@@ -212,6 +213,7 @@ const SettingsScreen = ({ navigation }) => {
                   style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border}]}
                   placeholderTextColor={theme.text + '60'}
                   placeholder="Enter new password"
+                  autoCapitalize="none"
                 />
               </View>
               
@@ -224,6 +226,7 @@ const SettingsScreen = ({ navigation }) => {
                   style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border}]}
                   placeholderTextColor={theme.text + '60'}
                   placeholder="Confirm new password"
+                  autoCapitalize="none"
                 />
               </View>
               

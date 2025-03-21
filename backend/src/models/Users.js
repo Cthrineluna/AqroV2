@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema({
     enum: ['customer', 'staff', 'admin'],
     default: 'customer'
   },
+  restaurantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant',
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true

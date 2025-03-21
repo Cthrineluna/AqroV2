@@ -21,6 +21,11 @@ const containerSchema = new mongoose.Schema({
     ref: 'ContainerType',
     required: true
   },
+  restaurantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant',
+    default: null
+  },
   purchaseDate: {
     type: Date,
     default: Date.now
