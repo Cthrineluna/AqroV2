@@ -23,12 +23,12 @@ import {
   BoldText 
 } from '../../components/StyledComponents';
 import FilterTabs from '../../components/FilterTabs';
-import { getAllActivities } from '../../services/activityService';
+import { getRestaurantActivities } from '../../services/activityService';
 import * as NavigationBar from 'expo-navigation-bar';
 
 const { width, height } = Dimensions.get('window');
 
-const ActivityListScreen = ({ navigation }) => {
+const StaffActivityListScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
   const [activities, setActivities] = useState([]);
   const [filteredActivities, setFilteredActivities] = useState([]);
@@ -60,7 +60,8 @@ const ActivityListScreen = ({ navigation }) => {
         setLoading(true);
       }
       
-      const result = await getAllActivities(pageNum);
+      // Use the new function for staff
+      const result = await getRestaurantActivities(pageNum);
       
       if (result) {
         let newActivities;
@@ -72,7 +73,6 @@ const ActivityListScreen = ({ navigation }) => {
           setActivities(newActivities);
         }
         
-
         applyFilter(activeFilter, newActivities);
         
         setTotalPages(result.totalPages);
@@ -249,6 +249,8 @@ const processSections = () => {
 
 
   const renderActivityItem = ({ item }) => {
+    const userName = item.userId ? `${item.userId.firstName} ${item.userId.lastName}` : 
+    'Unknown User';
     const info = getActivityInfo(item.type);
     const date = new Date(item.createdAt);
     const formattedTime = date.toLocaleTimeString('en-US', {
@@ -291,6 +293,9 @@ const processSections = () => {
               </SemiBoldText>
               <RegularText style={{ color: theme.text, opacity: 0.6, fontSize: 12 }}>
                 {formattedTime}
+              </RegularText>
+              <RegularText style={{ color: theme.text, opacity: 0.6, fontSize: 12 }}>
+                By: {userName}
               </RegularText>
             </View>
           </View>
@@ -375,6 +380,11 @@ const ActivityDetailModal = ({ activity, animation }) => {
             <RegularText style={{ color: theme.text }}>{formattedTime}</RegularText>
           </View>
           
+          <View style={styles.detailRow}>
+            <RegularText style={styles.detailLabel}>Customer:</RegularText>
+            <RegularText style={{ color: theme.text }}> {activity.userId ? `${activity.userId.firstName} ${activity.userId.lastName}` : 'Unknown User'} </RegularText>
+          </View>
+          
           {activity.type === 'return' && activity.location && (
             <View style={styles.detailRow}>
                 <RegularText style={styles.detailLabel}>Location:</RegularText>
@@ -424,18 +434,8 @@ const ActivityDetailModal = ({ activity, animation }) => {
                 "{activity.notes}"
               </RegularText>
             </View>
-            
           )}
-          {activity.restaurantId && (
-          <View style={styles.detailRow}>
-            <RegularText style={styles.detailLabel}>Restaurant:</RegularText>
-            <RegularText style={{ color: theme.text }}>
-              {typeof activity.restaurantId === 'object' ? activity.restaurantId.name : 'Unknown'}
-            </RegularText>
-          </View>
-        )}
         </View>
-        
       </Animated.View>
     );
   };
@@ -700,4 +700,4 @@ const styles = StyleSheet.create({
     }
   });
 
-export default ActivityListScreen;
+export default StaffActivityListScreen;

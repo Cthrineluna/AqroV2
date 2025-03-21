@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Container = require('../models/Container');
 const ContainerType = require('../models/ContainerType');
 const Rebate = require('../models/Rebate');

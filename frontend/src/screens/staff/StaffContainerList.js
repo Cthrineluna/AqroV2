@@ -25,6 +25,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
+import SearchComponent from '../../components/SearchComponent';
 
 const { width, height } = Dimensions.get('window');
 
@@ -341,6 +342,9 @@ const StaffContainersList = ({ navigation }) => {
   const [modalBackdrop] = useState(new Animated.Value(0));
   const [activeFilter, setActiveFilter] = useState('all');
   const [filteredContainers, setFilteredContainers] = useState([]);
+  const [restaurantName, setRestaurantName] = useState("Restaurant");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
 
   const fetchContainerStats = async () => {
     try {
@@ -364,6 +368,29 @@ const StaffContainersList = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error fetching restaurant container stats:', error);
+    }
+  };
+  const fetchRestaurantDetails = async () => {
+    try {
+      const token = await AsyncStorage.getItem('aqro_token');
+      
+      if (!token || !user.restaurantId) {
+        console.error('No auth token or restaurantId found');
+        return;
+      }
+      
+      const response = await axios.get(
+        `${getApiUrl(`/restaurants/${user.restaurantId}`)}`, 
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      if (response.data) {
+        setRestaurantName(response.data.name);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurant details:', error);
     }
   };
 
@@ -401,8 +428,43 @@ const StaffContainersList = ({ navigation }) => {
     { id: 'lost', label: 'Lost' },
     { id: 'damaged', label: 'Damaged' },
   ];
+  const handleSearch = (query) => {
+    if (!query.trim()) {
+      // If search is empty, return to normal filtered containers
+      applyFilter(activeFilter);
+      return;
+    }
+    
+    // Search in the containers that match the current filter
+    const filtered = activeFilter === 'all' 
+      ? containers 
+      : containers.filter(item => item.status === activeFilter);
+    
+    // Search by container type name, QR code, or customer name
+    const results = filtered.filter(container => {
+      const containerTypeName = container.containerTypeId.name.toLowerCase();
+      const qrCode = container.qrCode.toLowerCase();
+      const customerName = container.customerId 
+        ? `${container.customerId.firstName} ${container.customerId.lastName}`.toLowerCase() 
+        : '';
+      
+      const searchLower = query.toLowerCase();
+      
+      return containerTypeName.includes(searchLower) || 
+             qrCode.includes(searchLower) || 
+             customerName.includes(searchLower);
+    });
+    
+    setFilteredContainers(results);
+  };
   
   const applyFilter = (filter, containerList = containers) => {
+    if (searchQuery.trim()) {
+      // If there's an active search, re-run the search with the new filter
+      handleSearch(searchQuery);
+      return;
+    }
+    
     if (filter === 'all') {
       setFilteredContainers(containerList);
     } else {
@@ -433,10 +495,12 @@ const StaffContainersList = ({ navigation }) => {
   useEffect(() => {
     fetchContainerStats();
     fetchContainers();
+    fetchRestaurantDetails();
   }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setSearchQuery('');
     await Promise.all([fetchContainerStats(), fetchContainers()]);
     setRefreshing(false);
   };
@@ -498,7 +562,9 @@ const StaffContainersList = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <BoldText style={[styles.headerTitle, { color: theme.text }]}>Restaurant Containers</BoldText>
+        <BoldText style={[styles.headerTitle, { color: theme.text }]}>
+        {user.restaurantId?.name || "Restaurant"} Containers
+      </BoldText>
         <View style={{ width: 24 }} />
       </View>
       
@@ -544,15 +610,24 @@ const StaffContainersList = ({ navigation }) => {
         
         {/* Containers List */}
         <View style={styles.section}>
-          <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
-            {filterOptions.find(option => option.id === activeFilter)?.label} Containers
-          </SemiBoldText>
+        <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
+          {searchQuery.trim() 
+            ? `Search Results (${filteredContainers.length})` 
+            : `${filterOptions.find(option => option.id === activeFilter)?.label} Containers`}
+        </SemiBoldText>
 
           <FilterTabs 
             options={filterOptions}
             activeFilter={activeFilter}
             onFilterChange={handleFilterChange}
             theme={theme}
+          />
+          <SearchComponent 
+            onSearch={handleSearch}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            theme={theme}
+            placeholder="Search by type, QR code, or customer..."
           />
           {filteredContainers.length === 0 ? (
             <View style={[styles.emptyState, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
@@ -562,13 +637,6 @@ const StaffContainersList = ({ navigation }) => {
                   ? "No containers found for this restaurant." 
                   : "No containers match the selected filter."}
               </RegularText>
-              <TouchableOpacity 
-                style={styles.scanButton}
-                onPress={() => navigation.navigate('StafScannerScreen')}
-              >
-                <Ionicons name="qr-code-outline" size={20} color="#FFFFFF" style={styles.scanIcon} />
-                <BoldText style={styles.scanButtonText}>Scan Container</BoldText>
-              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.containersList}>

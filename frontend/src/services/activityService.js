@@ -11,12 +11,14 @@ export const getRecentActivities = async (limit = 5) => {
       throw new Error('No auth token found');
     }
     
-    const response = await axios.get(
-      `${getApiUrl('/activities/recent')}?limit=${limit}`, 
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    );
+    
+const response = await axios.get(
+  `${getApiUrl('/activities/recent')}?limit=${limit}`, 
+  {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 10000 // 10 seconds
+  }
+);
     
     return response.data;
   } catch (error) {
@@ -43,6 +45,28 @@ export const getAllActivities = async (page = 1, limit = 20) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching all activities:', error);
+    throw error;
+  }
+};
+
+export const getRestaurantActivities = async (page = 1, limit = 20) => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    
+    if (!token) {
+      throw new Error('No auth token found');
+    }
+    
+    const response = await axios.get(
+      `${getApiUrl('/activities/restaurant')}?page=${page}&limit=${limit}`, 
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching restaurant activities:', error);
     throw error;
   }
 };

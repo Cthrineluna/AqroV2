@@ -15,6 +15,10 @@ const activitySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ContainerType',
   },
+  restaurantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant'
+  },
   type: {
     type: String,
     enum: ['registration', 'return', 'rebate', 'status_change'],
@@ -40,7 +44,7 @@ const activitySchema = new mongoose.Schema({
 });
 
 // Add index for faster queries on userId
-activitySchema.index({ userId: 1, createdAt: -1 });
+activitySchema.index({ userId: 1, restaurantId: 1, createdAt: -1 });
 
 const Activity = mongoose.model('Activity', activitySchema);
 

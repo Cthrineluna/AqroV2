@@ -18,13 +18,15 @@ router.get('/container-types', protect, containerController.getContainerTypes);
 // Get QR code image
 router.get('/qrcode/:id', containerController.getQRCodeImage);
 
-// Get all restaurants (admin only)
-router.get('/restaurants', protect, authorize('admin'), containerController.getRestaurants);
+// Get all restaurants 
+router.get('/restaurants', protect, authorize('admin', 'staff'), containerController.getRestaurants);
 
 // Get containers for a specific restaurant (staff and admin)
 router.get('/restaurant/:restaurantId', protect, authorize('staff', 'admin'), containerController.getRestaurantContainers);
 
 router.get('/restaurant/:restaurantId/stats', protect, authorize('staff', 'admin'), containerController.getRestaurantContainerStats);
+
+
 
 // Generate new container (staff/admin only)
 router.post(

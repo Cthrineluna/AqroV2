@@ -25,6 +25,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
+import SearchComponent from '../../components/SearchComponent';
 
 const { width, height } = Dimensions.get('window');
 
@@ -272,7 +273,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         {container.restaurantId && container.restaurantId.location && (
           <View style={styles.detailRow}>
             <RegularText style={styles.detailLabel}>Location:</RegularText>
-            <RegularText style={{ color: theme.text }}>{container.restaurantId.location}</RegularText>
+            <RegularText style={{ color: theme.text }}>{container.restaurantId.location.city}</RegularText>
           </View>
         )}
         
@@ -318,6 +319,8 @@ const ContainersList = ({ navigation }) => {
   const [modalBackdrop] = useState(new Animated.Value(0));
   const [activeFilter, setActiveFilter] = useState('all');
   const [filteredContainers, setFilteredContainers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
 
   const fetchContainerStats = async () => {
     try {
@@ -376,8 +379,48 @@ const ContainersList = ({ navigation }) => {
     { id: 'damaged', label: 'Damaged' },
   ];
   
+  const handleSearch = (query) => {
+    if (!query.trim()) {
+      // If search is empty, return to normal filtered containers
+      applyFilter(activeFilter);
+      return;
+    }
+    
+    // Search in the containers that match the current filter
+    const filtered = activeFilter === 'all' 
+      ? containers 
+      : containers.filter(item => item.status === activeFilter);
+    
+    // Search by container type name, QR code, customer name, or restaurant name
+    const results = filtered.filter(container => {
+      const containerTypeName = container.containerTypeId.name.toLowerCase();
+      const qrCode = container.qrCode.toLowerCase();
+      const customerName = container.customerId 
+        ? `${container.customerId.firstName} ${container.customerId.lastName}`.toLowerCase() 
+        : '';
+      // Add restaurant name search
+      const restaurantName = container.restaurantId 
+        ? container.restaurantId.name.toLowerCase() 
+        : '';
+      
+      const searchLower = query.toLowerCase();
+      
+      return containerTypeName.includes(searchLower) || 
+             qrCode.includes(searchLower) || 
+             customerName.includes(searchLower) ||
+             restaurantName.includes(searchLower);
+    });
+    
+    setFilteredContainers(results);
+  };
   // Add this function to handle filtering
   const applyFilter = (filter, containerList = containers) => {
+    if (searchQuery.trim()) {
+      // If there's an active search, re-run the search with the new filter
+      handleSearch(searchQuery);
+      return;
+    }
+    
     if (filter === 'all') {
       setFilteredContainers(containerList);
     } else {
@@ -521,9 +564,11 @@ const ContainersList = ({ navigation }) => {
         
         {/* Containers List */}
         <View style={styles.section}>
-          <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
-            {filterOptions.find(option => option.id === activeFilter)?.label} Containers
-          </SemiBoldText>
+        <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
+          {searchQuery.trim() 
+            ? `Search Results (${filteredContainers.length})` 
+            : `${filterOptions.find(option => option.id === activeFilter)?.label} Containers`}
+        </SemiBoldText>
 
 
           <FilterTabs 
@@ -532,6 +577,14 @@ const ContainersList = ({ navigation }) => {
             onFilterChange={handleFilterChange}
             theme={theme}
           />
+
+        <SearchComponent 
+          onSearch={handleSearch}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          theme={theme}
+          placeholder="Search by type, QR code, or restaurant..."
+        />
           {filteredContainers.length === 0 ? (
             <View style={[styles.emptyState, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
               <Ionicons name="cube-outline" size={48} color={theme.text} style={{ opacity: 0.4 }} />

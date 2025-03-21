@@ -28,9 +28,12 @@ const GenerateQRScreen = ({ navigation }) => {
   const [selectedType, setSelectedType] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [restaurants, setRestaurants] = useState([]);
+  const [selectedRestaurant, setSelectedRestaurant] = useState('');
   
   useEffect(() => {
     fetchContainerTypes();
+    fetchRestaurants();
   }, []);
   
   const fetchContainerTypes = async () => {
@@ -49,6 +52,22 @@ const GenerateQRScreen = ({ navigation }) => {
       Alert.alert('Error', 'Failed to load container types');
     }
   };
+  const fetchRestaurants = async () => {
+    try {
+      const token = await AsyncStorage.getItem('aqro_token');
+      const response = await axios.get(
+        `${getApiUrl('/containers/restaurants')}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setRestaurants(response.data);
+      if (response.data.length > 0) {
+        setSelectedRestaurant(response.data[0]._id);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+      Alert.alert('Error', 'Failed to load restaurants');
+    }
+  };
   
   const generateQRCode = async () => {
     try {
@@ -56,7 +75,10 @@ const GenerateQRScreen = ({ navigation }) => {
       const token = await AsyncStorage.getItem('aqro_token');
       const response = await axios.post(
         `${getApiUrl('/containers/generate')}`,
-        { containerTypeId: selectedType },
+        { 
+          containerTypeId: selectedType,
+          restaurantId: selectedRestaurant 
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -79,7 +101,27 @@ const GenerateQRScreen = ({ navigation }) => {
         <BoldText style={[styles.title, { color: theme.text }]}>
           Generate Container QR Code
         </BoldText>
-        
+        <View style={styles.formSection}>
+          <SemiBoldText style={[styles.label, { color: theme.text }]}>
+            Restaurant
+          </SemiBoldText>
+          
+          <View style={[styles.pickerContainer, { borderColor: theme.border }]}>
+            <Picker
+              selectedValue={selectedRestaurant}
+              onValueChange={(itemValue) => setSelectedRestaurant(itemValue)}
+              style={[styles.picker, { color: theme.text }]}
+            >
+              {restaurants.map((restaurant) => (
+                <Picker.Item 
+                  key={restaurant._id} 
+                  label={restaurant.name} 
+                  value={restaurant._id} 
+                />
+              ))}
+            </Picker>
+          </View>
+        </View>
         <View style={styles.formSection}>
           <SemiBoldText style={[styles.label, { color: theme.text }]}>
             Container Type

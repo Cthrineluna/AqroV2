@@ -22,7 +22,8 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
-import { getRecentActivities } from '../../services/activityService';
+import { getRecentActivities, getRestaurantActivities } from '../../services/activityService';
+
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   const { theme } = useTheme();
@@ -46,8 +47,10 @@ const ActivityItem = ({ activity }) => {
   const { theme } = useTheme();
 
   const getActivityInfo = () => {
-    // Get restaurant name if available
-    const restaurantName = activity.restaurantId?.name || activity.location || 'Unknown';
+    // Get customer name if available
+    const customerName = activity.userId?.firstName && activity.userId?.lastName 
+      ? `${activity.userId.firstName} ${activity.userId.lastName}` 
+      : 'Unknown customer';
     
     switch (activity.type) {
       case 'registration':
@@ -55,21 +58,21 @@ const ActivityItem = ({ activity }) => {
           icon: 'add-circle-outline',
           color: '#4CAF50',
           title: 'Container Registered',
-          description: `Container registered at ${restaurantName}`
+          description: `Container registered by ${customerName}`
         };
       case 'return':
         return {
           icon: 'repeat-outline',
           color: '#2196F3',
           title: 'Container Returned',
-          description: `Container returned at ${restaurantName}`
+          description: `Container returned by ${customerName}`
         };
       case 'rebate':
         return {
           icon: 'cash-outline',
           color: '#FF9800',
-          title: 'Rebate Received',
-          description: `₱${activity.amount.toFixed(2)} rebate from ${restaurantName}`
+          title: 'Rebate Issued',
+          description: `₱${activity.amount.toFixed(2)} rebate to ${customerName}`
         };
       case 'status_change':
         return {
@@ -109,7 +112,7 @@ const ActivityItem = ({ activity }) => {
   );
 };
 
-const CustomerHomeScreen = ({ navigation }) => {
+const StaffHomeScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -121,27 +124,35 @@ const CustomerHomeScreen = ({ navigation }) => {
   const [recentActivities, setRecentActivities] = useState([]);
 
 
-  const fetchRecentActivities = async () => {
-    try {
-      const activities = await getRecentActivities(3); 
+ const fetchRecentActivities = async () => {
+  try {
+
+    const result = await getRestaurantActivities(1, 3);
+    
+
+    const activities = result.activities || result;
+
+    if (activities && activities.length > 0) {
       setRecentActivities(activities);
-    } catch (error) {
-      console.error('Error fetching recent activities:', error);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching recent restaurant activities:', error);
+  }
+};
   
 
   const fetchContainerStats = async () => {
     try {
       const token = await AsyncStorage.getItem('aqro_token');
       
-      if (!token) {
-        console.error('No auth token found');
+      if (!token || !user.restaurantId) {
+        console.error('No auth token or restaurantId found');
         return;
       }
       
+      // This endpoint needs to be created in your backend
       const response = await axios.get(
-        `${getApiUrl('/containers/stats')}`, 
+        `${getApiUrl(`/containers/restaurant/${user.restaurantId}/stats`)}`, 
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -151,15 +162,10 @@ const CustomerHomeScreen = ({ navigation }) => {
         setContainerStats(response.data);
       }
     } catch (error) {
-      console.error('Error fetching container stats:', error);
-      // dummy data
-      // setContainerStats({
-      //   activeContainers: 3,
-      //   returnedContainers: 5,
-      //   totalRebate: 15.50
-      // });
+      console.error('Error fetching restaurant container stats:', error);
     }
   };
+  
   useEffect(() => {
       const setNavBarColor = async () => {
         await NavigationBar.setBackgroundColorAsync(theme.background); 
@@ -219,6 +225,14 @@ const CustomerHomeScreen = ({ navigation }) => {
           
           <View style={styles.cardsContainer}>
           <ContainerCard 
+              title="Available" 
+              value={containerStats.availableContainers}
+              icon="cafe-outline"
+              backgroundColor="#f3e5f5"
+              textColor="#9c27b0"
+            />
+            
+            <ContainerCard 
               title="Active" 
               value={containerStats.activeContainers}
               icon="cube-outline"
@@ -233,21 +247,13 @@ const CustomerHomeScreen = ({ navigation }) => {
               backgroundColor="#e3f2fd"
               textColor="#0277bd"
             />
-            
-            <ContainerCard 
-              title="Total Rebate" 
-              value={`₱${containerStats.totalRebate.toFixed(2)}`}
-              icon="cash-outline"
-              backgroundColor="#fffde7"
-              textColor="#f57f17"
-            />
           </View>
         </View>
         
         {/* Scan Button */}
         <TouchableOpacity 
           style={styles.scanButton}
-          onPress={() => navigation.navigate('Scanner')}
+          onPress={() => navigation.navigate('GenerateQR')}
         >
           <Ionicons name="qr-code-outline" size={28} color="#FFFFFF" style={styles.scanIcon} />
           <BoldText style={styles.scanButtonText}>Scan Container</BoldText>
@@ -410,4 +416,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CustomerHomeScreen;
+export default StaffHomeScreen;
