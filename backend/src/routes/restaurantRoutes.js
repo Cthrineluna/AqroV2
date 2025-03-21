@@ -4,9 +4,11 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 const restaurantController = require('../controllers/restaurantController');
 
 // Get all active restaurants
-router.get('/', protect, authorize('admin', 'staff'), restaurantController.getRestaurants);
+router.get('/', protect, authorize('admin', 'staff', 'customer'), restaurantController.getRestaurants);
 
 // Get a single restaurant by ID
 router.get('/:restaurantId', protect, authorize('admin', 'staff'), restaurantController.getRestaurantById);
+
+
 
 module.exports = router;

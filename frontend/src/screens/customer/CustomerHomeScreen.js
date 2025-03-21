@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
 import { getRecentActivities } from '../../services/activityService';
+import RestaurantCarousel from '../../components/RestaurantCarousel';
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   const { theme } = useTheme();
@@ -119,7 +120,8 @@ const CustomerHomeScreen = ({ navigation }) => {
     totalRebate: 0
   });
   const [recentActivities, setRecentActivities] = useState([]);
-
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchRecentActivities = async () => {
     try {
@@ -160,6 +162,38 @@ const CustomerHomeScreen = ({ navigation }) => {
       // });
     }
   };
+  const fetchRestaurants = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('aqro_token');
+  
+      if (!token) {
+        console.error('No auth token found');
+        setLoading(false);
+        return;
+      }
+  
+      const response = await axios.get(
+        getApiUrl('/restaurants'), 
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+  
+      if (response.data) {
+        setRestaurants(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestaurantPress = (restaurant) => {
+    navigation.navigate('RestaurantDetail', { restaurantId: restaurant._id });
+  };
+
   useEffect(() => {
       const setNavBarColor = async () => {
         await NavigationBar.setBackgroundColorAsync(theme.background); 
@@ -170,6 +204,7 @@ const CustomerHomeScreen = ({ navigation }) => {
   useEffect(() => {
     fetchContainerStats();
     fetchRecentActivities(); 
+    fetchRestaurants();
   }, []);
 
   const onRefresh = async () => {
@@ -253,6 +288,15 @@ const CustomerHomeScreen = ({ navigation }) => {
           <BoldText style={styles.scanButtonText}>Scan Container</BoldText>
         </TouchableOpacity>
         
+        
+        {!loading && restaurants.length > 0 && (
+          <RestaurantCarousel 
+            restaurants={restaurants} 
+            title="Our Partners"
+            onRestaurantPress={handleRestaurantPress}
+            autoPlay={true}
+          />
+        )}
         {/* Recent Activity Section  */}
         <View style={styles.section}>
           <View style={styles.sectionRecent}>

@@ -32,35 +32,45 @@ const SideMenu = ({ visible, onClose, theme, user }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const isDarkMode = theme.background === '#121212' || theme.isDark;
 
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: width - MENU_WIDTH,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: isDarkMode ? 0.7 : 0.5,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: width, 
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible, isDarkMode, slideAnim, fadeAnim, width]);
+// In SideMenu.js
+// Modify your animation to ensure it uses the native driver consistently
+
+useEffect(() => {
+  if (visible) {
+    // Pre-calculate the end position to avoid layout calculations during animation
+    const endPosition = width - MENU_WIDTH;
+    
+    // Reset the initial position before animating
+    slideAnim.setValue(width);
+    fadeAnim.setValue(0);
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: endPosition,
+        duration: 300,
+        useNativeDriver: true, // Ensure this is true
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: isDarkMode ? 0.7 : 0.5,
+        duration: 300,
+        useNativeDriver: true, // Ensure this is true
+      }),
+    ]).start();
+  } else {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: width,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }
+}, [visible, isDarkMode, slideAnim, fadeAnim, width]);
 
   const navigateTo = (screen) => {
     if (!screen || typeof screen !== "string") {
