@@ -207,7 +207,6 @@ const CustomerHomeScreen = ({ navigation }) => {
             style={styles.profileImage}
             onError={(e) => {
               console.log("Image loading error:", e.nativeEvent.error);
-              // Fallback to placeholder on error
               setImageFailed(true);
             }}
           />
@@ -215,7 +214,7 @@ const CustomerHomeScreen = ({ navigation }) => {
       } else {
         return (
           <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.primary + '20' }]}>
-            <Ionicons name="person" size={40} color={theme.primary} />
+            <Ionicons name="person" size={30} color={theme.primary} />
           </View>
         );
       }
@@ -276,16 +275,16 @@ const CustomerHomeScreen = ({ navigation }) => {
         <View style={styles.greetings}>
           <View>
             <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
-              Hello, {user.firstName}!
+              Hello, {user?.firstName || 'User'}!
             </SemiBoldText>
             <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
               Ready to close the loop?
             </RegularText> 
           </View>
           <TouchableOpacity
-                      onPress={() => navigation.navigate('Profile')}
-                    >
-          {renderProfileImage()}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            {renderProfileImage()}
           </TouchableOpacity>
         </View>
 
@@ -385,7 +384,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 4 : 10,
-    marginBottom: 10
+    marginBottom: 0  
   },
   headerLetter: {
     fontSize: 26,
@@ -424,6 +423,13 @@ const styles = StyleSheet.create({
     height: 50, 
     borderRadius: 25, 
   },  
+  profileImagePlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 40, 
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   greetingsHeader: {
     fontSize: 24,
   },
