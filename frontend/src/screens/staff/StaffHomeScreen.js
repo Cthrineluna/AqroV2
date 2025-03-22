@@ -9,7 +9,8 @@ import {
   StatusBar,
   Platform,
   Text,
-  Image
+  Image,
+  Dimensions
 } from 'react-native';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +27,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
 import { getRecentActivities, getRestaurantActivities } from '../../services/activityService';
+import { PieChart } from 'react-native-chart-kit';
 
+const windowWidth = Dimensions.get('window').width;
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   const { theme } = useTheme();
@@ -43,8 +46,6 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
     </View>
   );
 };
-
-
 
 const ActivityItem = ({ activity }) => {
   const { theme } = useTheme();
@@ -75,7 +76,7 @@ const ActivityItem = ({ activity }) => {
           icon: 'cash-outline',
           color: '#FF9800',
           title: 'Rebate Issued',
-          description: `₱${activity.amount.toFixed(2)} rebate to ${customerName}`
+          description: `₱${activity.amount?.toFixed(2) || '0.00'} rebate to ${customerName}`
         };
       case 'status_change':
         return {
@@ -120,33 +121,28 @@ const StaffHomeScreen = ({ navigation }) => {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [containerStats, setContainerStats] = useState({
+    availableContainers: 0,
     activeContainers: 0,
-    returnedContainers: 0,
-    totalRebate: 0
+    returnedContainers: 0
   });
   const [recentActivities, setRecentActivities] = useState([]);
   const [fontsLoaded] = useFonts({
-        Blanka: require('../../../assets/fonts/Blanka-Regular.otf'),
-      });
+    Blanka: require('../../../assets/fonts/Blanka-Regular.otf'),
+  });
 
+  const fetchRecentActivities = async () => {
+    try {
+      const result = await getRestaurantActivities(1, 3);
+      const activities = result.activities || result;
 
- const fetchRecentActivities = async () => {
-  try {
-
-    const result = await getRestaurantActivities(1, 3);
-    
-
-    const activities = result.activities || result;
-
-    if (activities && activities.length > 0) {
-      setRecentActivities(activities);
+      if (activities && activities.length > 0) {
+        setRecentActivities(activities);
+      }
+    } catch (error) {
+      console.error('Error fetching recent restaurant activities:', error);
     }
-  } catch (error) {
-    console.error('Error fetching recent restaurant activities:', error);
-  }
-};
+  };
   
-
   const fetchContainerStats = async () => {
     try {
       const token = await AsyncStorage.getItem('aqro_token');
@@ -156,7 +152,6 @@ const StaffHomeScreen = ({ navigation }) => {
         return;
       }
       
-      // This endpoint needs to be created in your backend
       const response = await axios.get(
         `${getApiUrl(`/containers/restaurant/${user.restaurantId}/stats`)}`, 
         {
@@ -173,11 +168,11 @@ const StaffHomeScreen = ({ navigation }) => {
   };
   
   useEffect(() => {
-      const setNavBarColor = async () => {
-        await NavigationBar.setBackgroundColorAsync(theme.background); 
-      };
-      setNavBarColor();
-    }, [theme.background]);
+    const setNavBarColor = async () => {
+      await NavigationBar.setBackgroundColorAsync(theme.background); 
+    };
+    setNavBarColor();
+  }, [theme.background]);
 
   useEffect(() => {
     fetchContainerStats();
@@ -189,28 +184,60 @@ const StaffHomeScreen = ({ navigation }) => {
     await Promise.all([fetchContainerStats(), fetchRecentActivities()]);
     setRefreshing(false);
   };
-const renderProfileImage = () => {
-      if (user?.profilePicture) {
-        return (
-          <Image
-            source={{ uri: user.profilePicture }}
-            style={styles.profileImage}
-            onError={(e) => {
-              console.log("Image loading error:", e.nativeEvent.error);
-              // Fallback to placeholder on error
-              setImageFailed(true);
-            }}
-          />
-        );
-      } else {
-        return (
-          <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.primary + '20' }]}>
-            <Ionicons name="person" size={35} color={theme.primary} />
-          </View>
-        );
-      }
-    };
 
+  const renderProfileImage = () => {
+    if (user?.profilePicture) {
+      return (
+        <Image
+          source={{ uri: user.profilePicture }}
+          style={styles.profileImage}
+          onError={(e) => {
+            console.log("Image loading error:", e.nativeEvent.error);
+          }}
+        />
+      );
+    } else {
+      return (
+        <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.primary + '20' }]}>
+          <Ionicons name="person" size={35} color={theme.primary} />
+        </View>
+      );
+    }
+  };
+
+
+  const containerChartData = [
+    {
+      name: 'Available',
+      population: containerStats.availableContainers,
+      color: '#dcbae0',
+      legendFontColor: theme.text,
+      legendFontSize: 12
+    },
+    {
+      name: 'Active',
+      population: containerStats.activeContainers,
+      color: '#a4fcab',
+      legendFontColor: theme.text,
+      legendFontSize: 12
+    },
+    {
+      name: 'Returned',
+      population: containerStats.returnedContainers,
+      color: '#a7d8fc',
+      legendFontColor: theme.text,
+      legendFontSize: 12
+    }
+  ];
+
+  const chartConfig = {
+    backgroundGradientFrom: theme.card,
+    backgroundGradientTo: theme.card,
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    strokeWidth: 2,
+    barPercentage: 0.5,
+    useShadowColorFromDataset: false
+  };
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -221,16 +248,13 @@ const renderProfileImage = () => {
       
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
-              <View style={{ flexDirection: 'row' }}>
-                <Text style={[styles.headerLetter, { color: theme.text }]}>A</Text>
-                <Text style={[styles.headerLetter, { color: theme.primary }]}>Q</Text>
-                <Text style={[styles.headerLetter, { color: theme.primary }]}>R</Text>
-                <Text style={[styles.headerLetter, { color: theme.text }]}>O</Text>
-              </View>
-              {/* <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-                <Ionicons name="settings-outline" size={24} color={theme.text} />
-              </TouchableOpacity> */}
-            </View>
+        <View style={{ flexDirection: 'row' }}>
+          <Text style={[styles.headerLetter, { color: theme.text }]}>A</Text>
+          <Text style={[styles.headerLetter, { color: theme.primary }]}>Q</Text>
+          <Text style={[styles.headerLetter, { color: theme.primary }]}>R</Text>
+          <Text style={[styles.headerLetter, { color: theme.text }]}>O</Text>
+        </View>
+      </View>
       
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
@@ -244,20 +268,22 @@ const renderProfileImage = () => {
         }
       >
         <View style={styles.greetings}>
-                  <View>
-                    <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
-                      Hello, {user?.firstName || 'User'}!
-                    </SemiBoldText>
-                    <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
-                      Ready to close the loop?
-                    </RegularText> 
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('Profile')}
-                  >
-                    {renderProfileImage()}
-                  </TouchableOpacity>
-                </View>
+          <View>
+            <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
+              Hello, {user?.firstName || 'User'}!
+            </SemiBoldText>
+            <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
+              Ready to close the loop?
+            </RegularText> 
+          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Profile')}
+          >
+            {renderProfileImage()}
+          </TouchableOpacity>
+        </View>
+
+        {/* Container Stats Section */}
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
@@ -268,9 +294,36 @@ const renderProfileImage = () => {
             </SemiBoldText>
             <Ionicons name="chevron-forward" style={styles.arrow} size={20} color={theme.text} />
           </TouchableOpacity>
-          
+           {/* Container Status Pie Chart */}
+           <View style={[styles.chartContainer, { backgroundColor: theme.card }]}>
+            <SemiBoldText style={[styles.chartTitle, { color: theme.text }]}>
+              Container Status Overview
+            </SemiBoldText>
+            {(containerStats.availableContainers > 0 || 
+              containerStats.activeContainers > 0 || 
+              containerStats.returnedContainers > 0) ? (
+              <PieChart
+                data={containerChartData}
+                width={windowWidth - 40}
+                height={180}
+                chartConfig={chartConfig}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="10"
+                absolute={false}
+              />
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="pie-chart-outline" size={40} color={theme.text} style={{opacity: 0.3}} />
+                <RegularText style={{color: theme.text, opacity: 0.5, marginTop: 10}}>
+                  No container data available
+                </RegularText>
+              </View>
+            )}
+          </View>
+        </View>
           <View style={styles.cardsContainer}>
-          <ContainerCard 
+            <ContainerCard 
               title="Available" 
               value={containerStats.availableContainers}
               icon="cafe-outline"
@@ -294,18 +347,37 @@ const renderProfileImage = () => {
               textColor="#0277bd"
             />
           </View>
+
+         
+        
+        {/* Quick Actions Menu */}
+        <View style={styles.quickActionsContainer}>
+          <TouchableOpacity 
+            style={[styles.actionButton, {backgroundColor: '#00df82'}]}
+            onPress={() => navigation.navigate('GenerateQR')}
+          >
+            <Ionicons name="qr-code-outline" size={24} color="#FFFFFF" />
+            <BoldText style={styles.actionButtonText}>Generate QR</BoldText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, {backgroundColor: '#FF9800'}]}
+            onPress={() => navigation.navigate('StaffScanner', { action: 'rebate' })}
+          >
+            <Ionicons name="cash-outline" size={24} color="#FFFFFF" />
+            <BoldText style={styles.actionButtonText}>Process Rebate</BoldText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, {backgroundColor: '#2196F3'}]}
+            onPress={() => navigation.navigate('StaffScanner', { action: 'return' })}
+          >
+            <Ionicons name="refresh-outline" size={24} color="#FFFFFF" />
+            <BoldText style={styles.actionButtonText}>Process Return</BoldText>
+          </TouchableOpacity>
         </View>
         
-        {/* Scan Button */}
-        <TouchableOpacity 
-          style={styles.scanButton}
-          onPress={() => navigation.navigate('GenerateQR')}
-        >
-          <Ionicons name="qr-code-outline" size={28} color="#FFFFFF" style={styles.scanIcon} />
-          <BoldText style={styles.scanButtonText}>Scan Container</BoldText>
-        </TouchableOpacity>
-        
-        {/* Recent Activity Section  */}
+        {/* Recent Activity Section */}
         <View style={styles.section}>
           <View style={styles.sectionRecent}>
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
@@ -389,19 +461,16 @@ const styles = StyleSheet.create({
     borderRadius: 40, 
     justifyContent: 'center',
     alignItems: 'center',
-
   },
   greetingsHeader: {
     fontSize: 24,
   },
   subGreetings: {
-    fontSize: 16 ,
+    fontSize: 16,
   },
-  
   arrow: {
     opacity: 0.5,
   },
-
   viewAllText: {
     fontSize: 14,
     color: '#00df82',
@@ -438,26 +507,49 @@ const styles = StyleSheet.create({
   cardValue: {
     fontSize: 18,
   },
-  scanButton: {
-    backgroundColor: '#00df82',
-    borderRadius: 30,
+  chartContainer: {
+    marginTop: 20,
+    borderRadius: 12,
     padding: 16,
-    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  chartTitle: {
+    fontSize: 16,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  noDataContainer: {
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  quickActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginVertical: 20,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  scanIcon: {
-    marginRight: 10,
-  },
-  scanButtonText: {
+  actionButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 12,
+    marginTop: 6,
+    textAlign: 'center',
   },
   activityPlaceholder: {
     padding: 20,

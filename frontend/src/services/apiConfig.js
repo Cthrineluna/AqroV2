@@ -1,4 +1,3 @@
-// frontend/src/services/apiConfig.js
 const API_URL = 'http://192.168.100.203:5000/api';
 
 export const getApiUrl = (endpoint = '') => {
