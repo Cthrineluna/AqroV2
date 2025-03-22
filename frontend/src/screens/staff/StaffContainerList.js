@@ -430,29 +430,27 @@ const StaffContainersList = ({ navigation }) => {
       applyFilter(activeFilter);
       return;
     }
-
+  
     const filtered = activeFilter === 'all' 
       ? containers 
       : containers.filter(item => item.status === activeFilter);
-
+  
     const results = filtered.filter(container => {
-      const containerTypeName = container.containerTypeId.name.toLowerCase();
-      const qrCode = container.qrCode.toLowerCase();
+      const containerTypeName = container.containerTypeId?.name?.toLowerCase() || '';
+      const qrCode = container.qrCode?.toLowerCase() || '';
       const customerName = container.customerId 
-        ? `${container.customerId.firstName} ${container.customerId.lastName}`.toLowerCase() 
+        ? `${container.customerId.firstName || ''} ${container.customerId.lastName || ''}`.toLowerCase() 
         : '';
-      const restaurantName = container.restaurantId 
-        ? container.restaurantId.name.toLowerCase() 
-        : '';
-      
+      const restaurantName = container.restaurantId?.name?.toLowerCase() || '';
+  
       const searchLower = query.toLowerCase();
-      
+  
       return containerTypeName.includes(searchLower) || 
              qrCode.includes(searchLower) || 
              customerName.includes(searchLower) ||
              restaurantName.includes(searchLower);
     });
-    
+  
     setFilteredContainers(results);
   };
   

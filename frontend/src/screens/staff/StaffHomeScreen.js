@@ -294,6 +294,7 @@ const StaffHomeScreen = ({ navigation }) => {
             </SemiBoldText>
             <Ionicons name="chevron-forward" style={styles.arrow} size={20} color={theme.text} />
           </TouchableOpacity>
+          
            {/* Container Status Pie Chart */}
            <View style={[styles.chartContainer, { backgroundColor: theme.card }]}>
             <SemiBoldText style={[styles.chartTitle, { color: theme.text }]}>
@@ -302,16 +303,23 @@ const StaffHomeScreen = ({ navigation }) => {
             {(containerStats.availableContainers > 0 || 
               containerStats.activeContainers > 0 || 
               containerStats.returnedContainers > 0) ? (
-              <PieChart
-                data={containerChartData}
-                width={windowWidth - 40}
-                height={180}
-                chartConfig={chartConfig}
-                accessor="population"
-                backgroundColor="transparent"
-                paddingLeft="10"
-                absolute={false}
-              />
+                <>
+                <PieChart
+                  data={containerChartData}
+                  width={windowWidth - 40}
+                  height={180}
+                  chartConfig={chartConfig}
+                  accessor="population"
+                  backgroundColor="transparent"
+                  paddingLeft="10"
+                  absolute={false}
+                />
+                {/* Total Count Display */}
+                <MediumText style={[styles.totalText, { color: theme.text }]}>
+                  Total: {containerStats.availableContainers + containerStats.activeContainers + containerStats.returnedContainers}
+                </MediumText>
+              </>
+
             ) : (
               <View style={styles.noDataContainer}>
                 <Ionicons name="pie-chart-outline" size={40} color={theme.text} style={{opacity: 0.3}} />
@@ -527,6 +535,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  totalText: {
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },  
   quickActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
