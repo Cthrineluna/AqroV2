@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   StatusBar,
-  Platform
+  Platform,
+  Text,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -18,6 +20,7 @@ import {
   BoldText, 
   SemiBoldText 
 } from '../../components/StyledComponents';
+import { useFonts } from 'expo-font';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -122,6 +125,9 @@ const CustomerHomeScreen = ({ navigation }) => {
   const [recentActivities, setRecentActivities] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fontsLoaded] = useFonts({
+      Blanka: require('../../../assets/fonts/Blanka-Regular.otf'),
+    });
 
   const fetchRecentActivities = async () => {
     try {
@@ -193,6 +199,27 @@ const CustomerHomeScreen = ({ navigation }) => {
   const handleRestaurantPress = (restaurant) => {
     navigation.navigate('RestaurantDetail', { restaurantId: restaurant._id });
   };
+  const renderProfileImage = () => {
+      if (user?.profilePicture) {
+        return (
+          <Image
+            source={{ uri: user.profilePicture }}
+            style={styles.profileImage}
+            onError={(e) => {
+              console.log("Image loading error:", e.nativeEvent.error);
+              // Fallback to placeholder on error
+              setImageFailed(true);
+            }}
+          />
+        );
+      } else {
+        return (
+          <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.primary + '20' }]}>
+            <Ionicons name="person" size={40} color={theme.primary} />
+          </View>
+        );
+      }
+    };
 
   useEffect(() => {
       const setNavBarColor = async () => {
@@ -224,7 +251,12 @@ const CustomerHomeScreen = ({ navigation }) => {
       
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <BoldText style={[styles.headerTitle, { color: theme.text }]}>aQRo</BoldText>
+        <View style={{ flexDirection: 'row' }}>
+          <Text style={[styles.headerLetter, { color: theme.text }]}>A</Text>
+          <Text style={[styles.headerLetter, { color: theme.primary }]}>Q</Text>
+          <Text style={[styles.headerLetter, { color: theme.primary }]}>R</Text>
+          <Text style={[styles.headerLetter, { color: theme.text }]}>O</Text>
+        </View>
         {/* <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="settings-outline" size={24} color={theme.text} />
         </TouchableOpacity> */}
@@ -241,6 +273,22 @@ const CustomerHomeScreen = ({ navigation }) => {
           />
         }
       >
+        <View style={styles.greetings}>
+          <View>
+            <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
+              Hello, {user.firstName}!
+            </SemiBoldText>
+            <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
+              Ready to close the loop?
+            </RegularText> 
+          </View>
+          <TouchableOpacity
+                      onPress={() => navigation.navigate('Profile')}
+                    >
+          {renderProfileImage()}
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
@@ -336,13 +384,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 2 : 10,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 4 : 10,
+    marginBottom: 10
   },
-  headerTitle: {
-    fontSize: 24,
+  headerLetter: {
+    fontSize: 26,
+    fontFamily: 'Blanka',
+    lineHeight: 30,
   },
   scrollContent: {
     padding: 16,
+    paddingTop:0,
   },
   section: {
     marginBottom: 24,
@@ -360,6 +412,23 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
+  },
+  greetings: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 50, 
+    height: 50, 
+    borderRadius: 25, 
+  },  
+  greetingsHeader: {
+    fontSize: 24,
+  },
+  subGreetings: {
+    fontSize: 16 ,
   },
   arrow: {
     opacity: 0.5,

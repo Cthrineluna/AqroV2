@@ -16,18 +16,17 @@ const SplashView = ({ onNextClick }) => {
     Blanka: require('../../../assets/fonts/Blanka-Regular.otf'),
   });
 
-  // Setup initial navigation bar color
   useEffect(() => {
     if (Platform.OS === 'android') {
-      NavigationBar.setBackgroundColorAsync('#25AF90'); // Initial splash color
+      NavigationBar.setBackgroundColorAsync('#25AF90'); 
     }
   }, []);
   
-  // Listen to background animation changes to update navigation bar
+
   useEffect(() => {
     if (Platform.OS === 'android') {
       const animationListener = backgroundAnimation.addListener(({ value }) => {
-        // Linear interpolation to calculate the current color
+
         const startColor = hexToRgb('#25AF90');
         const endColor = hexToRgb(isDark ? theme.background : '#F0F8FF');
         
@@ -39,7 +38,6 @@ const SplashView = ({ onNextClick }) => {
         NavigationBar.setBackgroundColorAsync(interpolatedColor);
       });
       
-      // Clean up listener on unmount
       return () => {
         backgroundAnimation.removeListener(animationListener);
       };
@@ -75,7 +73,7 @@ const SplashView = ({ onNextClick }) => {
   }, [fontsLoaded]);
 
   if (!fontsLoaded) {
-    return null; // Prevent rendering until fonts are loaded
+    return null; 
   }
 
   const logoScale = logoAnimation.interpolate({
@@ -98,13 +96,13 @@ const SplashView = ({ onNextClick }) => {
     outputRange: [0, 1, 1],
   });
 
-  // Theme-aware interpolations
+
   const backgroundColor = backgroundAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: ['#25AF90', isDark ? theme.background : '#F0F8FF'],
   });
 
-  // Text color interpolations based on theme
+
   const textColorA = backgroundAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: ['#F0F8FF', isDark ? '#F0F8FF' : '#030f0f'], // White to theme-dependent
