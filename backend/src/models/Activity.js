@@ -43,7 +43,7 @@ const activitySchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Add index for faster queries on userId
+
 activitySchema.index({ userId: 1, restaurantId: 1, createdAt: -1 });
 
 const Activity = mongoose.model('Activity', activitySchema);

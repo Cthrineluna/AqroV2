@@ -68,7 +68,12 @@ const StaffTabNavigator = () => {
       >
         <Tab.Screen name="Home" component={StaffHomeScreen} />
         <Tab.Screen name="Containers" component={StaffContainerList} />
-        <Tab.Screen name="Scanner" component={StaffScannerScreen} />
+        <Tab.Screen 
+          name="Scanner" 
+          component={StaffScannerScreen} 
+          initialParams={{ action: 'rebate' }} 
+        />
+
         <Tab.Screen name="Activities" component={StaffActivityListScreen} />
         <Tab.Screen 
           name="Menu" 

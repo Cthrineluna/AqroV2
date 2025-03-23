@@ -26,6 +26,14 @@ router.get('/restaurant/:restaurantId', protect, authorize('staff', 'admin'), co
 
 router.get('/restaurant/:restaurantId/stats', protect, authorize('staff', 'admin'), containerController.getRestaurantContainerStats);
 
+// Get container details by QR code
+router.get('/details', protect, containerController.getContainerDetailsByQR);
+
+// Process rebate (staff/admin only)
+router.post('/process-rebate', protect, authorize('staff', 'admin'), containerController.processRebate);
+
+// Process container return (staff/admin only)
+router.post('/process-return', protect, authorize('staff', 'admin'), containerController.processReturn);
 
 
 // Generate new container (staff/admin only)

@@ -651,7 +651,7 @@ const StaffContainersList = ({ navigation }) => {
       {containers.length > 0 && (
         <TouchableOpacity 
           style={styles.fabButton}
-          onPress={() => navigation.navigate('StaffScannerScreen')}
+          onPress={() => navigation.navigate('StaffScanner', { action: 'rebate' })}
         >
           <Ionicons name="qr-code-outline" size={28} color="#FFFFFF" />
         </TouchableOpacity>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions  } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -14,7 +14,7 @@ import {
   SemiBoldText 
 } from '../../components/StyledComponents';
 
-const StaffScannerScreen = ({ navigation }) => {
+const StaffScannerScreen = ({ navigation, route }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [scanning, setScanning] = useState(true);
@@ -25,6 +25,7 @@ const StaffScannerScreen = ({ navigation }) => {
   const lastScannedCode = useRef('');
   const lastScanTime = useRef(0);
   const SCAN_COOLDOWN = 3000;
+  const { action } = route.params; // 'rebate' or 'return'
 
   const screenWidth = Dimensions.get('window').width;
   const scanAreaSize = screenWidth * 0.7; 
@@ -69,6 +70,143 @@ const StaffScannerScreen = ({ navigation }) => {
     );
   };
 
+  const processRebate = async (qrCode, token) => {
+    try {
+      // First, get container details by QR code
+      const containerResponse = await axios.get(
+        `${getApiUrl('/containers/details')}`,
+        { 
+          params: { qrCode },
+          headers: { Authorization: `Bearer ${token}` } 
+        }
+      );
+      
+      const container = containerResponse.data;
+      
+      // Check if container exists and has a valid customer
+      if (!container) {
+        throw new Error('Container not found');
+      }
+      
+      if (!container.customerId) {
+        throw new Error('This container is not registered to any customer');
+      }
+      
+      // Check if container status is active
+      if (container.status !== 'active') {
+        throw new Error('This container is no longer active');
+      }
+      
+      // Check if container reached maximum uses
+      if (container.containerTypeId.maxUses <= container.usesCount) {
+        throw new Error('This container has reached its maximum number of uses');
+      }
+      
+      // Confirm with user (now including current use count)
+      return new Promise((resolve, reject) => {
+        Alert.alert(
+          'Process Rebate',
+          `Process rebate of ₱${container.containerTypeId.rebateValue.toFixed(2)} for this container?\n\nCurrent uses: ${container.usesCount}/${container.containerTypeId.maxUses}`,
+          [
+            { 
+              text: 'Cancel', 
+              style: 'cancel',
+              onPress: () => reject(new Error('Rebate cancelled')) 
+            },
+            { 
+              text: 'Confirm', 
+              onPress: async () => {
+                try {
+                  // Process the rebate
+                  const rebateResponse = await axios.post(
+                    `${getApiUrl('/containers/process-rebate')}`,
+                    { 
+                      containerId: container._id,
+                      amount: container.containerTypeId.rebateValue
+                    },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  );
+                  
+                  resolve(rebateResponse.data);
+                } catch (error) {
+                  reject(error);
+                }
+              } 
+            }
+          ]
+        );
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
+  
+  const processReturn = async (qrCode, token) => {
+    try {
+      // First, get container details by QR code
+      const containerResponse = await axios.get(
+        `${getApiUrl('/containers/details')}`,
+        { 
+          params: { qrCode },
+          headers: { Authorization: `Bearer ${token}` } 
+        }
+      );
+      
+      const container = containerResponse.data;
+      
+      // Check if container exists and has a valid customer
+      if (!container) {
+        throw new Error('Container not found');
+      }
+      
+      if (!container.customerId) {
+        throw new Error('This container is not registered to any customer');
+      }
+      
+      if (container.status === 'returned') {
+        throw new Error('This container has already been returned');
+      }
+      
+      // Check if container status is active
+      if (container.status !== 'active') {
+        throw new Error('Only containers with "active" status can be returned');
+      }
+      
+      // Confirm with user
+      return new Promise((resolve, reject) => {
+        Alert.alert(
+          'Process Return',
+          `Mark this container as returned?`,
+          [
+            { 
+              text: 'Cancel', 
+              style: 'cancel',
+              onPress: () => reject(new Error('Return cancelled')) 
+            },
+            { 
+              text: 'Confirm', 
+              onPress: async () => {
+                try {
+                  // Process the return
+                  const returnResponse = await axios.post(
+                    `${getApiUrl('/containers/process-return')}`,
+                    { containerId: container._id },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  );
+                  
+                  resolve(returnResponse.data);
+                } catch (error) {
+                  reject(error);
+                }
+              } 
+            }
+          ]
+        );
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
 
   const handleBarCodeScanned = async (result) => {
     const { data, cornerPoints } = result;
@@ -96,13 +234,19 @@ const StaffScannerScreen = ({ navigation }) => {
     setScanned(true);
     setScanning(false);
     
+    const resetScanState = () => {
+      setScanned(false);
+      setScanning(true);
+      isProcessing.current = false;
+    };
+    
     try {
-      
       console.log(`QR code scanned with data: ${data}`);
       
-      // Your existing QR code processing logic
+      // Validate QR code format
       if (!data.startsWith('AQRO-')) {
         Alert.alert('Invalid QR Code', 'This does not appear to be an aQRo container QR code.');
+        resetScanState();
         return;
       }
       
@@ -110,72 +254,65 @@ const StaffScannerScreen = ({ navigation }) => {
       const token = await AsyncStorage.getItem('aqro_token');
       if (!token) {
         Alert.alert('Authentication Error', 'Please log in again.');
+        resetScanState();
         return;
       }
       
-      // Send QR code to backend
-      const response = await axios.post(
-        `${getApiUrl('/containers/register')}`,
-        { qrCode: data },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const resetScanState = () => {
-        setScanned(false);
-        setScanning(true);
-        isProcessing.current = false;
-        // Don't reset lastScannedCode to prevent immediate re-scanning of the same code
-        // The cooldown timer will still apply
-      };
-      if (response.status === 200) {
-        // Handle different response scenarios
-        if (response.data.alreadyRegistered) {
-          if (response.data.ownedByCurrentUser) {
-            Alert.alert(
-              'Already Registered',
-              'This container is already registered to your account.',
-              [{ text: 'Try Again', onPress: () => {
-                resetScanState();
-              }}]
-            );
-          } else {
-            Alert.alert(
-              'Already Registered',
-              'This container is already registered to another user.',
-              [{ text: 'Try Again', onPress: () => {
-                resetScanState();
-              }}]
-            );
-          }
-        } else {
+      // Process based on action type
+      if (action === 'rebate') {
+        try {
+          const result = await processRebate(data, token);
           Alert.alert(
-            'Container Registered!',
-            'The container has been successfully registered to your account.',
-            [{ text: 'OK', onPress: () => navigation.navigate('CustomerTabs', { screen: 'Home' }) }]
+            'Rebate Processed',
+            `Rebate of ₱${result.amount.toFixed(2)} has been processed successfully.`,
+            [{ text: 'OK', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }]
           );
+        } catch (error) {
+          console.error('Error processing rebate:', error);
+          let errorMessage = error.message || 'Failed to process rebate. Please try again.';
+          
+          if (error.response && error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message;
+          }
+          
+          Alert.alert('Rebate Error', errorMessage, [
+            { text: 'Try Again', onPress: resetScanState },
+            { text: 'Cancel', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }
+          ]);
+        }
+      } else if (action === 'return') {
+        try {
+          const result = await processReturn(data, token);
+          Alert.alert(
+            'Return Processed',
+            'Container has been successfully marked as returned.',
+            [{ text: 'OK', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }]
+          );
+        } catch (error) {
+          console.error('Error processing return:', error);
+          let errorMessage = error.message || 'Failed to process return. Please try again.';
+          
+          if (error.response && error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message;
+          }
+          
+          Alert.alert('Return Error', errorMessage, [
+            { text: 'Try Again', onPress: resetScanState },
+            { text: 'Cancel', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }
+          ]);
         }
       }
     } catch (error) {
-      console.error('Error registering container:', error);
-      let errorMessage = 'Failed to register container. Please try again.';
-      
-      if (error.response && error.response.data && error.response.data.message) {
-        errorMessage = error.response.data.message;
-      }
-      
-      Alert.alert('Registration Error', errorMessage, [
-        { text: 'Try Again', onPress: () => {
-          resetScanState();
-        }},
-        { text: 'Cancel', onPress: () => navigation.navigate('CustomerTabs', { screen: 'Home' }) }
+      console.error('Error processing scan:', error);
+      Alert.alert('Scan Error', 'An unexpected error occurred. Please try again.', [
+        { text: 'Try Again', onPress: resetScanState },
+        { text: 'Cancel', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }
       ]);
     } finally {
       isProcessing.current = false;
     }
   };
 
- 
-
-  
   if (!permission) {
     // Camera permissions are still loading
     return (
@@ -211,7 +348,9 @@ const StaffScannerScreen = ({ navigation }) => {
         >
           <Ionicons name="close" size={28} color={isDark ? '#fff' : '#000'} />
         </TouchableOpacity>
-        <BoldText style={[styles.headerText, { color: theme.text }]}>Staff Scan Container</BoldText>
+        <BoldText style={[styles.headerText, { color: theme.text }]}>
+          {action === 'rebate' ? 'Process Rebate' : 'Process Return'}
+        </BoldText>
         <TouchableOpacity 
           style={styles.flashButton} 
           onPress={toggleFlash}
@@ -254,7 +393,10 @@ const StaffScannerScreen = ({ navigation }) => {
       
       <View style={styles.footer}>
         <RegularText style={[styles.instructions, { color: theme.text }]}>
-          Position the QR code within the frame to scan
+          {action === 'rebate' 
+            ? 'Scan container QR code to process rebate'
+            : 'Scan container QR code to process return'
+          }
         </RegularText>
         
         <View style={styles.buttonRow}>  

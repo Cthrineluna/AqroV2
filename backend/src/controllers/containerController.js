@@ -45,6 +45,7 @@ exports.getRestaurantContainerStats = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 exports.getQRCodeImage = async (req, res) => {
   try {
     const { id } = req.params;
@@ -70,6 +71,31 @@ exports.getQRCodeImage = async (req, res) => {
     console.error('Error generating QR code image:', error);
     res.status(500).json({ message: 'Server error' });
 }
+};
+
+// Get container details by QR code
+exports.getContainerDetailsByQR = async (req, res) => {
+  try {
+    const { qrCode } = req.query;
+    
+    if (!qrCode) {
+      return res.status(400).json({ message: 'QR code is required' });
+    }
+    
+    const container = await Container.findOne({ qrCode })
+      .populate('containerTypeId')
+      .populate('customerId', 'firstName lastName email')
+      .populate('restaurantId', 'name location');
+    
+    if (!container) {
+      return res.status(404).json({ message: 'Container not found' });
+    }
+    
+    res.json(container);
+  } catch (error) {
+    console.error('Error getting container details by QR:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
 // Get container stats for a customer
@@ -192,17 +218,41 @@ exports.registerContainer = async (req, res) => {
 // Process rebate
 exports.processRebate = async (req, res) => {
   try {
-    const { containerId, amount, location } = req.body;
+    const { containerId, amount } = req.body;
     const staffId = req.user._id;
     
     // Find the container
-    const container = await Container.findById(containerId);
+    const container = await Container.findById(containerId)
+      .populate('containerTypeId');
     
     if (!container) {
       return res.status(404).json({ message: 'Container not found' });
     }
     
+    if (!container.customerId) {
+      return res.status(400).json({ message: 'Container is not registered to any customer' });
+    }
+    
+    // Check if container has reached its maximum uses
+    if (container.containerTypeId.maxUses <= container.usesCount) {
+      return res.status(400).json({ 
+        message: 'Container has reached its maximum number of uses',
+        maxUses: container.containerTypeId.maxUses,
+        currentUses: container.usesCount
+      });
+    }
+    
+    // Get staff restaurant information
+    const staffUser = await mongoose.model('User').findById(staffId)
+      .populate('restaurantId');
+    
+    if (!staffUser || !staffUser.restaurantId) {
+      return res.status(400).json({ message: 'Staff user is not associated with a restaurant' });
+    }
+    
+    const restaurant = staffUser.restaurantId;
     const customerId = container.customerId;
+    const location = restaurant.name;
     
     // Create rebate record
     const rebate = new Rebate({
@@ -216,7 +266,6 @@ exports.processRebate = async (req, res) => {
     await rebate.save();
     
     // Update container status
-    container.status = 'returned';
     container.lastUsed = new Date();
     container.usesCount = (container.usesCount || 0) + 1;
     
@@ -226,19 +275,87 @@ exports.processRebate = async (req, res) => {
     const newActivity = new Activity({
       userId: customerId,
       containerId,
-      containerTypeId: container.containerTypeId,
-      restaurantId: container.restaurantId,
+      containerTypeId: container.containerTypeId._id,
+      restaurantId: restaurant._id,
       type: 'rebate',
       amount,
       location,
-      notes: 'Rebate processed and container returned'
+      notes: 'Rebate processed'
     });
     
     await newActivity.save();
     
-    res.status(201).json(rebate);
+    res.status(201).json({
+      success: true,
+      message: 'Rebate processed successfully',
+      amount,
+      rebate
+    });
   } catch (error) {
     console.error('Error processing rebate:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Process container return
+exports.processReturn = async (req, res) => {
+  try {
+    const { containerId } = req.body;
+    const staffId = req.user._id;
+    
+    // Find the container
+    const container = await Container.findById(containerId);
+    
+    if (!container) {
+      return res.status(404).json({ message: 'Container not found' });
+    }
+    
+    if (!container.customerId) {
+      return res.status(400).json({ message: 'Container is not registered to any customer' });
+    }
+    
+    if (container.status === 'returned') {
+      return res.status(400).json({ message: 'Container is already marked as returned' });
+    }
+    
+    // Get staff restaurant information
+    const staffUser = await mongoose.model('User').findById(staffId)
+      .populate('restaurantId');
+    
+    if (!staffUser || !staffUser.restaurantId) {
+      return res.status(400).json({ message: 'Staff user is not associated with a restaurant' });
+    }
+    
+    const restaurant = staffUser.restaurantId;
+    const customerId = container.customerId;
+    const location = restaurant.name;
+    
+    // Update container status
+    container.status = 'returned';
+    container.lastUsed = new Date();
+    
+    await container.save();
+    
+    // Record activity
+    const newActivity = new Activity({
+      userId: customerId,
+      containerId,
+      containerTypeId: container.containerTypeId,
+      restaurantId: restaurant._id,
+      type: 'return',
+      location,
+      notes: 'Container returned'
+    });
+    
+    await newActivity.save();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Container marked as returned successfully',
+      container
+    });
+  } catch (error) {
+    console.error('Error processing container return:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
