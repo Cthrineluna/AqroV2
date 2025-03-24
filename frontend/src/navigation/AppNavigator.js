@@ -12,8 +12,8 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 // Customer screens
 import CustomerTabNavigator from './CustomerTabNavigator';
 import ScannerScreen from '../screens/customer/ScannerScreen';
-import SettingsScreen from '../screens/customer/SettingsScreen';
-import ProfileScreen from '../screens/customer/ProfileScreen';
+import SettingsScreen from '../screens/shared/SettingsScreen';
+import ProfileScreen from '../screens/shared/ProfileScreen';
 import SideMenu from '../components/SideMenu';
 import ActivityListScreen from '../screens/customer/ActivityListScreen';
 
@@ -61,6 +61,9 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="StaffTabs" component={StaffTabNavigator} />
           <Stack.Screen name="ContainerList" component={StaffContainersList} />
+          <Stack.Screen name="Scanner" component={ScannerScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="StaffScanner" component={StaffScannerScreen} />
           <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
         </>

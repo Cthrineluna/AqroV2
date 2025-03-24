@@ -10,8 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomerHomeScreen from '../screens/customer/CustomerHomeScreen';
 import ContainersList from '../screens/customer/ContainersList';
 import ActivityListScreen from '../screens/customer/ActivityListScreen';
-import ProfileScreen from '../screens/customer/ProfileScreen';
-import SettingsScreen from '../screens/customer/SettingsScreen';
+import ProfileScreen from '../screens/shared/ProfileScreen';
+import SettingsScreen from '../screens/shared/SettingsScreen';
 
 // Side Menu
 import SideMenu from '../components/SideMenu';

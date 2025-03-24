@@ -11,8 +11,8 @@ import StaffHomeScreen from '../screens/staff/StaffHomeScreen';
 import StaffContainerList from '../screens/staff/StaffContainerList';
 import StaffActivityListScreen from '../screens/staff/StaffActivityListScreen';
 import StaffScannerScreen from '../screens/staff/StaffScannerScreen';
-import ProfileScreen from '../screens/customer/ProfileScreen';
-import SettingsScreen from '../screens/customer/SettingsScreen';
+import ProfileScreen from '../screens/shared/ProfileScreen';
+import SettingsScreen from '../screens/shared/SettingsScreen';
 
 // Side Menu
 import SideMenu from '../components/SideMenu';

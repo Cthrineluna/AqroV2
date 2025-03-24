@@ -100,31 +100,72 @@ const ProfileScreen = ({ navigation }) => {
 
   const pickImage = async () => {
     try {
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,  // Use full quality for manipulation
-      });
+      const options = ['Take Photo', 'Choose from Gallery', 'Remove Photo', 'Cancel'];
+      const cancelIndex = options.length - 1;
   
-      if (!result.canceled && result.assets.length > 0) {
-        const selectedAsset = result.assets[0];
+      Alert.alert('Select Image Option', '', [
+        {
+          text: options[0], // Take Photo
+          onPress: async () => {
+            const permission = await ImagePicker.requestCameraPermissionsAsync();
+            if (permission.status !== 'granted') {
+              Alert.alert('Permission Denied', 'Camera access is required to take a photo.');
+              return;
+            }
+            let result = await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 1,
+            });
   
-        // Resize the image to 300x300 pixels before uploading
-        const manipulatedImage = await ImageManipulator.manipulateAsync(
-          selectedAsset.uri,
-          [{ resize: { width: 300, height: 300 } }],
-          { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-        );
+            if (!result.canceled && result.assets.length > 0) {
+              processImage(result.assets[0]);
+            }
+          },
+        },
+        {
+          text: options[1], // Choose from Gallery
+          onPress: async () => {
+            let result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 1,
+            });
   
-        const base64Image = `data:image/jpeg;base64,${manipulatedImage.base64}`;
-        setUserData(prev => ({ ...prev, profilePicture: base64Image }));
-      }
+            if (!result.canceled && result.assets.length > 0) {
+              processImage(result.assets[0]);
+            }
+          },
+        },
+        {
+          text: options[2], // Remove Photo
+          onPress: () => {
+            setUserData(prev => ({ ...prev, profilePicture: null }));
+          },
+          style: 'destructive',
+        },
+        { text: options[3], style: 'cancel' },
+      ]);
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to select image');
     }
   };
+  
+  
+  // Function to resize and update profile picture
+  const processImage = async (selectedAsset) => {
+    const manipulatedImage = await ImageManipulator.manipulateAsync(
+      selectedAsset.uri,
+      [{ resize: { width: 300, height: 300 } }],
+      { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    );
+  
+    const base64Image = `data:image/jpeg;base64,${manipulatedImage.base64}`;
+    setUserData(prev => ({ ...prev, profilePicture: base64Image }));
+  };
+  
 
   const saveProfile = async () => {
     try {
