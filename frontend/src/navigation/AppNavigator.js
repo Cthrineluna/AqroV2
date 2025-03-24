@@ -20,7 +20,6 @@ import ActivityListScreen from '../screens/customer/ActivityListScreen';
 // Staff screens
 import StaffTabNavigator from './StaffTabNavigator';
 import GenerateQRScreen from '../screens/staff/GenerateQRScreen';
-import StaffContainersList from '../screens/staff/StaffContainerList';
 import StaffScannerScreen from '../screens/staff/StaffScannerScreen';
 
 // Admin screens
@@ -60,8 +59,6 @@ const AppNavigator = () => {
       ) : userType === 'staff' ? (
         <>
           <Stack.Screen name="StaffTabs" component={StaffTabNavigator} />
-          <Stack.Screen name="ContainerList" component={StaffContainersList} />
-          <Stack.Screen name="Scanner" component={ScannerScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="StaffScanner" component={StaffScannerScreen} />
