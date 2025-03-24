@@ -208,57 +208,42 @@ const StaffScannerScreen = ({ navigation, route }) => {
     }
   };
 
+  const resetScanState = () => {
+    setScanned(false);
+    setScanning(true);
+    isProcessing.current = false;
+  };
+  
   const handleBarCodeScanned = async (result) => {
     const { data, cornerPoints } = result;
     const currentTime = Date.now();
-    
-    // Only process QR codes within our scan area
-    if (!isWithinScanArea(cornerPoints)) {
-      return; // Ignore QR codes outside the scan area
-    }
-    
-    // Don't process if we're already handling a scan
-    if (
-      isProcessing.current || 
-      scanned || 
-      data === lastScannedCode.current ||
-      currentTime - lastScanTime.current < SCAN_COOLDOWN
-    ) {
+  
+    if (!isWithinScanArea(cornerPoints)) return;
+    if (isProcessing.current || scanned || data === lastScannedCode.current || currentTime - lastScanTime.current < SCAN_COOLDOWN) {
       return;
     }
-    
+  
     isProcessing.current = true;
     lastScannedCode.current = data;
     lastScanTime.current = currentTime;
-
+  
     setScanned(true);
     setScanning(false);
-    
-    const resetScanState = () => {
-      setScanned(false);
-      setScanning(true);
-      isProcessing.current = false;
-    };
-    
+  
     try {
       console.log(`QR code scanned with data: ${data}`);
-      
-      // Validate QR code format
+  
       if (!data.startsWith('AQRO-')) {
-        Alert.alert('Invalid QR Code', 'This does not appear to be an aQRo container QR code.');
-        resetScanState();
+        Alert.alert('Invalid QR Code', 'This does not appear to be an aQRo container QR code.', [{ text: 'Try Again', onPress: resetScanState }]);
         return;
       }
-      
-      // Get auth token
+  
       const token = await AsyncStorage.getItem('aqro_token');
       if (!token) {
-        Alert.alert('Authentication Error', 'Please log in again.');
-        resetScanState();
+        Alert.alert('Authentication Error', 'Please log in again.', [{ text: 'OK', onPress: resetScanState }]);
         return;
       }
-      
-      // Process based on action type
+  
       if (action === 'rebate') {
         try {
           const result = await processRebate(data, token);
@@ -269,12 +254,14 @@ const StaffScannerScreen = ({ navigation, route }) => {
           );
         } catch (error) {
           console.error('Error processing rebate:', error);
-          let errorMessage = error.message || 'Failed to process rebate. Please try again.';
-          
-          if (error.response && error.response.data && error.response.data.message) {
+          let errorMessage = 'Failed to process rebate. Please try again.';
+  
+          if (error.response?.status === 404) {
+            errorMessage = 'This container does not exist in the system.';
+          } else if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
           }
-          
+  
           Alert.alert('Rebate Error', errorMessage, [
             { text: 'Try Again', onPress: resetScanState },
             { text: 'Cancel', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }
@@ -290,12 +277,14 @@ const StaffScannerScreen = ({ navigation, route }) => {
           );
         } catch (error) {
           console.error('Error processing return:', error);
-          let errorMessage = error.message || 'Failed to process return. Please try again.';
-          
-          if (error.response && error.response.data && error.response.data.message) {
+          let errorMessage = 'Failed to process return. Please try again.';
+  
+          if (error.response?.status === 404) {
+            errorMessage = 'This container does not exist in the system.';
+          } else if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
           }
-          
+  
           Alert.alert('Return Error', errorMessage, [
             { text: 'Try Again', onPress: resetScanState },
             { text: 'Cancel', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }
@@ -312,6 +301,7 @@ const StaffScannerScreen = ({ navigation, route }) => {
       isProcessing.current = false;
     }
   };
+  
 
   if (!permission) {
     // Camera permissions are still loading
@@ -351,16 +341,7 @@ const StaffScannerScreen = ({ navigation, route }) => {
         <BoldText style={[styles.headerText, { color: theme.text }]}>
           {action === 'rebate' ? 'Process Rebate' : 'Process Return'}
         </BoldText>
-        <TouchableOpacity 
-          style={styles.flashButton} 
-          onPress={toggleFlash}
-        >
-          <Ionicons 
-            name={flashEnabled ? "flash" : "flash-off"} 
-            size={24} 
-            color={isDark ? '#fff' : '#000'} 
-          />
-        </TouchableOpacity>
+
       </View>
       
       <View style={styles.scannerContainer}>
