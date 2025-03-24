@@ -100,12 +100,9 @@ const ProfileScreen = ({ navigation }) => {
 
   const pickImage = async () => {
     try {
-      const options = ['Take Photo', 'Choose from Gallery', 'Remove Photo', 'Cancel'];
-      const cancelIndex = options.length - 1;
-  
       Alert.alert('Select Image Option', '', [
         {
-          text: options[0], // Take Photo
+          text: 'Take Photo',
           onPress: async () => {
             const permission = await ImagePicker.requestCameraPermissionsAsync();
             if (permission.status !== 'granted') {
@@ -124,7 +121,7 @@ const ProfileScreen = ({ navigation }) => {
           },
         },
         {
-          text: options[1], // Choose from Gallery
+          text: 'Choose from Gallery',
           onPress: async () => {
             let result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -139,19 +136,24 @@ const ProfileScreen = ({ navigation }) => {
           },
         },
         {
-          text: options[2], // Remove Photo
+          text: 'Remove Photo',
           onPress: () => {
             setUserData(prev => ({ ...prev, profilePicture: null }));
           },
           style: 'destructive',
         },
-        { text: options[3], style: 'cancel' },
+        {
+          text: 'Cancel', 
+          style: 'cancel',
+          onPress: () => console.log('Cancelled'),
+        },
       ]);
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to select image');
     }
   };
+  
   
   
   // Function to resize and update profile picture

@@ -99,8 +99,14 @@ const StaffScannerScreen = ({ navigation, route }) => {
       
       // Check if container reached maximum uses
       if (container.containerTypeId.maxUses <= container.usesCount) {
-        throw new Error('This container has reached its maximum number of uses');
+        Alert.alert(
+          'Usage Limit Reached',
+          'This container has reached its maximum number of uses.',
+          [{ text: 'OK', onPress: resetScanState }]
+        );
+        return null; 
       }
+      
       
       // Confirm with user (now including current use count)
       return new Promise((resolve, reject) => {
@@ -111,8 +117,10 @@ const StaffScannerScreen = ({ navigation, route }) => {
             { 
               text: 'Cancel', 
               style: 'cancel',
-              onPress: () => reject(new Error('Rebate cancelled')) 
-            },
+              onPress: () => {
+                navigation.navigate('StaffTabs', { screen: 'Home' });
+            }
+          },
             { 
               text: 'Confirm', 
               onPress: async () => {
@@ -163,9 +171,15 @@ const StaffScannerScreen = ({ navigation, route }) => {
         throw new Error('This container is not registered to any customer');
       }
       
-      if (container.status === 'returned') {
-        throw new Error('This container has already been returned');
-      }
+     if (container.status === 'returned') {
+      Alert.alert(
+        'Already Returned',
+        'This container has already been returned.',
+        [{ text: 'OK', onPress: resetScanState }] 
+      );
+      return null; 
+    }
+
       
       // Check if container status is active
       if (container.status !== 'active') {
@@ -181,8 +195,10 @@ const StaffScannerScreen = ({ navigation, route }) => {
             { 
               text: 'Cancel', 
               style: 'cancel',
-              onPress: () => reject(new Error('Return cancelled')) 
-            },
+              onPress: () => {
+                navigation.navigate('StaffTabs', { screen: 'Home' });
+            }
+          },
             { 
               text: 'Confirm', 
               onPress: async () => {
@@ -247,44 +263,55 @@ const StaffScannerScreen = ({ navigation, route }) => {
       if (action === 'rebate') {
         try {
           const result = await processRebate(data, token);
+      
+          if (result === null) return; // ✅ If max uses reached, exit without triggering an error
+      
           Alert.alert(
             'Rebate Processed',
             `Rebate of ₱${result.amount.toFixed(2)} has been processed successfully.`,
             [{ text: 'OK', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }]
           );
         } catch (error) {
+          if (error.message === 'Usage Limit Reached') return; // ✅ Prevents the generic error alert
+      
           console.error('Error processing rebate:', error);
           let errorMessage = 'Failed to process rebate. Please try again.';
-  
+      
           if (error.response?.status === 404) {
             errorMessage = 'This container does not exist in the system.';
           } else if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
           }
-  
+      
           Alert.alert('Rebate Error', errorMessage, [
             { text: 'Try Again', onPress: resetScanState },
             { text: 'Cancel', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }
           ]);
         }
-      } else if (action === 'return') {
+      }
+       else if (action === 'return') {
         try {
           const result = await processReturn(data, token);
+      
+          if (result === null) return; // ✅ If container is already returned, do nothing further
+      
           Alert.alert(
             'Return Processed',
             'Container has been successfully marked as returned.',
             [{ text: 'OK', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }]
           );
         } catch (error) {
+          if (error.message === 'This container has already been returned') return; // ✅ Prevent default error alert
+      
           console.error('Error processing return:', error);
           let errorMessage = 'Failed to process return. Please try again.';
-  
+      
           if (error.response?.status === 404) {
             errorMessage = 'This container does not exist in the system.';
           } else if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
           }
-  
+      
           Alert.alert('Return Error', errorMessage, [
             { text: 'Try Again', onPress: resetScanState },
             { text: 'Cancel', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }
