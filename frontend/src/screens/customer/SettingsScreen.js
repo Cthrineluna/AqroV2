@@ -30,12 +30,27 @@ const SettingsScreen = ({ navigation }) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [passwordSection, setPasswordSection] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+  const iconColor = isDark ? '#00df82' : theme.text;
 
+  const toggleCurrentPasswordVisibility = () => {
+    setShowCurrentPassword(!showCurrentPassword);
+  };
+  
+  const toggleNewPasswordVisibility = () => {
+    setShowNewPassword(!showNewPassword);
+  };
+  
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
   const handleInputChange = (field, value) => {
     setPasswordData(prev => ({
       ...prev,
@@ -191,43 +206,79 @@ const SettingsScreen = ({ navigation }) => {
           
           {passwordSection && (
             <View style={[styles.card, {backgroundColor: theme.card, borderColor: theme.border, marginTop: 10}]}>
-              <View style={styles.passwordInputContainer}>
+             <View style={styles.passwordInputContainer}>
                 <RegularText style={{color: theme.text, marginBottom: 8}}>Current Password</RegularText>
-                <TextInput
-                  secureTextEntry
-                  value={passwordData.currentPassword}
-                  onChangeText={(text) => handleInputChange('currentPassword', text)}
-                  style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border}]}
-                  placeholderTextColor={theme.text + '60'}
-                  placeholder="Enter current password"
-                  autoCapitalize="none"
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    secureTextEntry={!showCurrentPassword}
+                    value={passwordData.currentPassword}
+                    onChangeText={(text) => handleInputChange('currentPassword', text)}
+                    style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border, flex: 1}]}
+                    placeholderTextColor={theme.text + '60'}
+                    placeholder="Enter current password"
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity 
+                    style={styles.passwordToggle} 
+                    onPress={toggleCurrentPasswordVisibility}
+                  >
+                    <Ionicons 
+                      name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'} 
+                      size={18} 
+                      color={iconColor} 
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
               
               <View style={styles.passwordInputContainer}>
                 <RegularText style={{color: theme.text, marginBottom: 8}}>New Password</RegularText>
-                <TextInput
-                  secureTextEntry
-                  value={passwordData.newPassword}
-                  onChangeText={(text) => handleInputChange('newPassword', text)}
-                  style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border}]}
-                  placeholderTextColor={theme.text + '60'}
-                  placeholder="Enter new password"
-                  autoCapitalize="none"
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    secureTextEntry={!showNewPassword}
+                    value={passwordData.newPassword}
+                    onChangeText={(text) => handleInputChange('newPassword', text)}
+                    style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border, flex: 1}]}
+                    placeholderTextColor={theme.text + '60'}
+                    placeholder="Enter new password"
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity 
+                    style={styles.passwordToggle} 
+                    onPress={toggleNewPasswordVisibility}
+                  >
+                    <Ionicons 
+                      name={showNewPassword ? 'eye-off-outline' : 'eye-outline'} 
+                      size={18} 
+                      color={iconColor} 
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
               
               <View style={styles.passwordInputContainer}>
                 <RegularText style={{color: theme.text, marginBottom: 8}}>Confirm New Password</RegularText>
-                <TextInput
-                  secureTextEntry
-                  value={passwordData.confirmPassword}
-                  onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                  style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border}]}
-                  placeholderTextColor={theme.text + '60'}
-                  placeholder="Confirm new password"
-                  autoCapitalize="none"
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    secureTextEntry={!showConfirmPassword}
+                    value={passwordData.confirmPassword}
+                    onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                    style={[styles.input, {backgroundColor: theme.input, color: theme.text, borderColor: theme.border, flex: 1}]}
+                    placeholderTextColor={theme.text + '60'}
+                    placeholder="Confirm new password"
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity 
+                    style={styles.passwordToggle} 
+                    onPress={toggleConfirmPasswordVisibility}
+                  >
+                    <Ionicons 
+                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} 
+                      size={18} 
+                      color={iconColor} 
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
               
               <View style={styles.buttonContainer}>
@@ -380,10 +431,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  input: {
-    height: 46,
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderRadius: 8,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  passwordToggle: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 46,
+    width: 40,
+  },
+  input: {
+    height: 46,
     paddingHorizontal: 12,
     fontSize: 16,
   },

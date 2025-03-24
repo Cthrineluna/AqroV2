@@ -3,13 +3,16 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-// All routes require authentication
+// all routes require authentication
 router.use(authMiddleware.protect);
 
-// Get user profile
+// get user profile
 router.get('/profile', userController.getUserProfile);
 
-// Update user profile
+// update user profile
 router.put('/profile', userController.updateUserProfile);
+
+//update user password
+router.put('/password', userController.updateUserPassword);
 
 module.exports = router;

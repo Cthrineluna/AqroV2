@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
-    justifyContent: 'space-between', // Add this to position the theme toggle to the right
+    justifyContent: 'space-between', 
   },
   backButton: {
     padding: 8,
