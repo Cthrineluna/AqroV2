@@ -5,9 +5,9 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const containerRoutes = require('./routes/containerRoutes');
-const userRoutes = require('./routes/userRoutes');
 const restaurantRoutes = require('./routes/restaurantRoutes');
 const rebateRoutes = require('./routes/rebateRoutes');
+const { userRoutes, adminUserRoutes } = require('./routes/userRoutes');
 // Load environment variables
 dotenv.config();
 
@@ -31,6 +31,7 @@ app.use('/api/containers/qrcode', cors({
   exposedHeaders: ['Content-Type']
 }));
 app.use('/api/rebates', rebateRoutes);
+app.use('/api/admin/users', adminUserRoutes);
 
 
 // Connect to MongoDB

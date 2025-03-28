@@ -90,3 +90,113 @@ exports.updateUserProfile = async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   };
+
+  // Add these methods to your existing userController.js
+
+// Get all users (admin only)
+exports.getAllUsers = async (req, res) => {
+  try {
+    // Exclude password field when fetching users
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Create a new user (admin only)
+exports.createUser = async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, userType } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Create new user
+    const user = new User({
+      email,
+      password,
+      firstName,
+      lastName,
+      userType: userType || 'customer'
+    });
+
+    await user.save();
+
+    // Return user info without password
+    res.status(201).json({
+      _id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      userType: user.userType
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ message: 'Server error during user creation' });
+  }
+};
+
+// Update user by admin
+exports.updateUserByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, email, userType } = req.body;
+    
+    // Prepare update object
+    const updateData = { 
+      firstName, 
+      lastName,
+      userType
+    };
+    
+    // Only add email if it was provided and changed
+    if (email) {
+      // Check if email is already taken by another user
+      const existingUser = await User.findOne({ email });
+      if (existingUser && existingUser._id.toString() !== id) {
+        return res.status(400).json({ message: 'Email is already in use' });
+      }
+      updateData.email = email;
+    }
+    
+    // Find user and update
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Delete user
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find and delete user
+    const deletedUser = await User.findByIdAndDelete(id);
+    
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
