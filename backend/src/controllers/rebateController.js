@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Rebate = require('../models/Rebate');
 
 exports.getStaffRebateTotals = async (req, res) => {
@@ -44,22 +45,23 @@ exports.getRestaurantRebateTotals = async (req, res) => {
   try {
     const { restaurantId } = req.params;
 
-    // Aggregate total rebates for the restaurant
+    // Aggregate total rebates for the specific restaurant
     const rebateTotals = await Rebate.aggregate([
       {
         $lookup: {
-          from: 'containers', // Assuming 'containers' is the collection name
-          localField: 'containerId',
+          from: 'users', // Assuming 'users' is the collection name for staff
+          localField: 'staffId',
           foreignField: '_id',
-          as: 'container'
+          as: 'staffInfo'
         }
       },
       {
-        $unwind: '$container'
+        $unwind: '$staffInfo'
       },
       {
         $match: {
-          'container.restaurantId': mongoose.Types.ObjectId(restaurantId)
+          // Use new keyword with mongoose.Types.ObjectId
+          'staffInfo.restaurantId': new mongoose.Types.ObjectId(restaurantId)
         }
       },
       {
@@ -85,6 +87,10 @@ exports.getRestaurantRebateTotals = async (req, res) => {
     }
   } catch (error) {
     console.error('Error fetching restaurant rebate totals:', error);
-    res.status(500).json({ message: 'Error fetching rebate totals', error: error.message });
+    res.status(500).json({ 
+      message: 'Error fetching rebate totals', 
+      error: error.message,
+      stack: error.stack 
+    });
   }
 };

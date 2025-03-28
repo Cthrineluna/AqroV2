@@ -1,17 +1,18 @@
 const express = require('express');
 const router = express.Router();
+const { protect, authorize } = require('../middleware/authMiddleware');
 const rebateController = require('../controllers/rebateController');
-const authMiddleware = require('../middleware/authMiddleware');
 
 // Get total rebates for a specific staff
 router.get('/staff/:staffId/totals', 
-  authMiddleware.protect, 
+   protect, authorize('admin', 'staff'), 
   rebateController.getStaffRebateTotals
 );
 
 // Get total rebates for a specific restaurant
 router.get('/restaurant/:restaurantId/totals', 
-  authMiddleware.protect, 
+  protect,  // Ensure authentication middleware is applied
+  authorize('admin', 'staff'),  // Ensure authorization
   rebateController.getRestaurantRebateTotals
 );
 

@@ -125,10 +125,47 @@ const StaffHomeScreen = ({ navigation }) => {
     activeContainers: 0,
     returnedContainers: 0
   });
+  const [rebateStats, setRebateStats] = useState({
+    totalRebateAmount: 0,
+    rebateCount: 0
+  });
   const [recentActivities, setRecentActivities] = useState([]);
   const [fontsLoaded] = useFonts({
     Blanka: require('../../../assets/fonts/Blanka-Regular.otf'),
   });
+
+  const fetchRebateStats = async () => {
+    try {
+      const token = await AsyncStorage.getItem('aqro_token');
+      
+      if (!token || !user.restaurantId) {
+        console.error('No auth token or restaurantId found');
+        return;
+      }
+      
+      try {
+        const response = await axios.get(
+          `${getApiUrl(`/rebates/restaurant/${user.restaurantId}/totals`)}`, 
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        
+        if (response.data) {
+          setRebateStats(response.data);
+        }
+      } catch (error) {
+        console.error('Error in API call:', error.response ? error.response.data : error.message);
+        // Optionally set default/fallback stats
+        setRebateStats({
+          totalRebateAmount: 0,
+          rebateCount: 0
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error in fetchRebateStats:', error);
+    }
+  };
 
   const fetchRecentActivities = async () => {
     try {
@@ -176,12 +213,17 @@ const StaffHomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchContainerStats();
+    fetchRebateStats();
     fetchRecentActivities(); 
   }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchContainerStats(), fetchRecentActivities()]);
+    await Promise.all([
+      fetchContainerStats(), 
+      fetchRebateStats(), 
+      fetchRecentActivities()
+    ]);
     setRefreshing(false);
   };
 
@@ -355,9 +397,24 @@ const StaffHomeScreen = ({ navigation }) => {
               textColor="#0277bd"
             />
           </View>
-
+          <View style={[styles.cardsContainer, {marginTop: 10}]}>
+          <ContainerCard 
+            title="Total Rebated" 
+            value={`₱${rebateStats.totalRebateAmount.toFixed(2)}`}
+            icon="cash-outline"
+            backgroundColor="#fff3e0"
+            textColor="#fb8c00"
+          />
+          
+          <ContainerCard 
+            title="Rebate Count" 
+            value={rebateStats.rebateCount}
+            icon="receipt-outline"
+            backgroundColor="#e8eaf6"
+            textColor="#3f51b5"
+          />
+        </View>
          
-        
         {/* Quick Actions Menu */}
         <View style={styles.quickActionsContainer}>
           <TouchableOpacity 
