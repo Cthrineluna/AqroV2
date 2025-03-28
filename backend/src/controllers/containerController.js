@@ -5,6 +5,7 @@ const Rebate = require('../models/Rebate');
 const Activity = require('../models/Activity');
 const QRCode = require('qrcode');
 const Restaurant = require('../models/Restaurant');
+const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
 
 // Generate QR code image
 // Get container stats for a restaurant
@@ -218,12 +219,13 @@ exports.registerContainer = async (req, res) => {
 // Process rebate
 exports.processRebate = async (req, res) => {
   try {
-    const { containerId, amount } = req.body;
+    const { containerId } = req.body;
     const staffId = req.user._id;
     
-    // Find the container
+    // Find the container with full population
     const container = await Container.findById(containerId)
-      .populate('containerTypeId');
+      .populate('containerTypeId')
+      .populate('customerId');
     
     if (!container) {
       return res.status(404).json({ message: 'Container not found' });
@@ -251,7 +253,22 @@ exports.processRebate = async (req, res) => {
     }
     
     const restaurant = staffUser.restaurantId;
-    const customerId = container.customerId;
+
+    // Find restaurant-specific rebate mapping
+    const rebateMapping = await RestaurantContainerRebate.findOne({
+      restaurantId: restaurant._id,
+      containerTypeId: container.containerTypeId._id
+    });
+
+    if (!rebateMapping) {
+      return res.status(404).json({ 
+        message: 'No rebate value found for this container type and restaurant' 
+      });
+    }
+
+    // Use the restaurant-specific rebate value
+    const amount = rebateMapping.rebateValue;
+    const customerId = container.customerId._id;
     const location = restaurant.name;
     
     // Create rebate record
@@ -284,7 +301,7 @@ exports.processRebate = async (req, res) => {
     });
     
     await newActivity.save();
-    
+
     res.status(201).json({
       success: true,
       message: 'Rebate processed successfully',
@@ -293,7 +310,81 @@ exports.processRebate = async (req, res) => {
     });
   } catch (error) {
     console.error('Error processing rebate:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'Server error', 
+      details: error.message 
+    });
+  }
+};
+
+// New method to manage restaurant-specific rebate mappings
+exports.manageRestaurantRebateMappings = async (req, res) => {
+  try {
+    const { restaurantId, containerTypeMappings } = req.body;
+
+    // Validate restaurant exists
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+
+    // Create or update rebate mappings
+    const savedMappings = await Promise.all(
+      containerTypeMappings.map(async (mapping) => {
+        // Validate container type exists
+        const containerType = await ContainerType.findById(mapping.containerTypeId);
+        if (!containerType) {
+          throw new Error(`Container type ${mapping.containerTypeId} not found`);
+        }
+
+        return RestaurantContainerRebate.findOneAndUpdate(
+          {
+            restaurantId: restaurantId,
+            containerTypeId: mapping.containerTypeId
+          },
+          {
+            rebateValue: mapping.rebateValue
+          },
+          { upsert: true, new: true }
+        );
+      })
+    );
+
+    res.status(200).json({
+      message: 'Rebate mappings updated successfully',
+      mappings: savedMappings
+    });
+  } catch (error) {
+    console.error('Error managing rebate mappings:', error);
+    res.status(500).json({ 
+      message: 'Error managing rebate mappings', 
+      details: error.message 
+    });
+  }
+};
+
+// Retrieve rebate mappings for a restaurant
+exports.getRestaurantRebateMappings = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+
+    // Validate restaurant exists
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+
+    const rebateMappings = await RestaurantContainerRebate.find({ 
+      restaurantId 
+    }).populate('containerTypeId');
+
+    res.status(200).json(rebateMappings);
+  } catch (error) {
+    console.error('Error retrieving rebate mappings:', error);
+    res.status(500).json({ 
+      message: 'Error retrieving rebate mappings', 
+      details: error.message 
+    });
   }
 };
 
@@ -416,6 +507,59 @@ exports.getContainerTypes = async (req, res) => {
   }
 };
 
+// Retrieve rebate mappings for a specific container type across all restaurants
+exports.getContainerTypeRebateMappings = async (req, res) => {
+  try {
+    const { containerTypeId } = req.params;
+
+    // Validate container type exists
+    const containerType = await ContainerType.findById(containerTypeId);
+    if (!containerType) {
+      return res.status(404).json({ message: 'Container type not found' });
+    }
+
+    const rebateMappings = await RestaurantContainerRebate.find({ 
+      containerTypeId 
+    })
+    .populate('restaurantId', 'name')
+    .populate('containerTypeId', 'name');
+
+    res.status(200).json(rebateMappings);
+  } catch (error) {
+    console.error('Error retrieving container type rebate mappings:', error);
+    res.status(500).json({ 
+      message: 'Error retrieving rebate mappings', 
+      details: error.message 
+    });
+  }
+};
+
+exports.getContainerTypeRebateValue = async (req, res) => {
+  try {
+    const { containerTypeId } = req.params;
+    const restaurantId = req.user.restaurantId;
+
+    // Find the specific rebate mapping for this container type and restaurant
+    const rebateMapping = await RestaurantContainerRebate.findOne({
+      restaurantId,
+      containerTypeId
+    });
+
+    if (!rebateMapping) {
+      return res.status(404).json({ 
+        message: 'No specific rebate value found for this container type and restaurant',
+        defaultRebateValue: containerType.rebateValue // fallback to default
+      });
+    }
+
+    res.status(200).json({
+      rebateValue: rebateMapping.rebateValue
+    });
+  } catch (error) {
+    console.error('Error retrieving rebate value:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 // Get all restaurants
 exports.getRestaurants = async (req, res) => {
   try {

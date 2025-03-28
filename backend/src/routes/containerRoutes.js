@@ -35,6 +35,35 @@ router.post('/process-rebate', protect, authorize('staff', 'admin'), containerCo
 // Process container return (staff/admin only)
 router.post('/process-return', protect, authorize('staff', 'admin'), containerController.processReturn);
 
+// Manage restaurant-specific rebate mappings (admin only)
+router.post(
+    '/rebate-mappings', 
+    protect, 
+    authorize('admin'), 
+    containerController.manageRestaurantRebateMappings
+  );
+  
+  // Get rebate mappings for a specific restaurant (staff and admin)
+  router.get(
+    '/rebate-mappings/:restaurantId', 
+    protect, 
+    authorize('staff', 'admin', 'customer'), 
+    containerController.getRestaurantRebateMappings
+  );
+
+  // Get rebate mappings for a specific container type across all restaurants
+router.get(
+    '/rebate-mappings-by-container-type/:containerTypeId', 
+    protect, 
+    containerController.getContainerTypeRebateMappings
+  );
+  
+  // This route is already defined in containerRoutes.js, so you might just need to update the controller method
+router.get('/rebate-value/:containerTypeId', 
+  protect, 
+  authorize('staff', 'admin'), 
+  containerController.getContainerTypeRebateValue
+);
 
 // Generate new container (staff/admin only)
 router.post(

@@ -7,7 +7,7 @@ const dotenv = require('dotenv');
 const containerRoutes = require('./routes/containerRoutes');
 const userRoutes = require('./routes/userRoutes');
 const restaurantRoutes = require('./routes/restaurantRoutes');
-
+const rebateRoutes = require('./routes/rebateRoutes');
 // Load environment variables
 dotenv.config();
 
@@ -30,6 +30,7 @@ app.use('/api/containers/qrcode', cors({
   methods: ['GET', 'OPTIONS'],
   exposedHeaders: ['Content-Type']
 }));
+app.use('/api/rebates', rebateRoutes);
 
 
 // Connect to MongoDB

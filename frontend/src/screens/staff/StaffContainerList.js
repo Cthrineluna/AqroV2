@@ -9,7 +9,8 @@ import {
   StatusBar,
   Platform,
   Animated,
-  Dimensions
+  Dimensions,
+  ScrollView as RNScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -26,6 +27,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
 import SearchComponent from '../../components/SearchComponent';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -262,6 +264,11 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         </TouchableOpacity>
       </View>
       
+      <RNScrollView 
+        contentContainerStyle={styles.modalBodyScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+
       <View style={styles.modalBody}>
         <View style={[styles.containerIconLarge, { backgroundColor }]}>
           <Ionicons name={name} size={24} color={color} />
@@ -284,7 +291,9 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         
         <View style={styles.detailRow}>
           <RegularText style={styles.detailLabel}>Rebate Value:</RegularText>
-          <RegularText style={{ color: theme.text }}>₱{container.containerTypeId.rebateValue.toFixed(2)}</RegularText>
+          <RegularText style={{ color: theme.text }}>
+            ₱{container.rebateValue ? container.rebateValue.toFixed(2) : container.containerTypeId.rebateValue.toFixed(2)}
+          </RegularText>
         </View>
         
         {/* Add customer details for staff view */}
@@ -320,6 +329,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
           </View>
         )}
       </View>
+      </RNScrollView>
     </Animated.View>
   );
 };
@@ -392,6 +402,30 @@ const StaffContainersList = ({ navigation }) => {
   };
   
 
+  const fetchContainerRebateValue = async (container) => {
+    try {
+      const token = await AsyncStorage.getItem('aqro_token');
+      
+      const response = await axios.get(
+        `${getApiUrl(`/containers/rebate-value/${container.containerTypeId._id}`)}`, 
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      // Create a new container object with the updated rebate value
+      return {
+        ...container,
+        rebateValue: response.data.rebateValue
+      };
+    } catch (error) {
+      console.error('Error fetching rebate value:', error);
+      // Fallback to original container type rebate value
+      return container;
+    }
+  };
+  
+  // Modify your container fetching logic
   const fetchContainers = async () => {
     try {
       const token = await AsyncStorage.getItem('aqro_token');
@@ -409,8 +443,13 @@ const StaffContainersList = ({ navigation }) => {
       );
       
       if (response.data) {
-        setContainers(response.data);
-        applyFilter(activeFilter, response.data);
+        // Fetch rebate values for each container
+        const containersWithRebates = await Promise.all(
+          response.data.map(container => fetchContainerRebateValue(container))
+        );
+        
+        setContainers(containersWithRebates);
+        applyFilter(activeFilter, containersWithRebates);
       }
     } catch (error) {
       console.error('Error fetching restaurant containers:', error);

@@ -9,7 +9,8 @@ import {
   StatusBar,
   Platform,
   Animated,
-  Dimensions
+  Dimensions,
+  ScrollView as RNScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -28,6 +29,8 @@ import { getApiUrl } from '../../services/apiConfig';
 import SearchComponent from '../../components/SearchComponent';
 
 const { width, height } = Dimensions.get('window');
+
+
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   const { theme } = useTheme();
@@ -130,9 +133,156 @@ const ContainerItem = ({ container, onPress }) => {
   );
 };
 
+const RebateSection = ({ container, theme }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [restaurantRebates, setRestaurantRebates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Use useRef for the animation to ensure it's consistent across renders
+  const animatedHeight = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const fetchRestaurantRebates = async () => {
+      if (!container || !container.containerTypeId) {
+        console.error('Container or Container Type is missing');
+        setIsLoading(false);
+        return;
+      }
+    
+      try {
+        const token = await AsyncStorage.getItem('aqro_token');
+        if (!token) {
+          console.error('No auth token found');
+          setIsLoading(false);
+          return;
+        }
+    
+        const containerTypeId = container.containerTypeId._id || container.containerTypeId;
+    
+        const response = await axios.get(
+          `${getApiUrl('/containers/rebate-mappings-by-container-type')}/${containerTypeId}`, 
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+    
+        if (response.data && response.data.length > 0) {
+          const rebatesWithNames = response.data.map(mapping => ({
+            restaurantName: mapping.restaurantId.name,
+            rebateValue: mapping.rebateValue
+          }));
+    
+          setRestaurantRebates(rebatesWithNames);
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant rebates:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRestaurantRebates();
+  }, [container]); // Dependency array ensures it runs when container changes
+
+  const toggleExpand = () => {
+    // Calculate the height based on content
+    const dynamicHeight = isExpanded 
+      ? 0 
+      : Math.min(
+          (restaurantRebates.length || 1) * 50, 
+          250
+        );
+
+    // Animate the height
+    Animated.timing(animatedHeight, {
+      toValue: dynamicHeight,
+      duration: 300,
+      useNativeDriver: false
+    }).start(() => {
+      // Toggle expansion state after animation
+      setIsExpanded(!isExpanded);
+    });
+  };
+
+  // Only render the section if there are rebates or it's loading
+  if (isLoading && restaurantRebates.length === 0) {
+    return (
+      <View style={[styles.detailRow, { flexDirection: 'column' }]}>
+        <RegularText style={[styles.detailLabel, { opacity: 0.7 }]}>
+          Restaurant Rebates
+        </RegularText>
+        <RegularText style={[styles.detailLabel, { width: '100%', textAlign: 'center' }]}>
+          Loading rebates...
+        </RegularText>
+      </View>
+    );
+  }
+
+  if (restaurantRebates.length === 0) {
+    return null;
+  }
+
+  return (
+    <View style={[styles.detailRow, { 
+      flexDirection: 'column', 
+      borderBottomWidth: 0, 
+      paddingVertical: 0,
+    }]}>
+      <TouchableOpacity 
+        style={[
+          styles.detailRow, 
+          { 
+            width: '100%', 
+            paddingVertical: 6,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: 'rgba(0,0,0,0.05)'
+          }
+        ]}
+        onPress={toggleExpand}
+      >
+        <RegularText style={[styles.detailLabel, { opacity: 0.7 }]}>
+          Restaurant Rebates
+        </RegularText>
+        <Ionicons 
+          name={isExpanded ? "chevron-up" : "chevron-down"} 
+          size={20} 
+          color={theme.text} 
+        />
+      </TouchableOpacity>
+  
+      <Animated.View 
+        style={{
+          height: animatedHeight, 
+          overflow: 'hidden',
+          width: '100%'
+        }}
+      >
+        {restaurantRebates.map((rebate, index) => (
+          <View 
+            key={index} 
+            style={[
+              styles.detailRow,
+              { 
+                paddingVertical: 8,
+                borderBottomWidth: index < restaurantRebates.length - 1 
+                  ? StyleSheet.hairlineWidth 
+                  : 0,
+                borderBottomColor: 'rgba(0,0,0,0.05)'
+              }
+            ]}
+          >
+            <RegularText style={{ opacity: 0.7 }}>{rebate.restaurantName}</RegularText>
+            <RegularText style={{ color: theme.text }}>₱{rebate.rebateValue.toFixed(2)}</RegularText>
+          </View>
+        ))}
+      </Animated.View>
+    </View>
+  );
+};
+
+
 const ContainerDetailModal = ({ container, animation, closeModal }) => {
   const { theme } = useTheme();
-  // Use the maxUses from containerType instead of hardcoded 10
   const estimatedUsesLeft = container?.containerTypeId?.maxUses - (container?.usesCount || 0);
   
   if (!container) return null;
@@ -238,67 +388,75 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         </TouchableOpacity>
       </View>
       
-      <View style={styles.modalBody}>
-        <View style={[styles.containerIconLarge, { backgroundColor }]}>
-          <Ionicons name={name} size={24} color={color} />
-        </View>
-        
-        <BoldText style={{ fontSize: 24, marginVertical: 8, color: theme.text }}>
-          {container.containerTypeId.name}
-        </BoldText>
-        
-        <View style={styles.statusChip}>
-          <RegularText style={{ color: statusTextColor, fontSize: 16 }}>
-            {container.status.toUpperCase()}
-          </RegularText>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Container Code:</RegularText>
-          <RegularText style={{ color: theme.text, fontSize: 14 }}>{container.qrCode}</RegularText>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Rebate Value:</RegularText>
-          <RegularText style={{ color: theme.text }}>₱{container.containerTypeId.rebateValue.toFixed(2)}</RegularText>
-        </View>
-        
-        {container.restaurantId && (
-          <View style={styles.detailRow}>
-            <RegularText style={styles.detailLabel}>Restaurant:</RegularText>
-            <RegularText style={{ color: theme.text }}>{container.restaurantId.name}</RegularText>
+      {/* Wrap the modal body in a ScrollView */}
+      <RNScrollView 
+        contentContainerStyle={styles.modalBodyScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.modalBody}>
+          <View style={[styles.containerIconLarge, { backgroundColor }]}>
+            <Ionicons name={name} size={24} color={color} />
           </View>
-        )}
-        
-        {container.restaurantId && container.restaurantId.location && (
-          <View style={styles.detailRow}>
-            <RegularText style={styles.detailLabel}>Location:</RegularText>
-            <RegularText style={{ color: theme.text }}>{container.restaurantId.location.city}</RegularText>
+          
+          <BoldText style={{ fontSize: 24, marginVertical: 8, color: theme.text }}>
+            {container.containerTypeId.name}
+          </BoldText>
+          
+          <View style={styles.statusChip}>
+            <RegularText style={{ color: statusTextColor, fontSize: 16 }}>
+              {container.status.toUpperCase()}
+            </RegularText>
           </View>
-        )}
-        
-        <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Registered:</RegularText>
-          <RegularText style={{ color: theme.text }}>{registrationDate}</RegularText>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Last Used:</RegularText>
-          <RegularText style={{ color: theme.text }}>{lastUsed}</RegularText>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Usage Count:</RegularText>
-          <RegularText style={{ color: theme.text }}>{container.usesCount}</RegularText>
-        </View>
-        
-        {container.status === 'active' && (
+          
           <View style={styles.detailRow}>
-            <RegularText style={styles.detailLabel}>Uses Left:</RegularText>
-            <RegularText style={{ color: theme.text }}>{estimatedUsesLeft}</RegularText>
+            <RegularText style={styles.detailLabel}>Container Code:</RegularText>
+            <RegularText style={{ color: theme.text, fontSize: 14 }}>{container.qrCode}</RegularText>
           </View>
-        )}
-      </View>
+
+          <RebateSection container={container} theme={theme} />
+
+          <View style={styles.detailRow}>
+            <RegularText style={styles.detailLabel}>Rebate Value:</RegularText>
+            <RegularText style={{ color: theme.text }}>₱{container.containerTypeId.rebateValue.toFixed(2)}</RegularText>
+          </View>
+          
+          {container.restaurantId && (
+            <View style={styles.detailRow}>
+              <RegularText style={styles.detailLabel}>Restaurant:</RegularText>
+              <RegularText style={{ color: theme.text }}>{container.restaurantId.name}</RegularText>
+            </View>
+          )}
+          
+          {container.restaurantId && container.restaurantId.location && (
+            <View style={styles.detailRow}>
+              <RegularText style={styles.detailLabel}>Location:</RegularText>
+              <RegularText style={{ color: theme.text }}>{container.restaurantId.location.city}</RegularText>
+            </View>
+          )}
+          
+          <View style={styles.detailRow}>
+            <RegularText style={styles.detailLabel}>Registered:</RegularText>
+            <RegularText style={{ color: theme.text }}>{registrationDate}</RegularText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <RegularText style={styles.detailLabel}>Last Used:</RegularText>
+            <RegularText style={{ color: theme.text }}>{lastUsed}</RegularText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <RegularText style={styles.detailLabel}>Usage Count:</RegularText>
+            <RegularText style={{ color: theme.text }}>{container.usesCount}</RegularText>
+          </View>
+          
+          {container.status === 'active' && (
+            <View style={styles.detailRow}>
+              <RegularText style={styles.detailLabel}>Uses Left:</RegularText>
+              <RegularText style={{ color: theme.text }}>{estimatedUsesLeft}</RegularText>
+            </View>
+          )}
+        </View>
+      </RNScrollView>
     </Animated.View>
   );
 };
@@ -813,9 +971,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
+  modalBodyScrollContent: {
+    flexGrow: 1,
+  },
   modalBody: {
     padding: 20,
     alignItems: 'center',
+    paddingBottom: 40, 
   },
   containerIconLarge: {
     width: 80,
@@ -836,13 +998,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    paddingVertical: 8,
+    paddingVertical: 6, // Reduced from 8
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   detailLabel: {
     opacity: 0.7,
     fontSize: 14,
+  },
+   rebateSectionContainer: {
+    width: '100%',
+    marginTop: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.02)', // Light background to distinguish the section
+  },
+  rebateSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  rebateContentContainer: {
+    paddingHorizontal: 20,
+  },
+  rebateItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 });
 

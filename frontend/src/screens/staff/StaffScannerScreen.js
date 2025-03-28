@@ -83,10 +83,13 @@ const StaffScannerScreen = ({ navigation, route }) => {
       
       const container = containerResponse.data;
       
-      // Check if container exists and has a valid customer
+      // Comprehensive null checks
       if (!container) {
         throw new Error('Container not found');
       }
+      
+      // Debug logging
+      console.log('Container Details:', JSON.stringify(container, null, 2));
       
       if (!container.customerId) {
         throw new Error('This container is not registered to any customer');
@@ -97,30 +100,61 @@ const StaffScannerScreen = ({ navigation, route }) => {
         throw new Error('This container is no longer active');
       }
       
-      // Check if container reached maximum uses
-      if (container.containerTypeId.maxUses <= container.usesCount) {
-        Alert.alert(
-          'Usage Limit Reached',
-          'This container has reached its maximum number of uses.',
-          [{ text: 'OK', onPress: resetScanState }]
-        );
-        return null; 
+      // Ensure required references exist
+      if (!container.containerTypeId) {
+        throw new Error('Container type information is missing');
       }
       
+      // Fetch current user's restaurant
+      const profileResponse = await axios.get(
+        `${getApiUrl('/users/profile')}`,
+        { 
+          headers: { Authorization: `Bearer ${token}` } 
+        }
+      );
       
-      // Confirm with user (now including current use count)
+      const currentUser = profileResponse.data;
+      
+      if (!currentUser.restaurantId) {
+        throw new Error('You are not associated with a restaurant');
+      }
+      
+      // Fetch restaurant-specific rebate mappings
+      const rebateMappingsResponse = await axios.get(
+        `${getApiUrl(`/containers/rebate-mappings/${currentUser.restaurantId}`)}`,
+        { 
+          headers: { Authorization: `Bearer ${token}` } 
+        }
+      );
+      
+      // Debug logging for rebate mappings
+      console.log('Rebate Mappings:', JSON.stringify(rebateMappingsResponse.data, null, 2));
+      
+      // Find the rebate mapping for this specific container type
+      const rebateMapping = rebateMappingsResponse.data.find(
+        mapping => mapping.containerTypeId._id === container.containerTypeId._id
+      );
+      
+      // If no specific rebate mapping found, throw an error
+      if (!rebateMapping) {
+        throw new Error('No rebate value found for this container type at this restaurant');
+      }
+      
+      const rebateValue = rebateMapping.rebateValue;
+      
+      // Confirm with user (now including current use count and rebate value)
       return new Promise((resolve, reject) => {
         Alert.alert(
           'Process Rebate',
-          `Process rebate of ₱${container.containerTypeId.rebateValue.toFixed(2)} for this container?\n\nCurrent uses: ${container.usesCount}/${container.containerTypeId.maxUses}`,
+          `Process rebate of ₱${rebateValue.toFixed(2)} for this container?\n\nCurrent uses: ${container.usesCount}/${container.containerTypeId.maxUses}`,
           [
             { 
               text: 'Cancel', 
               style: 'cancel',
               onPress: () => {
                 navigation.navigate('StaffTabs', { screen: 'Home' });
-            }
-          },
+              }
+            },
             { 
               text: 'Confirm', 
               onPress: async () => {
@@ -129,14 +163,15 @@ const StaffScannerScreen = ({ navigation, route }) => {
                   const rebateResponse = await axios.post(
                     `${getApiUrl('/containers/process-rebate')}`,
                     { 
-                      containerId: container._id,
-                      amount: container.containerTypeId.rebateValue
+                      containerId: container._id 
+                      // Note: amount is now determined server-side based on restaurant-specific mapping
                     },
                     { headers: { Authorization: `Bearer ${token}` } }
                   );
                   
                   resolve(rebateResponse.data);
                 } catch (error) {
+                  console.error('Rebate Processing Error:', error.response ? error.response.data : error);
                   reject(error);
                 }
               } 
@@ -145,6 +180,7 @@ const StaffScannerScreen = ({ navigation, route }) => {
         );
       });
     } catch (error) {
+      console.error('Full Rebate Processing Error:', error.response ? error.response.data : error);
       throw error;
     }
   };
@@ -264,7 +300,7 @@ const StaffScannerScreen = ({ navigation, route }) => {
         try {
           const result = await processRebate(data, token);
       
-          if (result === null) return; // ✅ If max uses reached, exit without triggering an error
+          if (result === null) return; 
       
           Alert.alert(
             'Rebate Processed',
@@ -272,7 +308,7 @@ const StaffScannerScreen = ({ navigation, route }) => {
             [{ text: 'OK', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }]
           );
         } catch (error) {
-          if (error.message === 'Usage Limit Reached') return; // ✅ Prevents the generic error alert
+          if (error.message === 'Usage Limit Reached') return; 
       
           console.error('Error processing rebate:', error);
           let errorMessage = 'Failed to process rebate. Please try again.';
@@ -293,7 +329,7 @@ const StaffScannerScreen = ({ navigation, route }) => {
         try {
           const result = await processReturn(data, token);
       
-          if (result === null) return; // ✅ If container is already returned, do nothing further
+          if (result === null) return; 
       
           Alert.alert(
             'Return Processed',
@@ -301,7 +337,7 @@ const StaffScannerScreen = ({ navigation, route }) => {
             [{ text: 'OK', onPress: () => navigation.navigate('StaffTabs', { screen: 'Home' }) }]
           );
         } catch (error) {
-          if (error.message === 'This container has already been returned') return; // ✅ Prevent default error alert
+          if (error.message === 'This container has already been returned') return;
       
           console.error('Error processing return:', error);
           let errorMessage = 'Failed to process return. Please try again.';

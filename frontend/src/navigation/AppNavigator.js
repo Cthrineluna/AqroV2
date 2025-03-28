@@ -9,11 +9,13 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
+//Shared screens
+import SettingsScreen from '../screens/shared/SettingsScreen';
+import ProfileScreen from '../screens/shared/ProfileScreen';
+
 // Customer screens
 import CustomerTabNavigator from './CustomerTabNavigator';
 import ScannerScreen from '../screens/customer/ScannerScreen';
-import SettingsScreen from '../screens/shared/SettingsScreen';
-import ProfileScreen from '../screens/shared/ProfileScreen';
 import SideMenu from '../components/SideMenu';
 import ActivityListScreen from '../screens/customer/ActivityListScreen';
 

@@ -173,7 +173,7 @@ const processSections = () => {
         return {
           icon: 'cash-outline',
           color: '#FF9800',
-          title: 'Rebate Received',
+          title: 'Rebate Issued',
           background: '#fff3e0'
         };
       case 'status_change':
