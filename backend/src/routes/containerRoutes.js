@@ -73,4 +73,31 @@ router.post(
     containerController.generateContainer
 );
 
+// Get all containers (admin only)
+router.get(
+  '/all', 
+  protect, 
+  authorize('admin'), 
+  containerController.getAllContainers
+);
+
+
+// Add this route
+router.get('/users', protect, authorize('admin'), containerController.getUsers);
+
+router.post(
+  '/',
+  protect,
+  authorize('admin'),
+  containerController.createContainer
+);
+
+// Update container (admin only)
+router.put(
+  '/:id',
+  protect,
+  authorize('admin'),
+  containerController.updateContainer
+);
+
 module.exports = router;

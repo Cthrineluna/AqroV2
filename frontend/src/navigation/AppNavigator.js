@@ -26,6 +26,7 @@ import StaffScannerScreen from '../screens/staff/StaffScannerScreen';
 
 // Admin screens
 import AdminTabNavigator from './AdminTabNavigator';
+import ViewQRScreen from '../screens/admin/ViewQRScreen';
 
 
 
@@ -72,6 +73,7 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
           <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
+          <Stack.Screen name="ViewQr" component={ViewQRScreen} />
         </>
       )}
     </Stack.Navigator>

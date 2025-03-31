@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -9,20 +10,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Screens
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
-import StaffContainerList from '../screens/staff/StaffContainerList';
+import AdminContainerScreen from '../screens/admin/AdminContainerScreen';
 import StaffActivityListScreen from '../screens/staff/StaffActivityListScreen';
-import StaffScannerScreen from '../screens/staff/StaffScannerScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import SettingsScreen from '../screens/shared/SettingsScreen';
-
+import ViewQRScreen from '../screens/admin/ViewQRScreen';
 // Side Menu
 import SideMenu from '../components/SideMenu';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
 const EmptyScreen = () => <View style={{ flex: 1 }} />;
 
-const StaffTabNavigator = () => {
+
+const AdminTabNavigator = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -54,11 +56,9 @@ const StaffTabNavigator = () => {
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Users') {
-              iconName = focused ? 'logo-dropbox' : 'cube-outline';
+              iconName = focused ? 'people' : 'people-outline';
             } else if (route.name === 'Containers') {
               iconName = focused ? 'logo-dropbox' : 'cube-outline';
-            } else if (route.name === 'Scanner') {
-              iconName = focused ? 'qr-code' : 'qr-code-outline';
             } else if (route.name === 'Activities') {
               iconName = focused ? 'newspaper' : 'newspaper-outline';
             } else if (route.name === 'Menu') {
@@ -71,13 +71,10 @@ const StaffTabNavigator = () => {
       >
         <Tab.Screen name="Home" component={AdminHomeScreen} />
         <Tab.Screen name="Users" component={AdminUsersScreen} />
-        <Tab.Screen name="Containers" component={StaffContainerList} />
         <Tab.Screen 
-          name="Scanner" 
-          component={StaffScannerScreen} 
-          initialParams={{ action: 'rebate' }} 
+          name="Containers" 
+          component={AdminContainerScreen} 
         />
-
         <Tab.Screen name="Activities" component={StaffActivityListScreen} />
         <Tab.Screen 
           name="Menu" 
@@ -103,4 +100,4 @@ const StaffTabNavigator = () => {
   );
 };
 
-export default StaffTabNavigator;
+export default AdminTabNavigator;

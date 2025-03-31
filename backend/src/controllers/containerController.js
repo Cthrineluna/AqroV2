@@ -7,6 +7,125 @@ const QRCode = require('qrcode');
 const Restaurant = require('../models/Restaurant');
 const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
 
+
+// Create a new container (admin only)
+exports.createContainer = async (req, res) => {
+  try {
+    const { qrCode, containerTypeId } = req.body;
+
+    // Validate required fields
+    if (!qrCode || !containerTypeId) {
+      return res.status(400).json({ message: 'QR code and container type are required' });
+    }
+
+    // Verify QR code uniqueness again (defensive check)
+    const existing = await Container.findOne({ qrCode });
+    if (existing) {
+      return res.status(400).json({ 
+        message: 'QR code already in use',
+        existingContainerId: existing._id 
+      });
+    }
+
+    // Validate container type
+    const containerType = await ContainerType.findById(containerTypeId);
+    if (!containerType) {
+      return res.status(404).json({ message: 'Container type not found' });
+    }
+
+    // Create container
+    const container = new Container({
+      ...req.body,
+      status: req.body.status || 'available',
+      usesCount: req.body.usesCount || 0
+    });
+
+    await container.save();
+
+    res.status(201).json(container);
+
+  } catch (error) {
+    console.error('Container creation error:', error);
+    res.status(500).json({ 
+      message: 'Container creation failed',
+      error: error.message 
+    });
+  }
+};
+
+// Update an existing container (admin only)
+exports.updateContainer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { containerTypeId, restaurantId, status, customerId, usesCount } = req.body;
+
+    // Find container
+    const container = await Container.findById(id);
+    if (!container) {
+      return res.status(404).json({ message: 'Container not found' });
+    }
+
+    // Update fields
+    if (containerTypeId) {
+      const containerType = await ContainerType.findById(containerTypeId);
+      if (!containerType) {
+        return res.status(404).json({ message: 'Container type not found' });
+      }
+      container.containerTypeId = containerTypeId;
+    }
+
+    if (restaurantId !== undefined) {
+      container.restaurantId = restaurantId || null;
+    }
+
+    if (status) {
+      container.status = status;
+    }
+
+    if (customerId !== undefined) {
+      container.customerId = customerId || null;
+    }
+
+    if (usesCount !== undefined) {
+      container.usesCount = usesCount;
+    }
+
+    await container.save();
+
+    res.json(container);
+  } catch (error) {
+    console.error('Error updating container:', error);
+    res.status(500).json({ message: 'Server error', details: error.message });
+  }
+};
+
+// Get all containers (admin only)
+exports.getAllContainers = async (req, res) => {
+  try {
+    const containers = await Container.find()
+      .populate('containerTypeId')
+      .populate('customerId', 'firstName lastName email')
+      .populate('restaurantId', 'name')
+      .sort({ updatedAt: -1 });
+    
+    res.json(containers);
+  } catch (error) {
+    console.error('Error getting all containers:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Add this method
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await mongoose.model('User').find({}, 'firstName lastName email');
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Generate QR code image
 // Get container stats for a restaurant
 exports.getRestaurantContainerStats = async (req, res) => {
@@ -456,44 +575,50 @@ exports.generateContainer = async (req, res) => {
   try {
     const { containerTypeId, restaurantId } = req.body;
     
-    // Validate container type
+    // Validate container type exists
     const containerType = await ContainerType.findById(containerTypeId);
     if (!containerType) {
       return res.status(404).json({ message: 'Container type not found' });
     }
+
+    // Generate unique QR code with retry logic
+    let qrCode;
+    let attempts = 0;
+    const maxAttempts = 5;
     
-    // Validate restaurant if provided
-    if (restaurantId) {
-      const restaurant = await mongoose.model('Restaurant').findById(restaurantId);
-      if (!restaurant) {
-        return res.status(404).json({ message: 'Restaurant not found' });
+    while (attempts < maxAttempts) {
+      // More robust generation with timestamp and random components
+      const timestamp = Date.now().toString();
+      const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+      qrCode = `AQRO-${randomString}-${timestamp.slice(-6)}`;
+      
+      // Verify uniqueness
+      const exists = await Container.findOne({ qrCode }).lean();
+      if (!exists) break;
+      
+      attempts++;
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({ 
+          message: 'Failed to generate unique QR code after multiple attempts' 
+        });
       }
     }
-    
-    // Generate a unique QR code
-    const timestamp = Date.now().toString();
-    const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const qrCode = `AQRO-${randomString}-${timestamp.slice(-6)}`;
-    
-    // Create a new container (NO customerId assigned)
-    const container = new Container({
+
+    // Return the QR code details without creating container yet
+    res.status(200).json({
+      success: true,
       qrCode,
-      containerTypeId,
-      restaurantId: restaurantId || null,
-      status: 'available'  // Mark as 'available' for scanning later
+      qrCodeUrl: `/qr-codes/${qrCode}.png`,
+      timestamp: new Date()
     });
-    
-    await container.save();
-    
-    res.status(201).json({
-      container,
-      qrCode,
-      qrCodeUrl: `/api/containers/qrcode/${container._id}`
-    });
-    
+
   } catch (error) {
-    console.error('Error generating container:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('QR generation error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'QR generation failed',
+      error: error.message 
+    });
   }
 };
 

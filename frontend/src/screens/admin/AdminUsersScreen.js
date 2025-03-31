@@ -170,7 +170,10 @@ const AdminUsersScreen = ({ navigation }) => {
   // View User Containers
   const handleViewContainers = (userId) => {
     setActionModalVisible(false);
-    navigation.navigate('AdminContainerScreen', { userId });
+    navigation.navigate('Containers', {
+      userId: userId,  // Make sure this is the selected user's ID
+      userName: `${selectedUser.firstName} ${selectedUser.lastName}`
+    });
   };
 
   // Open modal for editing/creating user

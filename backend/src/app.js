@@ -5,9 +5,11 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const containerRoutes = require('./routes/containerRoutes');
+const containerTypeRoutes = require('./routes/containerTypeRoutes');
 const restaurantRoutes = require('./routes/restaurantRoutes');
 const rebateRoutes = require('./routes/rebateRoutes');
 const { userRoutes, adminUserRoutes } = require('./routes/userRoutes');
+
 // Load environment variables
 dotenv.config();
 
@@ -22,6 +24,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/users', userRoutes);
 app.use('/api/containers', containerRoutes);
+app.use('/api/container-types', containerTypeRoutes);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/api/restaurants', restaurantRoutes);
@@ -32,6 +35,8 @@ app.use('/api/containers/qrcode', cors({
 }));
 app.use('/api/rebates', rebateRoutes);
 app.use('/api/admin/users', adminUserRoutes);
+
+
 
 
 // Connect to MongoDB
