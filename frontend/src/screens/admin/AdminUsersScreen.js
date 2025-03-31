@@ -85,15 +85,22 @@ const AdminUsersScreen = ({ navigation }) => {
   
       if (selectedUser) {
         // Update existing user
+        const updateData = {
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+          userType: userData.userType,
+          profileImage: userData.profileImage
+        };
+        
+        // Only include password if it's provided (not empty)
+        if (userData.password && userData.password.trim() !== '') {
+          updateData.password = userData.password;
+        }
+        
         await axios.put(
           `${getApiUrl()}/admin/users/${selectedUser._id}`, 
-          {
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            email: userData.email,
-            userType: userData.userType,
-            profileImage: userData.profileImage
-          }, 
+          updateData, 
           { 
             headers: { 
               Authorization: `Bearer ${storedToken}`,
@@ -160,6 +167,12 @@ const AdminUsersScreen = ({ navigation }) => {
     );
   };
 
+  // View User Containers
+  const handleViewContainers = (userId) => {
+    setActionModalVisible(false);
+    navigation.navigate('AdminContainerScreen', { userId });
+  };
+
   // Open modal for editing/creating user
   const openUserModal = useCallback((user = null) => {
     setSelectedUser(user);
@@ -180,6 +193,38 @@ const AdminUsersScreen = ({ navigation }) => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Fade in/out animation for modals
+  const fadeIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const fadeOut = (callback) => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      if (callback) callback();
+    });
+  };
+
+  // Handle modal visibility with animation
+  useEffect(() => {
+    if (modalVisible || actionModalVisible) {
+      fadeIn();
+    }
+  }, [modalVisible, actionModalVisible]);
+
+  // Validate email format
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   // Render user item
   const renderUserItem = ({ item }) => (
@@ -253,6 +298,7 @@ const AdminUsersScreen = ({ navigation }) => {
       profileImage: selectedUser?.profilePicture || null
     });
     const [localError, setLocalError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const validateForm = () => {
       if (!localUser.firstName.trim()) {
@@ -267,21 +313,54 @@ const AdminUsersScreen = ({ navigation }) => {
         setLocalError('Email is required');
         return false;
       }
+      if (!isValidEmail(localUser.email)) {
+        setLocalError('Please enter a valid email address');
+        return false;
+      }
+      
+      // Password validation
+      // For new user, password is required
+      if (!selectedUser && (!localUser.password || localUser.password.trim() === '')) {
+        setLocalError('Password is required for new users');
+        return false;
+      }
+      
+      // If password is provided (either for new user or during edit), check length
+      if (localUser.password && localUser.password.trim() !== '' && localUser.password.length < 6) {
+        setLocalError('Password must be at least 6 characters');
+        return false;
+      }
+      
       return true;
     };
 
     return (
       <RNModal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => {
+          fadeOut(() => setModalVisible(false));
+        }}
       >
-        <View style={styles.modalOverlay}>
+        <Animated.View 
+          style={[
+            styles.modalOverlay,
+            { opacity: fadeAnim }
+          ]}
+        >
           <View style={[
             styles.modalContent, 
             { backgroundColor: theme?.background || '#FFFFFF' }
           ]}>
+            {/* Title */}
+            <SemiBoldText style={[
+              styles.modalTitle, 
+              { color: theme?.text || '#000000' }
+            ]}>
+              {selectedUser ? 'Edit User' : 'Create New User'}
+            </SemiBoldText>
+            
             {/* Profile Image Picker */}
             <TouchableOpacity 
               style={styles.profileImagePickerContainer}
@@ -372,26 +451,45 @@ const AdminUsersScreen = ({ navigation }) => {
               placeholderTextColor={theme?.textMuted || '#888888'}
             />
 
-            {!selectedUser && (
+            {/* Password field for both new and edit user */}
+            <View style={styles.passwordContainer}>
               <TextInput
                 style={[
-                  styles.input, 
+                  styles.passwordInput, 
                   { 
                     backgroundColor: theme?.input || '#F5F5F5', 
                     color: theme?.text || '#000000',
-                    borderColor: theme?.border || '#E0E0E0'
+                    borderColor: theme?.border || '#E0E0E0',
+                    fontSize:12
                   }
                 ]}
-                placeholder="Password"
+                placeholder={selectedUser ? "New Password (leave empty to keep current)" : "Password"}
                 value={localUser.password}
                 onChangeText={(text) => {
                   setLocalUser(prev => ({ ...prev, password: text }));
                   setLocalError('');
                 }}
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 placeholderTextColor={theme?.textMuted || '#888888'}
               />
-            )}
+              <TouchableOpacity 
+                style={styles.passwordVisibilityButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={24} 
+                  color={theme?.textMuted || '#888888'} 
+                />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Password hint */}
+            <RegularText style={[styles.passwordHint, { color: theme?.textMuted || '#888888' }]}>
+              {selectedUser ? 
+                "Password must be at least 6 characters (if changed)" : 
+                "Password must be at least 6 characters"}
+            </RegularText>
 
             {/* User Type Selection */}
             <View style={styles.userTypeRadioContainer}>
@@ -435,7 +533,9 @@ const AdminUsersScreen = ({ navigation }) => {
                   styles.cancelButton,
                   { borderColor: theme?.border || '#E0E0E0' }
                 ]}
-                onPress={() => setModalVisible(false)}
+                onPress={() => {
+                  fadeOut(() => setModalVisible(false));
+                }}
               >
                 <RegularText style={{ color: theme?.text || '#000000' }}>
                   Cancel
@@ -459,7 +559,7 @@ const AdminUsersScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </RNModal>
     );
   };
@@ -467,56 +567,81 @@ const AdminUsersScreen = ({ navigation }) => {
   // Action Modal
   const ActionModal = () => (
     <RNModal
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       visible={actionModalVisible}
-      onRequestClose={() => setActionModalVisible(false)}
+      onRequestClose={() => {
+        fadeOut(() => setActionModalVisible(false));
+      }}
     >
-      <TouchableOpacity 
-        style={styles.actionModalOverlay} 
-        activeOpacity={1} 
-        onPressOut={() => setActionModalVisible(false)}
+      <Animated.View 
+        style={[
+          styles.actionModalOverlay,
+          { opacity: fadeAnim }
+        ]} 
       >
-        <View style={[
-          styles.actionModalContent, 
-          { backgroundColor: theme?.card || '#FFFFFF' }
-        ]}>
+        <TouchableOpacity 
+          style={styles.actionModalOverlayTouch} 
+          activeOpacity={1} 
+          onPressOut={() => {
+            fadeOut(() => setActionModalVisible(false));
+          }}
+        >
+          <View style={[
+            styles.actionModalContent, 
+            { backgroundColor: theme?.card || '#FFFFFF' }
+          ]}>
+            <TouchableOpacity 
+              style={styles.actionModalButton}
+              onPress={() => {
+                handleViewContainers(selectedUser._id);
+              }}
+            >
+              <Ionicons 
+                name="cube-outline" 
+                size={24} 
+                color={theme?.primary || '#007BFF'} 
+              />
+              <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
+                View Containers
+              </RegularText>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionModalButton}
+              onPress={() => {
+                setActionModalVisible(false);
+                openUserModal(selectedUser);
+              }}
+            >
+              <Ionicons 
+                name="create-outline" 
+                size={24} 
+                color={theme?.text || '#000000'} 
+              />
+              <RegularText style={{ marginLeft: 10, color: theme?.text || '#000000' }}>
+                Edit User
+              </RegularText>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.actionModalButton}
-            onPress={() => {
-              setActionModalVisible(false);
-              openUserModal(selectedUser);
-            }}
-          >
-            <Ionicons 
-              name="create-outline" 
-              size={24} 
-              color={theme?.text || '#000000'} 
-            />
-            <RegularText style={{ marginLeft: 10 }}>
-              Edit User
-            </RegularText>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionModalButton}
-            onPress={() => {
-              setActionModalVisible(false);
-              handleDeleteUser(selectedUser._id);
-            }}
-          >
-            <Ionicons 
-              name="trash-outline" 
-              size={24} 
-              color="red" 
-            />
-            <RegularText style={{ marginLeft: 10, color: 'red' }}>
-              Delete User
-            </RegularText>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionModalButton}
+              onPress={() => {
+                setActionModalVisible(false);
+                handleDeleteUser(selectedUser._id);
+              }}
+            >
+              <Ionicons 
+                name="trash-outline" 
+                size={24} 
+                color="red" 
+              />
+              <RegularText style={{ marginLeft: 10, color: 'red' }}>
+                Delete User
+              </RegularText>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     </RNModal>
   );
 
@@ -550,7 +675,8 @@ const AdminUsersScreen = ({ navigation }) => {
           User Management
         </SemiBoldText>
         
-        <TouchableOpacity onPress={() => openUserModal()}>
+        <TouchableOpacity 
+        onPress={() => openUserModal()}>
           <Ionicons 
             name="add-circle-outline" 
             size={24} 
@@ -598,6 +724,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 2 : 10,
     height: Platform.OS === 'android' ? 76 : 56,
+    marginBottom: 12,
   },
   headerTitle: {
     fontSize: 20,
@@ -657,6 +784,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
   },
+  modalTitle: {
+    fontSize: 20,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
   profileImagePickerContainer: {
     alignSelf: 'center',
     marginBottom: 20,
@@ -679,6 +811,27 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+  },
+  passwordVisibilityButton: {
+    position: 'absolute',
+    right: 15,
+  },
+  passwordHint: {
+    fontSize: 12,
+    marginBottom: 15,
+    paddingHorizontal: 5,
   },
   errorContainer: {
     backgroundColor: '#ffebee',
@@ -732,8 +885,11 @@ const styles = StyleSheet.create({
   },
   actionModalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  actionModalOverlayTouch: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   actionModalContent: {
     borderTopLeftRadius: 20,
