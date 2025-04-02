@@ -51,76 +51,58 @@ const RegisterScreen = ({ navigation }) => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-  const handleRegister = async () => {
-    setError('');
+const handleRegister = async () => {
+  setError('');
+  
+  if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword) {
+    setError('All fields are required');
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    setError('Please enter a valid email address');
+    return;
+  }
+
+  if (password.length < 6) {
+    setError('Password must be at least 6 characters');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    setError('Passwords do not match');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const userData = { firstName, lastName, email, password, userType: 'customer' };
+
+    const response = await register(userData);
     
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword) {
-      setError('All fields are required');
-      return;
-    }
-  
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-  
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-  
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-  
-    setLoading(true);
-  
-    try {
-      const userData = { firstName, lastName, email, password, userType: 'customer' };
-  
-      const response = await register(userData);
+    if (response) {
+      console.log("User registered successfully:", response);
+      setSuccessMessage('Registration successful! Redirecting to verification...');
       
-      if (response) {
-        console.log("User registered successfully:", response);
-        
-        // If the token wasn't returned/saved in the register function,
-        // we can try to log in directly
-        if (!response.token) {
-          try {
-            await login(email, password);
-          } catch (loginErr) {
-            console.error('Auto-login after registration failed:', loginErr);
-            // Even if auto-login fails, we still consider registration successful
-          }
-        }
-        
-        // Refresh the auth state to reflect the logged-in user
-        await checkAuthState();
-        
-        // Navigate back to the previous screen and let auth context handle redirection
-        if (navigation.canGoBack()) {
-          navigation.goBack();
-          
-          // Then after a short delay, trigger the auth check again
-          setTimeout(() => {
-            checkAuthState();
-          }, 100);
-        } else {
-          // If we can't go back (rare case), just go to Login - the auth state refresh will handle the rest
-          navigation.replace('Login');
-        }
-      } else {
-        setError('Registration failed. Please try again.');
-        setLoading(false);
-      }
-    } catch (err) {
-      setLoading(false);
-      console.error('Registration error:', err);
-      setError(err.message || 'Registration failed. Please try again.');
+      // Refresh the auth state to reflect the new user
+      await checkAuthState();
+      
+      // Navigate to email verification screen after short delay
+      setTimeout(() => {
+        navigation.navigate('EmailVerification', { email });
+      }, 1500);
+    } else {
+      setError('Registration failed. Please try again.');
     }
-  };
+  } catch (err) {
+    console.error('Registration error:', err);
+    setError(err.message || 'Registration failed. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
       const setNavBarColor = async () => {

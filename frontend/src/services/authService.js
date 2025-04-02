@@ -19,7 +19,6 @@ const getApiUrl = () => {
 };
 
 // Register user
-// Update the register function in authService.js
 export const register = async (userData) => {
   try {
     const response = await axios.post(`${getApiUrl()}/register`, userData);
@@ -45,7 +44,6 @@ export const register = async (userData) => {
     }
   }
 };
-
 
 // Login user
 export const login = async (email, password) => {
@@ -85,6 +83,51 @@ export const login = async (email, password) => {
     } else {
       // Other errors
       throw { message: error.message || 'Login failed. Please try again.' };
+    }
+  }
+};
+
+// Verify email
+export const verifyEmail = async (email, token) => {
+  try {
+    const response = await axios.post(`${getApiUrl()}/verify-email`, { email, token });
+    
+    console.log('Email verification response:', response.data);
+    
+    if (response.data.token) {
+      await AsyncStorage.setItem('aqro_token', response.data.token);
+      await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data.user));
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Email verification error:', error);
+    
+    if (error.response) {
+      throw error.response.data || { message: `Server error: ${error.response.status}` };
+    } else if (error.request) {
+      throw { message: 'No response from server. Please check your connection.' };
+    } else {
+      throw { message: error.message || 'Email verification failed. Please try again.' };
+    }
+  }
+};
+
+// Resend verification email
+export const resendVerification = async (email) => {
+  try {
+    const response = await axios.post(`${getApiUrl()}/resend-verification`, { email });
+    console.log('Resend verification response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    
+    if (error.response) {
+      throw error.response.data || { message: `Server error: ${error.response.status}` };
+    } else if (error.request) {
+      throw { message: 'No response from server. Please check your connection.' };
+    } else {
+      throw { message: error.message || 'Failed to resend verification email. Please try again.' };
     }
   }
 };

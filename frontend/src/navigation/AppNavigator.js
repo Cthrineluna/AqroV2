@@ -8,6 +8,7 @@ import LandingScreen from '../screens/auth/LandingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
 
 //Shared screens
 import SettingsScreen from '../screens/shared/SettingsScreen';
@@ -33,7 +34,7 @@ import ViewQRScreen from '../screens/admin/ViewQRScreen';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
-  const { userToken, userType, isLoading } = useAuth();
+  const { userToken, userType, isLoading, isEmailVerified  } = useAuth();
 
   if (isLoading) {
     return (
@@ -51,7 +52,10 @@ const AppNavigator = () => {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
         </>
+         ) : !isEmailVerified ? (
+          <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
       ) : userType === 'customer' ? (
         <>
           <Stack.Screen name="CustomerTabs" component={CustomerTabNavigator} />

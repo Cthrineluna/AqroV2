@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   const [userToken, setUserToken] = useState(null);
   const [userType, setUserType] = useState(null);
   const [user, setUser] = useState(null);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   // Check authentication on mount
   useEffect(() => {
@@ -41,6 +42,7 @@ export const AuthProvider = ({ children }) => {
           const parsedUserData = JSON.parse(storedUserData);
           setUser(parsedUserData);
           setUserType(parsedUserData?.userType || 'customer');
+          setIsEmailVerified(parsedUserData?.isEmailVerified || false);
           setUserToken('token-exists');
         }
         
@@ -56,6 +58,7 @@ export const AuthProvider = ({ children }) => {
             // Update the user data with the fresh data from the server
             setUser(response.data);
             setUserType(response.data?.userType || 'customer');
+            setIsEmailVerified(response.data?.isEmailVerified || false);
             // Save the fresh data to AsyncStorage
             await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data));
           }
@@ -66,12 +69,14 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setUserType(null);
         setUserToken(null);
+        setIsEmailVerified(false);
       }
     } catch (e) {
       console.error('Auth check failed:', e);
       setUser(null);
       setUserType(null);
       setUserToken(null);
+      setIsEmailVerified(false);
     } finally {
       setIsLoading(false);
     }
@@ -80,9 +85,19 @@ export const AuthProvider = ({ children }) => {
   const updateUserInfo = async (userData) => {
     try {
       setUser(userData);
+      setIsEmailVerified(userData?.isEmailVerified || false);
       await AsyncStorage.setItem('aqro_user', JSON.stringify(userData));
     } catch (e) {
       console.error('Failed to update user info:', e);
+    }
+  };
+
+  // Update email verification status
+  const updateEmailVerification = (status) => {
+    setIsEmailVerified(status);
+    if (user) {
+      const updatedUser = { ...user, isEmailVerified: status };
+      updateUserInfo(updatedUser);
     }
   };
 
@@ -98,6 +113,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setUserType(null);
       setUserToken(null);
+      setIsEmailVerified(false);
     } catch (e) {
       console.error('Logout failed:', e);
     }
@@ -110,9 +126,11 @@ export const AuthProvider = ({ children }) => {
         userToken,
         userType,
         user,
+        isEmailVerified,
         checkAuthState,
         logout,
         updateUserInfo,
+        updateEmailVerification,
       }}
     >
       {children}
