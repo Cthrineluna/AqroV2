@@ -25,7 +25,7 @@ exports.sendVerificationEmail = async (user, verificationToken) => {
       subject: 'Verify Your Email Address',
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #00df82;">Welcome to Aqro!</h2>
+          <h2 style="color: #00df82;">Welcome to AQRO!</h2>
           <p>Hello ${user.firstName},</p>
           <p>Thank you for registering with AQRO! To complete your registration, please verify your email address.</p>
           <p>Your verification code is: <strong style="font-size: 18px;">${verificationToken}</strong></p>
@@ -34,8 +34,8 @@ exports.sendVerificationEmail = async (user, verificationToken) => {
           <div style="margin: 25px 0;">
             <a href="${verificationUrl}" style="background-color: #00df82; color: #030f0f; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">Verify Email</a>
           </div>
-          <p>If you didn't register for an Aqro account, please ignore this email.</p>
-          <p>Best regards,<br>The Aqro Team</p>
+          <p>If you didn't register for an AQRO account, please ignore this email.</p>
+          <p>Best regards,<br>The AQRO Team</p>
         </div>
       `
     };
@@ -61,7 +61,7 @@ exports.sendConfirmationEmail = async (user) => {
         <div style="font-family: Arial, sans-serif; color: #333;">
           <h2 style="color: #00df82;">Email Verified Successfully!</h2>
           <p>Hello ${user.firstName},</p>
-          <p>Your email address has been successfully verified. You can now enjoy all the features of the Aqro app.</p>
+          <p>Your email address has been successfully verified. You can now enjoy all the features of the AQRO app.</p>
           <p>Thank you for choosing AQRO!</p>
           <p>Best regards,<br>The AQRO Team</p>
         </div>
