@@ -50,7 +50,6 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
 
 const ContainerItem = ({ container, onPress }) => {
   const { theme } = useTheme();
-  // Use the maxUses from containerType instead of hardcoded 10
   const estimatedUsesLeft = container.containerTypeId.maxUses - container.usesCount; 
   const statusMessage = (() => {
     switch (container.status) {
@@ -138,7 +137,6 @@ const RebateSection = ({ container, theme }) => {
   const [restaurantRebates, setRestaurantRebates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Use useRef for the animation to ensure it's consistent across renders
   const animatedHeight = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -182,10 +180,10 @@ const RebateSection = ({ container, theme }) => {
     };
 
     fetchRestaurantRebates();
-  }, [container]); // Dependency array ensures it runs when container changes
+  }, [container]); 
 
   const toggleExpand = () => {
-    // Calculate the height based on content
+
     const dynamicHeight = isExpanded 
       ? 0 
       : Math.min(
@@ -193,18 +191,17 @@ const RebateSection = ({ container, theme }) => {
           250
         );
 
-    // Animate the height
+
     Animated.timing(animatedHeight, {
       toValue: dynamicHeight,
       duration: 300,
       useNativeDriver: false
     }).start(() => {
-      // Toggle expansion state after animation
       setIsExpanded(!isExpanded);
     });
   };
 
-  // Only render the section if there are rebates or it's loading
+
   if (isLoading && restaurantRebates.length === 0) {
     return (
       <View style={[styles.detailRow, { flexDirection: 'column' }]}>
@@ -410,7 +407,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
           
           <View style={styles.detailRow}>
             <RegularText style={styles.detailLabel}>Container Code:</RegularText>
-            <RegularText style={{ color: theme.text, fontSize: 14 }}>{container.qrCode}</RegularText>
+            <RegularText style={{ color: theme.text, fontSize: 12 }}>{container.qrCode}</RegularText>
           </View>
 
           <RebateSection container={container} theme={theme} />
@@ -522,7 +519,7 @@ const ContainersList = ({ navigation }) => {
       
       if (response.data) {
         setContainers(response.data);
-        applyFilter(activeFilter, response.data);  // Apply filter after setting containers
+        applyFilter(activeFilter, response.data); 
       }
     } catch (error) {
       console.error('Error fetching containers:', error);
@@ -539,24 +536,23 @@ const ContainersList = ({ navigation }) => {
   
   const handleSearch = (query) => {
     if (!query.trim()) {
-      // If search is empty, return to normal filtered containers
+
       applyFilter(activeFilter);
       return;
     }
     
-    // Search in the containers that match the current filter
+
     const filtered = activeFilter === 'all' 
       ? containers 
       : containers.filter(item => item.status === activeFilter);
-    
-    // Search by container type name, QR code, customer name, or restaurant name
+
     const results = filtered.filter(container => {
       const containerTypeName = container.containerTypeId.name.toLowerCase();
       const qrCode = container.qrCode.toLowerCase();
       const customerName = container.customerId 
         ? `${container.customerId.firstName} ${container.customerId.lastName}`.toLowerCase() 
         : '';
-      // Add restaurant name search
+
       const restaurantName = container.restaurantId 
         ? container.restaurantId.name.toLowerCase() 
         : '';
@@ -571,10 +567,9 @@ const ContainersList = ({ navigation }) => {
     
     setFilteredContainers(results);
   };
-  // Add this function to handle filtering
+
   const applyFilter = (filter, containerList = containers) => {
     if (searchQuery.trim()) {
-      // If there's an active search, re-run the search with the new filter
       handleSearch(searchQuery);
       return;
     }
@@ -587,13 +582,13 @@ const ContainersList = ({ navigation }) => {
     }
   };
   
-  // Add this function to handle filter change
+
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
     applyFilter(filter);
   };
   
-  // Add this effect to update filtered containers when containers change
+
   useEffect(() => {
     applyFilter(activeFilter);
   }, [containers, activeFilter]);
@@ -998,7 +993,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    paddingVertical: 6, // Reduced from 8
+    paddingVertical: 6, 
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
@@ -1010,7 +1005,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.02)', // Light background to distinguish the section
+    backgroundColor: 'rgba(0,0,0,0.02)',
   },
   rebateSectionHeader: {
     flexDirection: 'row',

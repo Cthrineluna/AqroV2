@@ -50,7 +50,6 @@ const ActivityItem = ({ activity }) => {
   const { theme } = useTheme();
 
   const getActivityInfo = () => {
-    // Get restaurant name if available
     const restaurantName = activity.restaurantId?.name || activity.location || 'Unknown';
     
     switch (activity.type) {

@@ -53,6 +53,148 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   );
 };
 
+const RebateSection = ({ container, theme }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [restaurantRebates, setRestaurantRebates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const animatedHeight = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const fetchRestaurantRebates = async () => {
+      if (!container || !container.containerTypeId) {
+        console.error('Container or Container Type is missing');
+        setIsLoading(false);
+        return;
+      }
+    
+      try {
+        const token = await AsyncStorage.getItem('aqro_token');
+        if (!token) {
+          console.error('No auth token found');
+          setIsLoading(false);
+          return;
+        }
+    
+        const containerTypeId = container.containerTypeId._id || container.containerTypeId;
+    
+        const response = await axios.get(
+          `${getApiUrl('/containers/rebate-mappings-by-container-type')}/${containerTypeId}`, 
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+    
+        if (response.data && response.data.length > 0) {
+          const rebatesWithNames = response.data.map(mapping => ({
+            restaurantName: mapping.restaurantId.name,
+            rebateValue: mapping.rebateValue
+          }));
+    
+          setRestaurantRebates(rebatesWithNames);
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant rebates:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRestaurantRebates();
+  }, [container]); 
+
+  const toggleExpand = () => {
+    const dynamicHeight = isExpanded 
+      ? 0 
+      : Math.min(
+          (restaurantRebates.length || 1) * 50, 
+          250
+        );
+
+    Animated.timing(animatedHeight, {
+      toValue: dynamicHeight,
+      duration: 300,
+      useNativeDriver: false
+    }).start(() => {
+      setIsExpanded(!isExpanded);
+    });
+  };
+
+  if (isLoading && restaurantRebates.length === 0) {
+    return (
+      <View style={[styles.detailRow, { flexDirection: 'column' }]}>
+        <RegularText style={[styles.detailLabel, { opacity: 0.7 }]}>
+          Restaurant Rebates
+        </RegularText>
+        <RegularText style={[styles.detailLabel, { width: '100%', textAlign: 'center' }]}>
+          Loading rebates...
+        </RegularText>
+      </View>
+    );
+  }
+
+  if (restaurantRebates.length === 0) {
+    return null;
+  }
+
+  return (
+    <View style={[styles.detailRow, { 
+      flexDirection: 'column', 
+      borderBottomWidth: 0, 
+      paddingVertical: 0,
+    }]}>
+      <TouchableOpacity 
+        style={[
+          styles.detailRow, 
+          { 
+            width: '100%', 
+            paddingVertical: 6,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: 'rgba(0,0,0,0.05)'
+          }
+        ]}
+        onPress={toggleExpand}
+      >
+        <RegularText style={[styles.detailLabel, { opacity: 0.7 }]}>
+          Restaurant Rebates
+        </RegularText>
+        <Ionicons 
+          name={isExpanded ? "chevron-up" : "chevron-down"} 
+          size={20} 
+          color={theme.text} 
+        />
+      </TouchableOpacity>
+  
+      <Animated.View 
+        style={{
+          height: animatedHeight, 
+          overflow: 'hidden',
+          width: '100%'
+        }}
+      >
+        {restaurantRebates.map((rebate, index) => (
+          <View 
+            key={index} 
+            style={[
+              styles.detailRow,
+              { 
+                paddingVertical: 8,
+                borderBottomWidth: index < restaurantRebates.length - 1 
+                  ? StyleSheet.hairlineWidth 
+                  : 0,
+                borderBottomColor: 'rgba(0,0,0,0.05)'
+              }
+            ]}
+          >
+            <RegularText style={{ opacity: 0.7 }}>{rebate.restaurantName}</RegularText>
+            <RegularText style={{ color: theme.text }}>₱{rebate.rebateValue.toFixed(2)}</RegularText>
+          </View>
+        ))}
+      </Animated.View>
+    </View>
+  );
+};
+
 const ContainerItem = ({ container, onPress }) => {
   const { theme } = useTheme();
   const estimatedUsesLeft = container.containerTypeId.maxUses - container.usesCount; 
@@ -160,6 +302,10 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   
   if (!container) return null;
+
+  const createdAt = container.createdAt 
+    ? new Date(container.createdAt).toLocaleDateString() 
+    : 'N/A';
   
   const registrationDate = container.registrationDate 
     ? new Date(container.registrationDate).toLocaleDateString() 
@@ -314,15 +460,15 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
         
         <View style={styles.detailRow}>
           <RegularText style={styles.detailLabel}>Container Code:</RegularText>
-          <RegularText style={{ color: theme.text, fontSize: 14 }}>{container.qrCode}</RegularText>
+          <RegularText style={{ color: theme.text, fontSize: 12 }}>{container.qrCode}</RegularText>
         </View>
-        
+
         <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Rebate Value:</RegularText>
-          <RegularText style={{ color: theme.text }}>
-            ₱{container.rebateValue ? container.rebateValue.toFixed(2) : container.containerTypeId.rebateValue.toFixed(2)}
-          </RegularText>
+          <RegularText style={styles.detailLabel}>Date Created:</RegularText>
+          <RegularText style={{ color: theme.text }}>{createdAt}</RegularText>
         </View>
+
+        <RebateSection container={container} theme={theme} />
         
         <View style={styles.detailRow}>
           <RegularText style={styles.detailLabel}>Restaurant:</RegularText>
@@ -360,6 +506,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
             <RegularText style={{ color: theme.text }}>{estimatedUsesLeft}</RegularText>
           </View>
         )}
+
 
         <View style={styles.actionButtonsContainer}>
             <TouchableOpacity 

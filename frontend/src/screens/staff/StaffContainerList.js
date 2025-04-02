@@ -286,7 +286,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         
         <View style={styles.detailRow}>
           <RegularText style={styles.detailLabel}>Container Code:</RegularText>
-          <RegularText style={{ color: theme.text, fontSize: 14 }}>{container.qrCode}</RegularText>
+          <RegularText style={{ color: theme.text, fontSize: 12 }}>{container.qrCode}</RegularText>
         </View>
         
         <View style={styles.detailRow}>
