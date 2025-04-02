@@ -3,7 +3,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
-// Auth screens
 import LandingScreen from '../screens/auth/LandingScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -34,7 +33,7 @@ import ViewQRScreen from '../screens/admin/ViewQRScreen';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
-  const { userToken, userType, isLoading, isEmailVerified  } = useAuth();
+  const { userToken, userType, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -54,8 +53,9 @@ const AppNavigator = () => {
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
         </>
-         ) : !isEmailVerified ? (
-          <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
+      ) : !user?.isEmailVerified ? (
+        // If user is logged in but email is not verified, show verification screen
+        <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
       ) : userType === 'customer' ? (
         <>
           <Stack.Screen name="CustomerTabs" component={CustomerTabNavigator} />

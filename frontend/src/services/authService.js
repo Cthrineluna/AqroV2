@@ -19,6 +19,7 @@ const getApiUrl = () => {
 };
 
 // Register user
+// Update the register function in authService.js
 export const register = async (userData) => {
   try {
     const response = await axios.post(`${getApiUrl()}/register`, userData);
@@ -45,7 +46,9 @@ export const register = async (userData) => {
   }
 };
 
+
 // Login user
+// authService.js - login function
 export const login = async (email, password) => {
   try {
     console.log('Attempting login with:', { email, password: '****' });
@@ -54,80 +57,35 @@ export const login = async (email, password) => {
     console.log('Login response:', response.status, response.data);
     
     if (response.data.token) {
+      // Create userData object from response
+      const userData = {
+        id: response.data.user.id,
+        email: response.data.user.email,
+        firstName: response.data.user.firstName,
+        lastName: response.data.user.lastName,
+        userType: response.data.user.userType,
+        isEmailVerified: response.data.user.isEmailVerified || false
+      };
+      
       await AsyncStorage.setItem('aqro_token', response.data.token);
-      await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data.user));
+      await AsyncStorage.setItem('aqro_user', JSON.stringify(userData));
+      
+      return {
+        token: response.data.token,
+        user: userData
+      };
     } else {
       console.warn('Login successful but no token received');
       throw { message: 'Authentication error: No token received' };
     }
-    
-    return response.data;
   } catch (error) {
     console.error('Login error details:', error);
-    
-    if (error.response) {
-      // Server responded with error
-      const errorMessage = error.response.data?.message || 
-                          `Server error: ${error.response.status}`;
-      
-      if (error.response.status === 401) {
-        throw { message: 'Invalid email or password' };
-      } else if (error.response.status === 404) {
-        throw { message: 'User not found' };
-      } else {
-        throw { message: errorMessage };
-      }
-    } else if (error.request) {
-      // No response received
-      throw { message: 'Server not responding. Please check your connection.' };
-    } else {
-      // Other errors
-      throw { message: error.message || 'Login failed. Please try again.' };
-    }
-  }
-};
-
-// Verify email
-export const verifyEmail = async (email, token) => {
-  try {
-    const response = await axios.post(`${getApiUrl()}/verify-email`, { email, token });
-    
-    console.log('Email verification response:', response.data);
-    
-    if (response.data.token) {
-      await AsyncStorage.setItem('aqro_token', response.data.token);
-      await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data.user));
-    }
-    
-    return response.data;
-  } catch (error) {
-    console.error('Email verification error:', error);
-    
     if (error.response) {
       throw error.response.data || { message: `Server error: ${error.response.status}` };
     } else if (error.request) {
       throw { message: 'No response from server. Please check your connection.' };
     } else {
-      throw { message: error.message || 'Email verification failed. Please try again.' };
-    }
-  }
-};
-
-// Resend verification email
-export const resendVerification = async (email) => {
-  try {
-    const response = await axios.post(`${getApiUrl()}/resend-verification`, { email });
-    console.log('Resend verification response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Resend verification error:', error);
-    
-    if (error.response) {
-      throw error.response.data || { message: `Server error: ${error.response.status}` };
-    } else if (error.request) {
-      throw { message: 'No response from server. Please check your connection.' };
-    } else {
-      throw { message: error.message || 'Failed to resend verification email. Please try again.' };
+      throw { message: error.message || 'An unexpected error occurred' };
     }
   }
 };
@@ -163,5 +121,39 @@ export const isAuthenticated = async () => {
   } catch (error) {
     console.error('Error checking authentication:', error);
     return false;
+  }
+};
+
+// Verify email
+export const verifyEmail = async (email, token) => {
+  try {
+    const response = await axios.post(`${getApiUrl()}/verify-email`, { email, token });
+    return response.data;
+  } catch (error) {
+    console.error('Email verification error:', error);
+    if (error.response) {
+      throw error.response.data || { message: `Server error: ${error.response.status}` };
+    } else if (error.request) {
+      throw { message: 'No response from server. Please check your connection.' };
+    } else {
+      throw { message: error.message || 'An unexpected error occurred' };
+    }
+  }
+};
+
+// Resend verification email
+export const resendVerification = async (email) => {
+  try {
+    const response = await axios.post(`${getApiUrl()}/resend-verification`, { email });
+    return response.data;
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    if (error.response) {
+      throw error.response.data || { message: `Server error: ${error.response.status}` };
+    } else if (error.request) {
+      throw { message: 'No response from server. Please check your connection.' };
+    } else {
+      throw { message: error.message || 'An unexpected error occurred' };
+    }
   }
 };

@@ -21,83 +21,73 @@ export const AuthProvider = ({ children }) => {
   const [userToken, setUserToken] = useState(null);
   const [userType, setUserType] = useState(null);
   const [user, setUser] = useState(null);
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   // Check authentication on mount
   useEffect(() => {
     // clearStorageOnStart();
     checkAuthState();
   }, []);
-
-  // Function to check and update authentication state
-  const checkAuthState = async () => {
-    setIsLoading(true);
+  const updateEmailVerification = async (isVerified) => {
     try {
-      const authenticated = await isAuthenticated();
-      
-      if (authenticated) {
-        // First, try to get the user from AsyncStorage for immediate UI update
-        const storedUserData = await AsyncStorage.getItem('aqro_user');
-        if (storedUserData) {
-          const parsedUserData = JSON.parse(storedUserData);
-          setUser(parsedUserData);
-          setUserType(parsedUserData?.userType || 'customer');
-          setIsEmailVerified(parsedUserData?.isEmailVerified || false);
-          setUserToken('token-exists');
-        }
-        
-        // Then, fetch fresh data from the server including the profile picture
-        try {
-          const token = await AsyncStorage.getItem('aqro_token');
-          const response = await axios.get(
-            `${getApiUrl('/users/profile')}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          
-          if (response.data) {
-            // Update the user data with the fresh data from the server
-            setUser(response.data);
-            setUserType(response.data?.userType || 'customer');
-            setIsEmailVerified(response.data?.isEmailVerified || false);
-            // Save the fresh data to AsyncStorage
-            await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data));
-          }
-        } catch (error) {
-          console.error('Error fetching fresh user data:', error);
-        }
-      } else {
-        setUser(null);
-        setUserType(null);
-        setUserToken(null);
-        setIsEmailVerified(false);
+      if (user) {
+        const updatedUser = { ...user, isEmailVerified: isVerified };
+        setUser(updatedUser);
+        await AsyncStorage.setItem('aqro_user', JSON.stringify(updatedUser));
       }
     } catch (e) {
-      console.error('Auth check failed:', e);
+      console.error('Failed to update email verification status:', e);
+    }
+  };
+  // Function to check and update authentication state
+
+const checkAuthState = async () => {
+  setIsLoading(true);
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    const storedUser = await AsyncStorage.getItem('aqro_user');
+    
+    if (token && storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      
+      // Optionally verify token with backend
+      try {
+        const response = await axios.get(`${getApiUrl('/users/profile')}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Update with fresh user data
+        setUser(response.data);
+        setUserType(response.data.userType);
+        setUserToken(token);
+      } catch (error) {
+        // Fall back to stored data if fresh fetch fails
+        console.log('Using stored user data due to fetch error:', error);
+        setUser(parsedUser);
+        setUserType(parsedUser.userType);
+        setUserToken(token);
+      }
+    } else {
+      // No token or user data found
       setUser(null);
       setUserType(null);
       setUserToken(null);
-      setIsEmailVerified(false);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (e) {
+    console.error('Auth check failed:', e);
+    setUser(null);
+    setUserType(null);
+    setUserToken(null);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const updateUserInfo = async (userData) => {
     try {
       setUser(userData);
-      setIsEmailVerified(userData?.isEmailVerified || false);
       await AsyncStorage.setItem('aqro_user', JSON.stringify(userData));
     } catch (e) {
       console.error('Failed to update user info:', e);
-    }
-  };
-
-  // Update email verification status
-  const updateEmailVerification = (status) => {
-    setIsEmailVerified(status);
-    if (user) {
-      const updatedUser = { ...user, isEmailVerified: status };
-      updateUserInfo(updatedUser);
     }
   };
 
@@ -113,7 +103,6 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setUserType(null);
       setUserToken(null);
-      setIsEmailVerified(false);
     } catch (e) {
       console.error('Logout failed:', e);
     }
@@ -126,7 +115,6 @@ export const AuthProvider = ({ children }) => {
         userToken,
         userType,
         user,
-        isEmailVerified,
         checkAuthState,
         logout,
         updateUserInfo,

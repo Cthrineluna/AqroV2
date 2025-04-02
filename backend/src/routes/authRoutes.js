@@ -1,25 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const authMiddleware = require('../middleware/authMiddleware');
 
-// Auth routes
+// Register new user
 router.post('/register', authController.register);
+
+// Login user
 router.post('/login', authController.login);
+
+// Verify email
 router.post('/verify-email', authController.verifyEmail);
+
+// Resend verification email
 router.post('/resend-verification', authController.resendVerification);
 
-// Route to check auth status (protected)
-router.get('/check', authMiddleware.protect, (req, res) => {
-  res.status(200).json({ 
-    message: 'Authenticated',
-    user: {
-      id: req.user.id,
-      email: req.user.email,
-      userType: req.user.userType,
-      isEmailVerified: req.user.isEmailVerified
-    }
-  });
-});
+
 
 module.exports = router;

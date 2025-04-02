@@ -82,16 +82,24 @@ const EmailVerificationScreen = ({ navigation, route }) => {
       await checkAuthState();
       
       // Navigate to the appropriate screen after successful verification
-      setTimeout(() => {
-        navigation.navigate('Login');
-      }, 1500);
+
     } catch (err) {
       setError(err.message || 'Failed to verify email. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
-
+  const handleBackPress = () => {
+    // If user is logged in but not verified, prevent going back to protected screens
+    if (user) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'EmailVerification' }],
+      });
+    } else {
+      navigation.goBack();
+    }
+  };
   const handleResendCode = async () => {
     setError('');
     setMessage('');
@@ -119,9 +127,9 @@ const EmailVerificationScreen = ({ navigation, route }) => {
       
       {/* Header with back button */}
       <View style={[styles.header, {backgroundColor: theme.background}]}>
-        <TouchableOpacity
+      <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={handleBackPress} 
         >
           <Ionicons name="chevron-back-outline" size={24} color={theme.text} />
         </TouchableOpacity>
@@ -163,7 +171,11 @@ const EmailVerificationScreen = ({ navigation, route }) => {
             <TextInput
               style={[styles.input, {color: theme.text, borderColor: theme.border}]}
               value={verificationCode}
-              onChangeText={setVerificationCode}
+              onChangeText={(text) => {
+                if (/^\d*$/.test(text)) { 
+                  setVerificationCode(text);
+                }
+              }}
               placeholder="Enter 6-digit code"
               placeholderTextColor="#9e9e9e"
               keyboardType="number-pad"
@@ -182,7 +194,6 @@ const EmailVerificationScreen = ({ navigation, route }) => {
               )}
             </TouchableOpacity>
             
-            // Completing EmailVerificationScreen.js from where it was cut off
             <View style={styles.resendContainer}>
               <TouchableOpacity 
                 style={[

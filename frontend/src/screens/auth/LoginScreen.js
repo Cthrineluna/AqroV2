@@ -42,48 +42,49 @@ const LoginScreen = ({ navigation }) => {
     setShowPassword(!showPassword);
   };
 
-  const handleLogin = async () => {
-    // Clear previous errors
-    setError('');
+ // LoginScreen.js
+const handleLogin = async () => {
+  setError('');
+  
+  if (!email.trim() || !password) {
+    setError('Please enter both email and password');
+    return;
+  }
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    setError('Please enter a valid email address');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const response = await login(email, password);
+    console.log('Login successful, user data:', response.user);
     
-    // Basic validation
-    if (!email.trim() || !password) {
-      setError('Please enter both email and password');
+    // Check if email is verified - now properly checking the response
+    if (response.user && !response.user.isEmailVerified) {
+      navigation.navigate('EmailVerification', { email: response.user.email });
       return;
     }
     
-    // Simple email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return;
+    // Only refresh auth state if login was successful and email is verified
+    await checkAuthState();
+  } catch (err) {
+    console.error('Login error details:', err);
+    
+    if (err.message) {
+      setError(err.message);
+    } else if (typeof err === 'string') {
+      setError(err);
+    } else {
+      setError('Login failed. Please check your credentials and try again.');
     }
-
-    setLoading(true);
-
-    try {
-      const response = await login(email, password);
-      console.log('Login response:', response);
-      
-      // Only refresh auth state if login was successful
-      await checkAuthState();
-      // Navigate to home screen after successful login
-      // navigation.navigate('Home');
-    } catch (err) {
-      console.error('Login error details:', err);
-      
-      // Make sure to set a meaningful error message
-      if (err.message) {
-        setError(err.message);
-      } else if (typeof err === 'string') {
-        setError(err);
-      } else {
-        setError('Login failed. Please check your credentials and try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const clearLoginFields = () => {
     setEmail('');
