@@ -111,7 +111,7 @@ exports.resendVerification = async (req, res) => {
     }
     
     // Generate verification token
-    const verificationToken = crypto.randomBytes(3).toString('hex');
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     user.verificationToken = verificationToken;
     user.verificationTokenExpires = Date.now() + 3600000; // 1 hour
     
