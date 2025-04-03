@@ -11,6 +11,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { 
   BoldText, 
+  SemiBoldText,
   RegularText, 
   ThemedView, 
   PrimaryButton, 
@@ -100,6 +101,14 @@ const LandingScreen = ({ navigation }) => {
         
         {/* Bottom Info */}
         <View style={styles.infoContainer}>
+
+        <View style={styles.partnerContainer}>
+                <RegularText style={styles.signupText}>Want to be an AQRO Partner? </RegularText>
+                <TouchableOpacity onPress={() => navigation.navigate('RetailRegister')}>
+                  <SemiBoldText style={styles.signupLinkText}>Sign-Up!</SemiBoldText>
+                </TouchableOpacity>
+          </View>
+
           <RegularText style={styles.infoText}>
             Join thousands of users making a difference with AQRO reusable containers
           </RegularText>
@@ -167,6 +176,20 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     textAlign: 'center',
   },
+  partnerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  signupText: {
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  signupLinkText: {
+    fontSize: 14,
+    color: '#00df82',
+  }
 });
 
 export default LandingScreen;

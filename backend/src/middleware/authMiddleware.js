@@ -61,3 +61,24 @@ exports.staffOnly = (req, res, next) => {
     res.status(403).json({ message: 'Access denied: Staff only' });
   }
 };
+
+exports.checkApproved = (req, res, next) => {
+  if (req.user.userType === 'staff' && !req.user.isApproved) {
+    return res.status(403).json({
+      success: false,
+      message: 'Your staff account is pending admin approval'
+    });
+  }
+  next();
+};
+
+// Email verification check middleware
+exports.checkVerified = (req, res, next) => {
+  if (!req.user.isEmailVerified) {
+    return res.status(403).json({
+      success: false,
+      message: 'Please verify your email first'
+    });
+  }
+  next();
+};

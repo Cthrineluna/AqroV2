@@ -200,3 +200,87 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+exports.getPendingStaff = async (req, res) => {
+  try {
+    const pendingStaff = await User.find({ 
+      userType: 'staff',
+      isActive: false,
+      isEmailVerified: true 
+    }).populate('restaurantId');
+    
+    res.json(pendingStaff);
+  } catch (error) {
+    console.error('Error fetching pending staff:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.approveStaff = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { comments } = req.body;
+
+    // Activate user and their restaurant
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { 
+        isActive: true,
+        approvalComments: comments || null 
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Activate the restaurant and set createdBy
+    await Restaurant.findByIdAndUpdate(user.restaurantId, {
+      isActive: true,
+      createdBy: userId
+    });
+
+    // Send approval email
+    await emailService.sendApprovalEmail(user);
+
+    res.json({ 
+      message: 'Staff member approved successfully',
+      user 
+    });
+  } catch (error) {
+    console.error('Error approving staff:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.rejectStaff = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { 
+        rejectionReason: reason,
+        isActive: false
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Send rejection email
+    await emailService.sendRejectionEmail(user, reason);
+
+    res.json({ 
+      message: 'Staff registration rejected',
+      user 
+    });
+  } catch (error) {
+    console.error('Error rejecting staff:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

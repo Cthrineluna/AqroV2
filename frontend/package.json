@@ -28,6 +28,7 @@
     "expo-constants": "~17.0.8",
     "expo-dev-client": "~5.0.13",
     "expo-device": "~7.0.2",
+    "expo-document-picker": "^13.0.3",
     "expo-font": "~13.0.4",
     "expo-image-manipulator": "^13.0.6",
     "expo-image-picker": "^16.0.6",

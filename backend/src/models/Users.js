@@ -52,7 +52,17 @@ const userSchema = new mongoose.Schema({
   verificationTokenExpires: {
     type: Date,
     default: null
-  }
+  },
+  isApproved: {
+    type: Boolean,
+    default: false
+  },
+  approvalRequestedAt: Date,
+  approvedAt: Date,
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
 }, {
   timestamps: true
 });

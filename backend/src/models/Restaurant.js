@@ -16,19 +16,13 @@ const restaurantSchema = new mongoose.Schema({
       required: true
     },
     coordinates: {
-      lat: {
-        type: Number,
-        default: null
-      },
-      lng: {
-        type: Number,
-        default: null
-      }
+      lat: Number,
+      lng: Number
     }
   },
   description: {
     type: String,
-    required: true
+    default: '' 
   },
   contactNumber: {
     type: String,
@@ -38,14 +32,25 @@ const restaurantSchema = new mongoose.Schema({
     type: String,
     default: 'default-restaurant.png'
   },
+  businessLicense: {
+    fileData: Buffer,
+    fileName: String,
+    mimeType: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
   isActive: {
     type: Boolean,
-    default: true
+    default: false
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true
 });
 
-const Restaurant = mongoose.model('Restaurant', restaurantSchema);
-
-module.exports = Restaurant;
+module.exports = mongoose.model('Restaurant', restaurantSchema);

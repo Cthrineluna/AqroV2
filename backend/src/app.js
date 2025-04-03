@@ -36,9 +36,6 @@ app.use('/api/containers/qrcode', cors({
 app.use('/api/rebates', rebateRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 
-
-
-
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/aqro')
   .then(() => console.log('MongoDB connected'))
@@ -46,9 +43,11 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/aqro')
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
+const approvalRoutes = require('./routes/approvalRoutes');
 
 // Use routes
 app.use('/api/auth', authRoutes);
+app.use('/api', approvalRoutes); // Add approval routes with /api prefix
 
 // Default route
 app.get('/', (req, res) => {

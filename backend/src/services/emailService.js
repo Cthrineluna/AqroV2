@@ -76,3 +76,59 @@ exports.sendConfirmationEmail = async (user) => {
     throw new Error('Failed to send confirmation email');
   }
 };
+
+// Send approval notification to staff
+exports.sendApprovalNotification = async (user) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || '"AQRO App" <noreply@aqro.app>',
+      to: user.email,
+      subject: 'Your AQRO Account Has Been Approved!',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #00df82;">Account Approved!</h2>
+          <p>Hello ${user.firstName},</p>
+          <p>Congratulations! Your AQRO account has been approved and is now active.</p>
+          <p>You can now log in to the app and start using all the features available to staff members.</p>
+          <p>Thank you for joining AQRO!</p>
+          <p>Best regards,<br>The AQRO Team</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Approval notification email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending approval notification email:', error);
+    throw new Error('Failed to send approval notification email');
+  }
+};
+
+// Send rejection email to staff
+exports.sendRejectionEmail = async (user, reason) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || '"AQRO App" <noreply@aqro.app>',
+      to: user.email,
+      subject: 'Update on Your AQRO Account Application',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #00df82;">Account Application Status</h2>
+          <p>Hello ${user.firstName},</p>
+          <p>Thank you for your interest in AQRO. We have reviewed your application and are unable to approve your account at this time.</p>
+          ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+          <p>If you have any questions or would like to provide additional information for reconsideration, please contact our support team.</p>
+          <p>Best regards,<br>The AQRO Team</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Rejection email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending rejection email:', error);
+    throw new Error('Failed to send rejection email');
+  }
+};

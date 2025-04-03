@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on mount
   useEffect(() => {
-  // clearStorageOnStart();
+    //clearStorageOnStart();
     checkAuthState();
   }, []);
   const updateEmailVerification = async (isVerified) => {

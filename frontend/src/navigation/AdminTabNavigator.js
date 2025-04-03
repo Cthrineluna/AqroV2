@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Screens
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
+import AdminApprovalScreen from '../screens/admin/AdminApprovalScreen';
 import AdminContainerScreen from '../screens/admin/AdminContainerScreen';
 import StaffActivityListScreen from '../screens/staff/StaffActivityListScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
@@ -59,7 +60,7 @@ const AdminTabNavigator = () => {
               iconName = focused ? 'people' : 'people-outline';
             } else if (route.name === 'Containers') {
               iconName = focused ? 'logo-dropbox' : 'cube-outline';
-            } else if (route.name === 'Activities') {
+            } else if (route.name === 'Approvals') {
               iconName = focused ? 'newspaper' : 'newspaper-outline';
             } else if (route.name === 'Menu') {
               iconName = focused ? 'menu' : 'menu-outline';
@@ -75,7 +76,7 @@ const AdminTabNavigator = () => {
           name="Containers" 
           component={AdminContainerScreen} 
         />
-        <Tab.Screen name="Activities" component={StaffActivityListScreen} />
+        <Tab.Screen name="AdminApproval" component={AdminApprovalScreen} />
         <Tab.Screen 
           name="Menu" 
           component={EmptyScreen} 
