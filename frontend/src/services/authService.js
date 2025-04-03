@@ -19,19 +19,14 @@ const getApiUrl = () => {
 };
 
 // Register user
-// Update the register function in authService.js
 export const register = async (userData) => {
   try {
     const response = await axios.post(`${getApiUrl()}/register`, userData);
     
     console.log('Registration successful:', response.data);
 
-    // Store the token and user data if they are returned from registration
-    if (response.data.token) {
-      await AsyncStorage.setItem('aqro_token', response.data.token);
-      await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data.user));
-    }
-
+    // Note: We don't store token anymore since we're not getting one
+    // We just return the data
     return response.data;
   } catch (error) {
     console.error('Registration error:', error);
@@ -81,6 +76,14 @@ export const login = async (email, password) => {
   } catch (error) {
     console.error('Login error details:', error);
     if (error.response) {
+      // Special handling for verification error
+      if (error.response.data && error.response.data.needsVerification) {
+        throw { 
+          message: error.response.data.message || 'Please verify your email before logging in.',
+          needsVerification: true,
+          email: error.response.data.email
+        };
+      }
       throw error.response.data || { message: `Server error: ${error.response.status}` };
     } else if (error.request) {
       throw { message: 'No response from server. Please check your connection.' };
@@ -128,6 +131,17 @@ export const isAuthenticated = async () => {
 export const verifyEmail = async (email, token) => {
   try {
     const response = await axios.post(`${getApiUrl()}/verify-email`, { email, token });
+    
+    // If verification successful and we got a token, store it
+    if (response.data.token) {
+      await AsyncStorage.setItem('aqro_token', response.data.token);
+      
+      // If we got user data, store it too
+      if (response.data.user) {
+        await AsyncStorage.setItem('aqro_user', JSON.stringify(response.data.user));
+      }
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Email verification error:', error);

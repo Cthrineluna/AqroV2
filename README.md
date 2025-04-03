@@ -65,6 +65,14 @@ aQRo is a mobile application supporting reusable food and beverage containers to
    MONGODB_URI=mongodb://your_mongodb_host/your_db_name
    JWT_SECRET=your_jwt_secret_key
    NODE_ENV=development
+
+   # Email Configuration for Gmail
+   EMAIL_HOST=smtp.gmail.com
+   EMAIL_PORT=587
+   EMAIL_USER=your.email@gmail.com
+   EMAIL_PASS=your_app_password
+   EMAIL_FROM="AQRO App <your.email@gmail.com>"
+   FRONTEND_URL=exp://your-expo-app-url
    ```
 
 2. Configure app.json in the frontend directory as needed for your Expo app

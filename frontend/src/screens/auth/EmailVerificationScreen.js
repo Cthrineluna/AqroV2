@@ -69,20 +69,18 @@ const EmailVerificationScreen = ({ navigation, route }) => {
       setError('Please enter verification code');
       return;
     }
-
+  
     setIsLoading(true);
-
+  
     try {
       const response = await verifyEmail(userEmail, verificationCode);
       
       setMessage('Email verified successfully!');
       updateEmailVerification(true);
       
-      // Refresh auth state to reflect verified status
+      // Refresh auth state to reflect verified status and new token
       await checkAuthState();
       
-      // Navigate to the appropriate screen after successful verification
-
     } catch (err) {
       setError(err.message || 'Failed to verify email. Please try again.');
     } finally {
@@ -129,7 +127,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
       <View style={[styles.header, {backgroundColor: theme.background}]}>
       <TouchableOpacity
           style={styles.backButton}
-          onPress={handleBackPress} 
+          onPress={() => navigation.navigate('Landing')}
         >
           <Ionicons name="chevron-back-outline" size={24} color={theme.text} />
         </TouchableOpacity>

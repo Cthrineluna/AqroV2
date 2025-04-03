@@ -55,7 +55,11 @@ const AppNavigator = () => {
         </>
       ) : !user?.isEmailVerified ? (
         // If user is logged in but email is not verified, show verification screen
+        <>
+        <Stack.Screen name="Landing" component={LandingScreen} />
         <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
+        </>
+        
       ) : userType === 'customer' ? (
         <>
           <Stack.Screen name="CustomerTabs" component={CustomerTabNavigator} />

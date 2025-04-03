@@ -43,7 +43,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
  // LoginScreen.js
-const handleLogin = async () => {
+ const handleLogin = async () => {
   setError('');
   
   if (!email.trim() || !password) {
@@ -63,7 +63,7 @@ const handleLogin = async () => {
     const response = await login(email, password);
     console.log('Login successful, user data:', response.user);
     
-    // Check if email is verified - now properly checking the response
+    // Check if email is verified
     if (response.user && !response.user.isEmailVerified) {
       navigation.navigate('EmailVerification', { email: response.user.email });
       return;
@@ -73,6 +73,13 @@ const handleLogin = async () => {
     await checkAuthState();
   } catch (err) {
     console.error('Login error details:', err);
+    
+    // Handle verification error specifically
+    if (err.needsVerification) {
+      // Navigate to verification screen with the email
+      navigation.navigate('EmailVerification', { email: err.email });
+      return;
+    }
     
     if (err.message) {
       setError(err.message);

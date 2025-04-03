@@ -46,12 +46,9 @@ exports.register = async (req, res) => {
     // Send verification email
     await emailService.sendVerificationEmail(user, verificationToken);
 
-    // Generate token
-    const token = generateToken(user);
-
-    // Return user info and token
+    // Don't generate token yet, just return user info
     res.status(201).json({
-      token,
+      message: 'Registration successful! Please verify your email to continue.',
       user: {
         id: user._id,
         email: user.email,
@@ -92,7 +89,21 @@ exports.verifyEmail = async (req, res) => {
     // Send confirmation email
     await emailService.sendConfirmationEmail(user);
     
-    return res.status(200).json({ message: 'Email verified successfully' });
+    // Generate and return token upon successful verification
+    const authToken = generateToken(user);
+    
+    return res.status(200).json({ 
+      message: 'Email verified successfully',
+      token: authToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userType: user.userType,
+        isEmailVerified: true
+      }
+    });
   } catch (error) {
     console.error('Email verification error:', error);
     return res.status(500).json({ message: 'Server error during verification' });
@@ -142,6 +153,15 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: 'Account is disabled. Please contact support.' });
     }
 
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({ 
+        message: 'Email not verified. Please verify your email before logging in.',
+        needsVerification: true,
+        email: user.email
+      });
+    }
+
     // Check if password matches
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
@@ -151,7 +171,7 @@ exports.login = async (req, res) => {
     // Generate token
     const token = generateToken(user);
 
-    // Return user info and token - MAKE SURE TO INCLUDE isEmailVerified
+    // Return user info and token
     res.json({
       token,
       user: {
@@ -160,7 +180,7 @@ exports.login = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         userType: user.userType,
-        isEmailVerified: user.isEmailVerified // THIS IS CRUCIAL
+        isEmailVerified: user.isEmailVerified
       }
     });
   } catch (error) {

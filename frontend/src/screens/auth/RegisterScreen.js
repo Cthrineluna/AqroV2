@@ -51,58 +51,57 @@ const RegisterScreen = ({ navigation }) => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
-const handleRegister = async () => {
-  setError('');
-  
-  if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword) {
-    setError('All fields are required');
-    return;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    setError('Please enter a valid email address');
-    return;
-  }
-
-  if (password.length < 6) {
-    setError('Password must be at least 6 characters');
-    return;
-  }
-
-  if (password !== confirmPassword) {
-    setError('Passwords do not match');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const userData = { firstName, lastName, email, password, userType: 'customer' };
-
-    const response = await register(userData);
+  const handleRegister = async () => {
+    setError('');
     
-    if (response) {
-      console.log("User registered successfully:", response);
-      setSuccessMessage('Registration successful! Redirecting to verification...');
-      
-      // Refresh the auth state to reflect the new user
-      await checkAuthState();
-      
-      // Navigate to email verification screen after short delay
-      setTimeout(() => {
-        navigation.navigate('EmailVerification', { email });
-      }, 1500);
-    } else {
-      setError('Registration failed. Please try again.');
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword) {
+      setError('All fields are required');
+      return;
     }
-  } catch (err) {
-    console.error('Registration error:', err);
-    setError(err.message || 'Registration failed. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+  
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+  
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+  
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+  
+    setLoading(true);
+  
+    try {
+      const userData = { firstName, lastName, email, password, userType: 'customer' };
+  
+      const response = await register(userData);
+      
+      if (response) {
+        console.log("User registered successfully:", response);
+        setSuccessMessage('Registration successful! Redirecting to verification...');
+        
+        // No need to refresh auth state since user is not logged in yet
+        
+        // Navigate to email verification screen after short delay
+        setTimeout(() => {
+          navigation.navigate('EmailVerification', { email });
+        }, 1500);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
       const setNavBarColor = async () => {
