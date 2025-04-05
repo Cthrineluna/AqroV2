@@ -16,6 +16,7 @@ import {
   Share,
   StatusBar,
   Text,
+  Dimensions,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { approveStaff, getPendingStaff, getStaffDocuments } from '../../services/approvalService';
@@ -32,6 +33,8 @@ import {
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { StorageAccessFramework } from 'expo-file-system';
+import ImageViewer from 'react-native-image-zoom-viewer';
+
 
 const AdminApprovalScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
@@ -278,16 +281,27 @@ const AdminApprovalScreen = ({ navigation }) => {
               </MediumText>
             </View>
           ) : documentData ? (
-            <ScrollView style={styles.documentContainer}>
+            <ScrollView style={styles.documentContainer}
+            contentContainerStyle={{ flexGrow: 1 }} >
               {documentData.mimeType && documentData.mimeType.startsWith('image/') ? (
-                <View style={styles.imageDocumentContainer}>
-                  <Image
-                    source={{ uri: `data:${documentData.mimeType};base64,${documentData.fileData}` }}
-                    style={styles.documentImage}
-                    resizeMode="contain"
-                  />
+                 <View style={styles.imageZoomContainer}>
+                 <ImageViewer
+                   imageUrls={[{
+                     url: `data:${documentData.mimeType};base64,${documentData.fileData}`,
+                     props: {
+                     }
+                   }]}
+                   enableImageZoom={true}
+                   enableSwipeDown={true}
+                   onSwipeDown={() => setDocumentModalVisible(false)}
+                   swipeDownThreshold={50}
+                   backgroundColor={theme.background}
+                   renderIndicator={() => null} // Hide the default indicator
+                   saveToLocalByLongPress={false}
+                   style={styles.imageViewer}
+                 />
                   <PrimaryButton 
-                    style={{ marginTop: 16 }}
+                    style={{ marginTop: 12, marginBottom: 12 }}
                     onPress={() => handleDownloadDocument(documentData)}
                   >
                     Download Image
@@ -660,14 +674,23 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: Platform.select({
+      ios: 16,
+      android: 8,
+    }),
   },
   modalContent: {
-    width: '90%',
-    maxHeight: '80%',
     borderRadius: 12,
-    overflow: 'hidden',
-    padding: 0,
+    padding: 16,
+    maxHeight: Platform.select({
+      ios: '80%',
+      android: '90%', // Slightly taller on Android
+    }),
+    width: '100%',
+    marginHorizontal: Platform.select({
+      android: 8, // Add some margin on Android
+    }),
   },
   modalHeader: {
     flexDirection: 'row',
@@ -678,7 +701,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   documentContainer: {
-    padding: 16,
+    padding: 8,
+    maxHeight: Platform.select({
+      ios: 500,
+      android: Dimensions.get('window').height * 0.6, // Responsive height based on screen
+    }),
   },
   documentLoadingContainer: {
     padding: 32,
@@ -687,13 +714,44 @@ const styles = StyleSheet.create({
   },
   documentImage: {
     width: '100%',
-    height: 500,
+    height: Platform.select({
+      ios: 500,
+      android: Dimensions.get('window').height * 0.5, // Responsive height
+    }),
     backgroundColor: '#f0f0f0',
+    borderRadius: 8,
   },
   pdfContainer: {
-    padding: 24,
+    padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: Platform.select({
+      android: 200,
+      ios: 150,
+    }),
+  },
+  imageZoomContainer: {
+    flex: 1,
+    width: '100%',
+    height: Platform.select({
+      ios: 500,
+      android: Dimensions.get('window').height * 0.6,
+    }),
+  },
+  imageViewer: {
+    flex: 1,
+  },
+  closeZoomButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 999,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
