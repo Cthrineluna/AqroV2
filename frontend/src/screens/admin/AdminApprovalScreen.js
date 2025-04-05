@@ -34,7 +34,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { StorageAccessFramework } from 'expo-file-system';
 import ImageViewer from 'react-native-image-zoom-viewer';
-
+import { Animated } from 'react-native';
 
 const AdminApprovalScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
@@ -50,6 +50,19 @@ const AdminApprovalScreen = ({ navigation }) => {
   const [documentOptions, setDocumentOptions] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [documentProcessing, setDocumentProcessing] = useState(false);
+  const helpButtonOpacity = new Animated.Value(1);
+  const [debouncedHelpVisible, setDebouncedHelpVisible] = useState(true);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedHelpVisible(selectedStaffIds.length === 0);
+  }, 0); 
+
+  return () => clearTimeout(timer); // Cleanup
+}, [selectedStaffIds.length]);
+
+  
+
 
   const fetchPendingStaff = async () => {
     try {
@@ -253,6 +266,15 @@ const AdminApprovalScreen = ({ navigation }) => {
       setDocumentProcessing(false);
     }
   };
+  const handleToggleSelectAll = () => {
+    if (selectedStaffIds.length === pendingStaff.length) {
+      // Deselect all
+      setSelectedStaffIds([]);
+    } else {
+      // Select all
+      setSelectedStaffIds(pendingStaff.map(staff => staff._id));
+    }
+  };
   
   // Now let's update the renderDocumentModal function
   const renderDocumentModal = () => (
@@ -360,7 +382,17 @@ const AdminApprovalScreen = ({ navigation }) => {
     >
       <ThemedView style={[
         styles.card,
-        selectedStaffIds.includes(item._id) && { borderColor: theme.primary, borderWidth: 2 }
+        { 
+          backgroundColor: selectedStaffIds.includes(item._id) 
+            ? theme.card || '#e3f2fd'  
+            : theme.card || '#ffffff',
+            borderColor: theme?.border || '#E0E0E0' 
+                   
+        },
+        selectedStaffIds.includes(item._id) && { 
+          borderColor: theme.primary, 
+          borderWidth: 2 
+        }
       ]}>
         <View style={styles.infoContainer}>
           <SemiBoldText style={styles.name}>
@@ -381,7 +413,7 @@ const AdminApprovalScreen = ({ navigation }) => {
           <Ionicons 
             name={selectedStaffIds.includes(item._id) ? "checkmark-circle" : "ellipse"} 
             size={24} 
-            color={selectedStaffIds.includes(item._id) ? theme.primary : theme.secondaryText} 
+            color={selectedStaffIds.includes(item._id) ? theme.primary : theme.background} 
           />
         </View>
       </ThemedView>
@@ -419,15 +451,30 @@ const AdminApprovalScreen = ({ navigation }) => {
                   styles.headerTitle, 
                   { color: theme?.text || '#000000' }
                 ]}>
-                  Retailer Approvals
+                 Approvals
                 </SemiBoldText>
-          <RegularText>{selectedStaffIds.length} selected</RegularText>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <RegularText style={{ marginRight: 10 }}>
+                {selectedStaffIds.length} selected
+              </RegularText>
+              {pendingStaff.length > 0 && (
+                <TouchableOpacity 
+                  onPress={handleToggleSelectAll}
+                  style={{ padding: 5 }}
+                >
+                  <MediumText style={{ color: theme.primary }}>
+                    {selectedStaffIds.length === pendingStaff.length ? 'Deselect All' : 'Select All'}
+                  </MediumText>
+                </TouchableOpacity>
+              )}
+            </View>
         </View>
         
         <FlatList
           data={pendingStaff}
           renderItem={renderItem}
           keyExtractor={(item) => item._id}
+          
           ListEmptyComponent={
             <ThemedView style={styles.emptyContainer}>
               <Ionicons name="checkmark-done-circle" size={64} color={theme.primary} />
@@ -474,13 +521,14 @@ const AdminApprovalScreen = ({ navigation }) => {
             </View>
           </View>
         )}
-        
+        {debouncedHelpVisible && (
         <TouchableOpacity 
           style={[styles.helpButton, { backgroundColor: theme.primary }]}
           onPress={() => Alert.alert('Help', 'Tap a staff card to select for approval/rejection. Hold a card to view their documents. You can select multiple staff members to approve or reject in batch.')}
         >
           <Ionicons name="help" size={24} color="white" />
         </TouchableOpacity>
+)}
 
         {/* Document Modal - No WebView */}
         {renderDocumentModal()}
@@ -514,7 +562,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
+    borderWidth: 1,
+    borderRadius: 10,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -579,6 +628,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 80,
   },
   helpButton: {
     position: 'absolute',
@@ -753,6 +804,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Add to your StyleSheet
+selectAllText: {
+  fontSize: 14,
+},
 });
 
 export default AdminApprovalScreen;
