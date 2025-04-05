@@ -9,7 +9,8 @@ import {
   Animated,
   ScrollView,
   Text,
-  Platform
+  Platform,
+  StatusBar
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -107,7 +108,7 @@ const PendingApprovalScreen = () => {
           >
             <View style={styles.iconContainer}>
               <View style={[styles.iconCircle, { backgroundColor: theme.primary }]}>
-                <Ionicons name="time-outline" size={25} color="white" />
+                <Ionicons name="time-outline" size={35} color="white" />
               </View>
             </View>
             
@@ -134,7 +135,7 @@ const PendingApprovalScreen = () => {
               </View>
               
               <MediumText style={styles.message}>
-                You'll receive an email notification once your account has been approved.
+                You'll receive an email notification once your account has been approved or rejected.
                 Until then, you won't be able to access any staff features.
               </MediumText>
             </ThemedView>
@@ -151,17 +152,17 @@ const PendingApprovalScreen = () => {
             {expanded && (
               <ThemedView style={styles.faqContainer}>
                 <View style={styles.faqItem}>
-                  <SemiBoldText style={styles.faqQuestion}>How long does approval take?</SemiBoldText>
+                  <SemiBoldText style={[styles.faqQuestion, {color: theme.primary}]}>How long does approval take?</SemiBoldText>
                   <RegularText style={styles.faqAnswer}>Typically 24-48 hours during business days.</RegularText>
                 </View>
                 
                 <View style={styles.faqItem}>
-                  <SemiBoldText style={styles.faqQuestion}>What if my approval is taking longer?</SemiBoldText>
+                  <SemiBoldText style={[styles.faqQuestion, {color: theme.primary}]}>What if my approval is taking longer?</SemiBoldText>
                   <RegularText style={styles.faqAnswer}>Contact support if it's been more than 48 hours.</RegularText>
                 </View>
                 
                 <View style={styles.faqItem}>
-                  <SemiBoldText style={styles.faqQuestion}>Can I expedite the process?</SemiBoldText>
+                  <SemiBoldText style={[styles.faqQuestion, {color: theme.primary}]}>Can I expedite the process?</SemiBoldText>
                   <RegularText style={styles.faqAnswer}>For urgent approvals, please contact our email.</RegularText>
                 </View>
               </ThemedView>

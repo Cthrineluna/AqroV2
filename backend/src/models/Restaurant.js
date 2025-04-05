@@ -1,3 +1,4 @@
+// models/Restaurant.js
 const mongoose = require('mongoose');
 
 const restaurantSchema = new mongoose.Schema({
@@ -32,7 +33,16 @@ const restaurantSchema = new mongoose.Schema({
     type: String,
     default: 'default-restaurant.png'
   },
-  businessLicense: {
+  businessPermit: {  // Changed from businessLicense
+    fileData: Buffer,
+    fileName: String,
+    mimeType: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  birRegistration: {  // New field
     fileData: Buffer,
     fileName: String,
     mimeType: String,

@@ -47,6 +47,7 @@ const approvalRoutes = require('./routes/approvalRoutes');
 
 // Use routes
 app.use('/api/auth', authRoutes);
+app.use('/api/approval', approvalRoutes);
 app.use('/api', approvalRoutes); // Add approval routes with /api prefix
 
 // Default route

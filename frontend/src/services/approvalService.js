@@ -2,6 +2,7 @@ import axios from 'axios';
 import { getApiUrl } from './apiConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
 /**
  * Staff Approval Service
  * Handles all staff approval-related API calls
@@ -52,101 +53,134 @@ export const rejectStaff = async (staffId, reason) => {
   }
 };
 
+// In approvalService.js
+// Add this to your approvalService.js
+export const getStaffDocuments = async (staffId, documentType, reason) => {
+ 
+  const url = `${getApiUrl()}/approval/admin/staff-documents/${staffId}/${documentType}`;
+  console.log("Requesting document URL:", url);
+  try {
+    const token = await AsyncStorage.getItem('aqro_token'); 
+    const response = await axios.get(url, {
+       reason ,
+       headers: { Authorization: `Bearer ${token}` } 
+    });
+    
+    console.log(`Document fetched successfully: ${documentType}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching ${documentType}:`, error);
+    console.log('Response data:', error.response?.data);
+    console.log('Response status:', error.response?.status);
+    
+    // Return more specific error messages based on status codes
+    if (error.response?.status === 404) {
+      throw new Error(`Document not found: The ${documentType} document has not been uploaded or is missing.`);
+    } else if (error.response?.status === 401 || error.response?.status === 403) {
+      throw new Error('Authentication error: You may not have permission to view this document.');
+    } else {
+      throw new Error(error.response?.data?.message || `Could not fetch ${documentType}: ${error.message}`);
+    }
+  }
+};
 // Staff registration with restaurant details
 export const registerStaff = async (staffData) => {
-    try {
-      const formData = new FormData();
-      
-      // Append all text fields
-      const textFields = [
-        'firstName', 'lastName', 'email', 'password',
-        'restaurantName', 'address', 'city', 'contactNumber'
-      ];
-      
-      textFields.forEach(field => {
-        if (staffData[field]) {
-          formData.append(field, staffData[field]);
-        }
-      });
-  
-      // Append business license file with proper structure
-      if (staffData.businessLicense) {
-        // Get file extension from URI or use default
-        const uriParts = staffData.businessLicense.uri.split('.');
-        const fileExtension = uriParts[uriParts.length - 1] || 'pdf';
-        
-        // Determine MIME type based on extension or use provided type
-        let fileType = staffData.businessLicense.mimeType || staffData.businessLicense.type;
-        if (!fileType) {
-          if (['pdf'].includes(fileExtension.toLowerCase())) {
-            fileType = 'application/pdf';
-          } else if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
-            fileType = 'image/jpeg';
-          } else if (['png'].includes(fileExtension.toLowerCase())) {
-            fileType = 'image/png';
-          } else {
-            fileType = 'application/octet-stream';
-          }
-        }
-        
-        formData.append('businessLicense', {
-          uri: staffData.businessLicense.uri,
-          name: staffData.businessLicense.name || `business_license.${fileExtension}`,
-          type: fileType
-        });
-        
-        // Log file details for debugging
-        console.log('Business License Details:', {
-          uri: staffData.businessLicense.uri,
-          name: staffData.businessLicense.name || `business_license.${fileExtension}`,
-          type: fileType
-        });
+  try {
+    const formData = new FormData();
+    
+    // Append all text fields
+    const textFields = [
+      'firstName', 'lastName', 'email', 'password',
+      'restaurantName', 'address', 'city', 'contactNumber'
+    ];
+    
+    textFields.forEach(field => {
+      if (staffData[field]) {
+        formData.append(field, staffData[field]);
       }
-  
-      // Append restaurant logo with proper structure
-      if (staffData.restaurantLogo) {
-        // Get file extension from URI or use default
-        const uriParts = staffData.restaurantLogo.uri.split('.');
-        const fileExtension = uriParts[uriParts.length - 1] || 'jpg';
-        
-        // Determine MIME type based on extension or use provided type
-        let fileType = staffData.restaurantLogo.mimeType || staffData.restaurantLogo.type;
-        if (!fileType) {
-          if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
-            fileType = 'image/jpeg';
-          } else if (['png'].includes(fileExtension.toLowerCase())) {
-            fileType = 'image/png';
-          } else {
-            fileType = 'image/jpeg'; // Default for images
-          }
+    });
+
+    // Append business permit file
+    if (staffData.businessPermit) {
+      const uriParts = staffData.businessPermit.uri.split('.');
+      const fileExtension = uriParts[uriParts.length - 1] || 'pdf';
+      
+      let fileType = staffData.businessPermit.mimeType || staffData.businessPermit.type;
+      if (!fileType) {
+        if (['pdf'].includes(fileExtension.toLowerCase())) {
+          fileType = 'application/pdf';
+        } else if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
+          fileType = 'image/jpeg';
+        } else if (['png'].includes(fileExtension.toLowerCase())) {
+          fileType = 'image/png';
+        } else {
+          fileType = 'application/octet-stream';
         }
-        
-        formData.append('restaurantLogo', {
-          uri: staffData.restaurantLogo.uri,
-          name: staffData.restaurantLogo.name || `restaurant_logo.${fileExtension}`,
-          type: fileType
-        });
-        
-        // Log file details for debugging
-        console.log('Restaurant Logo Details:', {
-          uri: staffData.restaurantLogo.uri,
-          name: staffData.restaurantLogo.name || `restaurant_logo.${fileExtension}`,
-          type: fileType
-        });
       }
-  
-      // Log the entire form data for debugging
-      console.log('Sending registration data with form fields:', 
-        Object.fromEntries(textFields.map(field => [field, staffData[field]])));
-  
-      const response = await axios.post(`${getApiUrl()}/auth/register-staff`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json'
-        },
-        transformRequest: (data) => data, // Don't transform the FormData
-        timeout: 15000 // Increased timeout for file uploads
+      
+      formData.append('businessPermit', {
+        uri: staffData.businessPermit.uri,
+        name: staffData.businessPermit.name || `business_permit.${fileExtension}`,
+        type: fileType
       });
+    }
+
+    // Append BIR registration file
+    if (staffData.birRegistration) {
+      const uriParts = staffData.birRegistration.uri.split('.');
+      const fileExtension = uriParts[uriParts.length - 1] || 'pdf';
+      
+      let fileType = staffData.birRegistration.mimeType || staffData.birRegistration.type;
+      if (!fileType) {
+        if (['pdf'].includes(fileExtension.toLowerCase())) {
+          fileType = 'application/pdf';
+        } else if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
+          fileType = 'image/jpeg';
+        } else if (['png'].includes(fileExtension.toLowerCase())) {
+          fileType = 'image/png';
+        } else {
+          fileType = 'application/octet-stream';
+        }
+      }
+      
+      formData.append('birRegistration', {
+        uri: staffData.birRegistration.uri,
+        name: staffData.birRegistration.name || `bir_registration.${fileExtension}`,
+        type: fileType
+      });
+    }
+
+    // Append restaurant logo if exists
+    if (staffData.restaurantLogo) {
+      const uriParts = staffData.restaurantLogo.uri.split('.');
+      const fileExtension = uriParts[uriParts.length - 1] || 'jpg';
+      
+      let fileType = staffData.restaurantLogo.mimeType || staffData.restaurantLogo.type;
+      if (!fileType) {
+        if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
+          fileType = 'image/jpeg';
+        } else if (['png'].includes(fileExtension.toLowerCase())) {
+          fileType = 'image/png';
+        } else {
+          fileType = 'image/jpeg';
+        }
+      }
+      
+      formData.append('restaurantLogo', {
+        uri: staffData.restaurantLogo.uri,
+        name: staffData.restaurantLogo.name || `restaurant_logo.${fileExtension}`,
+        type: fileType
+      });
+    }
+
+    const response = await axios.post(`${getApiUrl()}/auth/register-staff`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json'
+      },
+      transformRequest: (data) => data,
+      timeout: 15000
+    });
       
       return response.data;
     } catch (error) {

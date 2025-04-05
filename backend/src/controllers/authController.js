@@ -238,8 +238,8 @@ exports.registerStaff = async (req, res, next) => {
 
   try {
     // Validate required files
-    if (!req.files || !req.files.businessLicense) {
-      return res.status(400).json({ message: 'Business license is required' });
+    if (!req.files || !req.files.businessPermit || !req.files.birRegistration) {
+      return res.status(400).json({ message: 'Both business permit and BIR registration are required' });
     }
 
     // Destructure required fields
@@ -267,7 +267,8 @@ exports.registerStaff = async (req, res, next) => {
     }
 
     // Process uploaded files
-    const businessLicense = req.files.businessLicense[0];
+    const businessPermit = req.files.businessPermit[0];
+    const birRegistration = req.files.birRegistration[0];
     const restaurantLogo = req.files.restaurantLogo?.[0];
 
     // Create new restaurant (initially inactive)
@@ -280,10 +281,15 @@ exports.registerStaff = async (req, res, next) => {
       description: description || '', 
       contactNumber,
       logo: restaurantLogo ? restaurantLogo.buffer : 'default-restaurant.png',
-      businessLicense: {
-        fileData: businessLicense.buffer,
-        fileName: businessLicense.originalname,
-        mimeType: businessLicense.mimetype
+      businessPermit: {
+        fileData: businessPermit.buffer,
+        fileName: businessPermit.originalname,
+        mimeType: businessPermit.mimetype
+      },
+      birRegistration: {
+        fileData: birRegistration.buffer,
+        fileName: birRegistration.originalname,
+        mimeType: birRegistration.mimetype
       },
       isActive: false
     });

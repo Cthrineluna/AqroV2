@@ -39,16 +39,41 @@ const RetailerRegisterScreen = ({ navigation }) => {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [contactNumber, setContactNumber] = useState('');
-  const [businessLicense, setBusinessLicense] = useState(null);
+  const [businessPermit, setbusinessPermit] = useState(null);
   const [restaurantLogo, setRestaurantLogo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { theme, isDark } = useTheme();
+  const [birRegistration, setBirRegistration] = useState(null);
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
 // Update the pickDocument function
+const pickBirDocument = async () => {
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['application/pdf', 'image/*'],
+      copyToCacheDirectory: true
+    });
+    
+    if (!result.canceled) {
+      const fileAsset = result.assets[0];
+      const fileSizeInMB = fileAsset.size / (1024 * 1024);
+      if (fileSizeInMB > 5) {
+        setError('BIR registration file size must be less than 5MB');
+        return;
+      }
+      
+      setBirRegistration(fileAsset);
+      setError('');
+    }
+  } catch (err) {
+    console.error('Error picking BIR document:', err);
+    setError('Failed to select BIR document: ' + (err.message || 'Unknown error'));
+  }
+};
+
 const pickDocument = async () => {
   try {
     const result = await DocumentPicker.getDocumentAsync({
@@ -58,16 +83,16 @@ const pickDocument = async () => {
     
     if (!result.canceled) {
       const fileAsset = result.assets[0];
-      console.log('Selected business license:', fileAsset);
+      console.log('Selected business permit:', fileAsset);
       
       // Add file size validation
       const fileSizeInMB = fileAsset.size / (1024 * 1024);
       if (fileSizeInMB > 5) { // 5MB limit
-        setError('Business license file size must be less than 5MB');
+        setError('Business permit file size must be less than 5MB');
         return;
       }
       
-      setBusinessLicense(fileAsset);
+      setbusinessPermit(fileAsset);
       setError(''); // Clear any previous errors
     }
   } catch (err) {
@@ -79,12 +104,18 @@ const pickDocument = async () => {
 // Update the pickImage function
 const pickImage = async () => {
   try {
+    // Request permission first (optional but recommended)
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      setError('Permission to access media library is required!');
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Updated this line
       allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8, // Slightly reduced quality for better upload performance
-      allowsMultipleSelection: false
+      aspect: [4, 4],
+      quality: 0.8,
     });
 
     if (!result.canceled) {
@@ -93,13 +124,13 @@ const pickImage = async () => {
       
       // Add file size validation
       const fileSizeInMB = imageAsset.fileSize / (1024 * 1024);
-      if (fileSizeInMB > 2) { // 2MB limit
+      if (fileSizeInMB > 2) {
         setError('Restaurant logo image size must be less than 2MB');
         return;
       }
       
       setRestaurantLogo(imageAsset);
-      setError(''); // Clear any previous errors
+      setError('');
     }
   } catch (err) {
     console.error('Error picking image:', err);
@@ -118,8 +149,12 @@ const pickImage = async () => {
       return false;
     }
 
-    if (!businessLicense) {
-      setError('Business license document is required');
+    if (!birRegistration) {
+      setError('BIR registration document is required');
+      return false;
+    }
+    if (!businessPermit) {
+      setError('Business permit document is required');
       return false;
     }
 
@@ -159,7 +194,8 @@ const pickImage = async () => {
         address,
         city,
         contactNumber,
-        businessLicense
+        businessPermit: businessPermit,
+        birRegistration: birRegistration
       };
   
       if (restaurantLogo) {
@@ -169,8 +205,10 @@ const pickImage = async () => {
       console.log('Submitting registration with data:', {
         ...staffData,
         password: '[REDACTED]',
-        businessLicense: businessLicense ? 
-          `File: ${businessLicense.name}, Size: ${(businessLicense.size/1024).toFixed(2)}KB` : null,
+        businessPermit: businessPermit ? 
+          `File: ${businessPermit.name}, Size: ${(businessPermit.size/1024).toFixed(2)}KB` : null,
+        birRegistration: birRegistration ? 
+          `File: ${birRegistration.name}, Size: ${(birRegistration.size/1024).toFixed(2)}KB` : null,
         restaurantLogo: restaurantLogo ? 
           `File: ${restaurantLogo.uri.split('/').pop()}, Size: ${(restaurantLogo.fileSize/1024).toFixed(2)}KB` : null
       });
@@ -250,13 +288,13 @@ const pickImage = async () => {
             ) : null}
 
             {/* Personal Information Section */}
-            <View style={styles.section}>
+            <View style={[styles.section, { backgroundColor: theme.card}]}>
               <BoldText style={[styles.sectionTitle, {color: theme.text}]}>Personal Information</BoldText>
               
               <View style={styles.formInput}>
                 <MediumText style={styles.inputLabel}>FIRST NAME</MediumText>
                 <TextInput
-                  style={[styles.input, {color: theme.text, borderColor: theme.border}]}
+                  style={[styles.input, {color: theme.text, borderColor: theme.border,}]}
                   value={firstName}
                   onChangeText={setFirstName}
                   placeholder="Enter your first name"
@@ -340,7 +378,7 @@ const pickImage = async () => {
             </View>
 
             {/* Restaurant Information Section */}
-            <View style={styles.section}>
+            <View style={[styles.section, { backgroundColor: theme.card}]}>
               <BoldText style={[styles.sectionTitle, {color: theme.text}]}>Restaurant Information</BoldText>
               
               <View style={styles.formInput}>
@@ -409,18 +447,35 @@ const pickImage = async () => {
               </View>
 
               <View style={styles.formInput}>
-                <MediumText style={styles.inputLabel}>BUSINESS LICENSE*</MediumText>
+                <MediumText style={styles.inputLabel}>BUSINESS PERMIT*</MediumText>
                 <TouchableOpacity 
                   style={[styles.uploadButton, {borderColor: theme.border}]}
                   onPress={pickDocument}
                 >
                   <MediumText style={[styles.uploadButtonText, {color: theme.text}]}>
-                    {businessLicense ? businessLicense.name : 'Select Document'}
+                    {businessPermit ? businessPermit.name : 'Select Document'}
                   </MediumText>
                 </TouchableOpacity>
-                {businessLicense && (
+                {businessPermit && (
                   <MediumText style={[styles.fileSizeText, {color: theme.text}]}>
-                    {`${(businessLicense.size / 1024).toFixed(2)} KB`}
+                    {`${(businessPermit.size / 1024).toFixed(2)} KB`}
+                  </MediumText>
+                )}
+              </View>
+
+              <View style={styles.formInput}>
+                <MediumText style={styles.inputLabel}>BIR REGISTRATION*</MediumText>
+                <TouchableOpacity 
+                  style={[styles.uploadButton, {borderColor: theme.border}]}
+                  onPress={pickBirDocument}
+                >
+                  <MediumText style={[styles.uploadButtonText, {color: theme.text}]}>
+                    {birRegistration ? birRegistration.name : 'Select Document'}
+                  </MediumText>
+                </TouchableOpacity>
+                {birRegistration && (
+                  <MediumText style={[styles.fileSizeText, {color: theme.text}]}>
+                    {`${(birRegistration.size / 1024).toFixed(2)} KB`}
                   </MediumText>
                 )}
               </View>
@@ -505,7 +560,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 20,
-    backgroundColor: 'rgba(0, 223, 130, 0.1)',
     borderRadius: 12,
     padding: 15,
   },

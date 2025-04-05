@@ -284,3 +284,36 @@ exports.rejectStaff = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+exports.getRestaurantStaff = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    
+    // Find all staff users associated with this restaurant
+    const staffMembers = await User.find({
+      userType: 'staff',
+      restaurantId: restaurantId
+    }).select('-password');
+    
+    res.json(staffMembers);
+  } catch (error) {
+    console.error('Error fetching restaurant staff:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Add this to userController.js
+exports.getAvailableStaff = async (req, res) => {
+  try {
+      // Find staff users with no restaurant assigned
+      const staff = await User.find({
+          userType: 'staff',
+          restaurantId: null
+      }).select('-password');
+      
+      res.json(staff);
+  } catch (error) {
+      console.error('Error fetching available staff:', error);
+      res.status(500).json({ message: 'Server error' });
+  }
+};

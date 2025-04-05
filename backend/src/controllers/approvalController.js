@@ -137,3 +137,70 @@ exports.checkApprovalStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Add this function to your approvalController.js
+exports.getStaffDocuments = async (req, res) => {
+  try {
+    const { staffId, documentType } = req.params;
+    
+    // First get the user (staff) to find their associated restaurant
+    const user = await User.findById(staffId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Check if user has a restaurantId
+    if (!user.restaurantId) {
+      return res.status(404).json({ success: false, message: 'No restaurant associated with this staff' });
+    }
+    
+    // Log the restaurantId to debug
+    console.log(`Finding restaurant with ID: ${user.restaurantId}`);
+    
+    // Get the restaurant document using the restaurantId from the user
+    const restaurant = await Restaurant.findById(user.restaurantId);
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: 'Restaurant not found' });
+    }
+    
+    console.log(`Found restaurant: ${restaurant.name}`);
+    console.log(`Document type requested: ${documentType}`);
+    
+    // Get the requested document based on documentType
+    let document;
+    if (documentType === 'businessPermit') {
+      document = restaurant.businessPermit;
+      console.log(`Business permit exists: ${!!document?.fileData}`);
+    } else if (documentType === 'birRegistration') {
+      document = restaurant.birRegistration;
+      console.log(`BIR registration exists: ${!!document?.fileData}`);
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid document type' });
+    }
+    
+    if (!document || !document.fileData) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `Document not found. Please ensure the ${documentType} has been uploaded.` 
+      });
+    }
+    
+    // Convert the binary buffer to base64 string for frontend display
+    const documentData = {
+      fileName: document.fileName || 'document.pdf',
+      mimeType: document.mimeType || 'application/pdf',
+      uploadedAt: document.uploadedAt,
+      fileData: document.fileData.toString('base64')
+    };
+    
+    res.status(200).json(documentData);
+  } catch (error) {
+    console.error('Error fetching staff document:', error);
+    console.error('Error details:', error.stack);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while retrieving document',
+      error: error.message
+    });
+  }
+};

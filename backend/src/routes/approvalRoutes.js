@@ -9,6 +9,9 @@ router.get('/admin/pending-staff', protect, authorize('admin'), approvalControll
 router.post('/admin/approve-staff/:staffId', protect, authorize('admin'), approvalController.approveStaff);
 router.post('/admin/reject-staff/:staffId', protect, authorize('admin'), approvalController.rejectStaff);
 
+// Staff document route
+router.get('/admin/staff-documents/:staffId/:documentType', protect, authorize('admin'), approvalController.getStaffDocuments);
+
 // Staff status check route
 router.get('/staff/approval-status', protect, authorize('staff'), approvalController.checkApprovalStatus);
 

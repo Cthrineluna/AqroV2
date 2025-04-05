@@ -21,9 +21,10 @@ const upload = multer({
 });
 
 router.post('/register-staff', upload.fields([
-    { name: 'businessLicense', maxCount: 1 },
-    { name: 'restaurantLogo', maxCount: 1 }
-  ]), authController.registerStaff);
+  { name: 'businessPermit', maxCount: 1 },
+  { name: 'birRegistration', maxCount: 1 },
+  { name: 'restaurantLogo', maxCount: 1 }
+]), authController.registerStaff);
 
 
 

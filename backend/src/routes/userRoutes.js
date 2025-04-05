@@ -20,9 +20,13 @@ const adminRouter = express.Router();
 adminRouter.use(authMiddleware.protect);
 adminRouter.use(authMiddleware.authorize('admin'));
 
+//get staff for restaurant
+adminRouter.get('/restaurant/:restaurantId', userController.getRestaurantStaff);
+
 // Get all users
 adminRouter.get('/', userController.getAllUsers);
 
+adminRouter.get('/available', userController.getAvailableStaff);
 // Create a new user
 adminRouter.post('/', userController.createUser);
 
