@@ -29,7 +29,9 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../components/StyledComponents';
-
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { StorageAccessFramework } from 'expo-file-system';
 
 const AdminApprovalScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
@@ -180,7 +182,76 @@ const AdminApprovalScreen = ({ navigation }) => {
     }
   };
   
-  // Enhanced document viewer modal
+  // Add this new function to handle document downloads
+  const handleDownloadDocument = async (document) => {
+    try {
+      // Set download started
+      setDocumentProcessing(true);
+      
+      // Create temp file with the right extension based on mimeType
+      const fileExtension = document.mimeType.includes('pdf') ? 'pdf' : 
+                           document.mimeType.includes('image') ? 
+                           (document.mimeType.includes('png') ? 'png' : 'jpg') : 'file';
+      
+      // Create secure file name
+      const fileName = document.fileName || `document.${fileExtension}`;
+      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+      
+      // Create file URI in app's cache directory
+      const fileUri = `${FileSystem.cacheDirectory}${sanitizedFileName}`;
+      
+      // Write base64 data to file
+      await FileSystem.writeAsStringAsync(
+        fileUri,
+        document.fileData,
+        { encoding: FileSystem.EncodingType.Base64 }
+      );
+      
+      if (Platform.OS === 'android') {
+        try {
+          // On Android, use StorageAccessFramework for Downloads access
+          const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+          
+          if (permissions.granted) {
+            const destinationUri = await StorageAccessFramework.createFileAsync(
+              permissions.directoryUri,
+              sanitizedFileName,
+              document.mimeType
+            );
+            
+            const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+              encoding: FileSystem.EncodingType.Base64
+            });
+            
+            await FileSystem.writeAsStringAsync(
+              destinationUri,
+              fileContent,
+              { encoding: FileSystem.EncodingType.Base64 }
+            );
+            
+            Alert.alert('Success', `File saved as ${sanitizedFileName}`);
+          } else {
+            // Use sharing instead if permission not granted
+            await Sharing.shareAsync(fileUri);
+          }
+        } catch (error) {
+          console.error('Storage framework error:', error);
+          // Fallback to sharing
+          await Sharing.shareAsync(fileUri);
+        }
+      } else {
+        // On iOS, use the sharing dialog
+        await Sharing.shareAsync(fileUri);
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      Alert.alert('Download Failed', error.message || 'Could not download the document');
+    } finally {
+      setDocumentProcessing(false);
+    }
+  };
+  
+  // Now let's update the renderDocumentModal function
   const renderDocumentModal = () => (
     <Modal
       visible={documentModalVisible}
@@ -202,16 +273,26 @@ const AdminApprovalScreen = ({ navigation }) => {
           {documentProcessing ? (
             <View style={styles.documentLoadingContainer}>
               <ActivityIndicator size="large" color={theme.primary} />
-              <MediumText style={{ marginTop: 12 }}>Loading document...</MediumText>
+              <MediumText style={{ marginTop: 12 }}>
+                {downloadProgress > 0 ? `Downloading... ${downloadProgress}%` : 'Loading document...'}
+              </MediumText>
             </View>
           ) : documentData ? (
             <ScrollView style={styles.documentContainer}>
               {documentData.mimeType && documentData.mimeType.startsWith('image/') ? (
-                <Image
-                  source={{ uri: `data:${documentData.mimeType};base64,${documentData.fileData}` }}
-                  style={styles.documentImage}
-                  resizeMode="contain"
-                />
+                <View style={styles.imageDocumentContainer}>
+                  <Image
+                    source={{ uri: `data:${documentData.mimeType};base64,${documentData.fileData}` }}
+                    style={styles.documentImage}
+                    resizeMode="contain"
+                  />
+                  <PrimaryButton 
+                    style={{ marginTop: 16 }}
+                    onPress={() => handleDownloadDocument(documentData)}
+                  >
+                    Download Image
+                  </PrimaryButton>
+                </View>
               ) : documentData.mimeType && documentData.mimeType.includes('pdf') ? (
                 <View style={styles.pdfContainer}>
                   <Ionicons name="document-text" size={64} color={theme.primary} />
@@ -219,16 +300,13 @@ const AdminApprovalScreen = ({ navigation }) => {
                     {documentData.fileName || 'Document.pdf'}
                   </MediumText>
                   <RegularText style={{ textAlign: 'center', marginTop: 8, color: theme.text, opacity: 0.5, }}>
-                    PDF viewing not available in this screen. 
+                    Download PDF to view on your device
                   </RegularText>
                   <PrimaryButton 
                     style={{ marginTop: 16 }}
-                    onPress={() => {
-                      // You would implement functionality to open/download PDF here
-                      Alert.alert('Info', 'This would open the PDF file in device viewer');
-                    }}
+                    onPress={() => handleDownloadDocument(documentData)}
                   >
-                    Open PDF
+                    Download PDF
                   </PrimaryButton>
                 </View>
               ) : (
@@ -238,6 +316,12 @@ const AdminApprovalScreen = ({ navigation }) => {
                   <RegularText style={{ textAlign: 'center', marginTop: 8, color: theme.secondaryText }}>
                     File type: {documentData.mimeType || 'Unknown'}
                   </RegularText>
+                  <PrimaryButton 
+                    style={{ marginTop: 16 }}
+                    onPress={() => handleDownloadDocument(documentData)}
+                  >
+                    Download File
+                  </PrimaryButton>
                 </View>
               )}
             </ScrollView>
