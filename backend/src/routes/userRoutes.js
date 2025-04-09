@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
 // User profile routes (authenticated users)
 router.use(authMiddleware.protect);
@@ -35,6 +36,11 @@ adminRouter.put('/:id', userController.updateUserByAdmin);
 
 // Delete a user
 adminRouter.delete('/:id', userController.deleteUser);
+
+
+router.get('/available-staff', protect, authorize('admin'), userController.getAvailableStaff);
+router.put('/:userId/assign-restaurant', protect, authorize('admin'), userController.assignRestaurant);
+router.put('/:userId/remove-restaurant', protect, authorize('admin'), userController.removeRestaurant);
 
 module.exports = {
   userRoutes: router,

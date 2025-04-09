@@ -28,6 +28,8 @@ router.post('/', protect, authorize('admin'), upload.fields([
 // Delete restaurant
 router.delete('/:restaurantId', protect, authorize('admin'), restaurantController.deleteRestaurant);
 
+router.get('/:restaurantId/staff', protect, authorize('admin', 'staff'), restaurantController.getRestaurantStaff);
+
 // Update restaurant
 router.put('/:restaurantId', protect, authorize('admin'), upload.fields([
     { name: 'logo', maxCount: 1 },

@@ -1,4 +1,5 @@
 const Restaurant = require('../models/Restaurant');
+const User = require('../models/Users');
 
 // Get all restaurants
 exports.getRestaurants = async (req, res) => {
@@ -171,5 +172,26 @@ exports.deleteRestaurant = async (req, res) => {
   } catch (error) {
     console.error('Error deleting restaurant:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get staff for a restaurant
+exports.getRestaurantStaff = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    
+    if (!restaurantId) {
+      return res.status(400).json({ message: 'Restaurant ID is required' });
+    }
+    
+    const staff = await User.find({
+      userType: 'staff',
+      restaurantId: restaurantId
+    });
+    
+    res.status(200).json(staff);
+  } catch (error) {
+    console.error('Error fetching restaurant staff:', error);
+    res.status(500).json({ message: 'Failed to fetch restaurant staff' });
   }
 };

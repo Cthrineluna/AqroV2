@@ -305,17 +305,77 @@ exports.getRestaurantStaff = async (req, res) => {
 };
 
 // Add this to userController.js
+
+
+// Get available staff (users with staff type and no restaurant)
+// Get available staff (users with staff type and no restaurant assigned)
 exports.getAvailableStaff = async (req, res) => {
   try {
-      // Find staff users with no restaurant assigned
-      const staff = await User.find({
-          userType: 'staff',
-          restaurantId: null
-      }).select('-password');
-      
-      res.json(staff);
+    const availableStaff = await User.find({
+      userType: 'staff',
+      $or: [
+        { restaurantId: null },
+        { restaurantId: { $exists: false } }
+      ],
+      isActive: true
+    }).select('-password');
+    
+    res.status(200).json(availableStaff);
   } catch (error) {
-      console.error('Error fetching available staff:', error);
-      res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching available staff:', error);
+    res.status(500).json({ message: 'Failed to fetch available staff' });
+  }
+};
+
+// Assign restaurant to staff
+exports.assignRestaurant = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { restaurantId } = req.body;
+    
+    if (!userId || !restaurantId) {
+      return res.status(400).json({ message: 'User ID and Restaurant ID are required' });
+    }
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { restaurantId },
+      { new: true }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Error assigning restaurant to user:', error);
+    res.status(500).json({ message: 'Failed to assign restaurant to user' });
+  }
+};
+
+// Remove restaurant from staff
+exports.removeRestaurant = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $unset: { restaurantId: "" } },
+      { new: true }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Error removing restaurant from user:', error);
+    res.status(500).json({ message: 'Failed to remove restaurant from user' });
   }
 };

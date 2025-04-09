@@ -17,6 +17,7 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  TouchableWithoutFeedback
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,9 +45,130 @@ const AdminRestaurantsScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [staffModalVisible, setStaffModalVisible] = useState(false);
+  const [staffList, setStaffList] = useState([]);
+  const [availableStaff, setAvailableStaff] = useState([]);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [staffActionModalVisible, setStaffActionModalVisible] = useState(false);
+  const [staffLoading, setStaffLoading] = useState(false);
+  useEffect(() => {
+
+    return () => {
+      // Reset all modal states when component unmounts
+      setModalVisible(false);
+      setActionModalVisible(false);
+      setStaffModalVisible(false);
+      setStaffActionModalVisible(false);
+    };
+  }, []);
+
+// In your fetch functions, add better error handling:
+const fetchStaffForRestaurant = async (restaurantId) => {
+  try {
+    setStaffLoading(true);
+    const storedToken = await AsyncStorage.getItem('aqro_token');
+    const response = await axios.get(`${getApiUrl()}/restaurants/${restaurantId}/staff`, {
+      headers: { 
+        Authorization: `Bearer ${storedToken}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000 // Add timeout to prevent hanging
+    });
+    setStaffList(response.data);
+  } catch (error) {
+    console.error('Error fetching staff:', error);
+    Alert.alert('Error', 'Failed to load staff data. Please try again.');
+    // Ensure modal can still be closed
+    setStaffModalVisible(false);
+  } finally {
+    setStaffLoading(false);
+  }
+};
+  
+  // Fetch available staff (users with staff type and no restaurant)
+
+const fetchAvailableStaff = async () => {
+  try {
+    setStaffLoading(true);
+    const storedToken = await AsyncStorage.getItem('aqro_token');
+    const response = await axios.get(`${getApiUrl()}/users/available-staff`, {
+      headers: { 
+        Authorization: `Bearer ${storedToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    setAvailableStaff(response.data);
+  } catch (error) {
+    console.error('Error fetching available staff:', error.response?.data || error.message);
+    Alert.alert('Error', error.response?.data?.message || 'Failed to fetch available staff');
+  } finally {
+    setStaffLoading(false);
+  }
+};
+  // Assign staff to restaurant
+  const assignStaffToRestaurant = async (userId, restaurantId) => {
+    try {
+   
+      const storedToken = await AsyncStorage.getItem('aqro_token');
+      
+      await axios.put(
+        `${getApiUrl()}/users/${userId}/assign-restaurant`,
+        { restaurantId },
+        {
+          headers: { 
+            Authorization: `Bearer ${storedToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      Alert.alert('Success', 'Staff assigned successfully',);
 
 
- 
+       fetchStaffForRestaurant(restaurantId),
+       fetchAvailableStaff()
+      setStaffActionModalVisible(false);
+      setStaffModalVisible(false);
+      
+      
+    } catch (error) {
+      console.error('Error assigning staff:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to assign staff');
+    } 
+  };
+  
+  // Remove staff from restaurant
+  const removeStaffFromRestaurant = async (userId, restaurantId) => {
+    try {
+      const storedToken = await AsyncStorage.getItem('aqro_token');
+      await axios.put(
+        `${getApiUrl()}/users/${userId}/remove-restaurant`,
+        {},
+        {
+          headers: { 
+            Authorization: `Bearer ${storedToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+
+      fetchStaffForRestaurant(restaurantId);
+      fetchAvailableStaff();
+      setStaffActionModalVisible(false);
+      setStaffModalVisible(false);
+      
+      Alert.alert('Success', 'Staff removed from restaurant successfully');
+    } catch (error) {
+      console.error('Error removing staff:', error.response?.data || error.message);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to remove staff');
+    } 
+
+  };
+  
+
+
+  
  
   // Fetch restaurants
   const fetchRestaurants = async () => {
@@ -185,6 +307,23 @@ const handleSaveRestaurant = async (restaurantData) => {
     setSelectedRestaurant(restaurant);
     setModalVisible(true);
     fadeIn();
+  };
+  const handleViewStaff = async (restaurantId) => {
+    console.log('Closing action modal');
+    setActionModalVisible(false);
+    
+    console.log('Fetching staff data');
+    try {
+      await Promise.all([
+        fetchStaffForRestaurant(restaurantId),
+        fetchAvailableStaff()
+      ]);
+      
+      console.log('Data fetched, opening staff modal');
+      setStaffModalVisible(true);
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
   // Helper function for email validation
@@ -664,386 +803,354 @@ const handleSaveRestaurant = async (restaurantData) => {
 
   // Action Modal
   const ActionModal = () => {
-    const [staffMembers, setStaffMembers] = useState([]);
-    const [staffModalVisible, setStaffModalVisible] = useState(false);
-    const [availableStaff, setAvailableStaff] = useState([]);
-    const [isLoadingStaff, setIsLoadingStaff] = useState(false);
-    
-
-    const openStaffModal = (restaurant) => {
-        setActionModalVisible(false); // Close the action modal first
-        setTimeout(() => {
-            setSelectedRestaurant(restaurant);
-            setStaffModalVisible(true); // This should trigger the RNModal
-        }, 300); // Short delay to allow action modal to close first
-    };
-
-      const fetchStaffMembers = async () => {
-        try {
-          if (!selectedRestaurant?._id) return; // Add this guard clause
-          
-          const storedToken = await AsyncStorage.getItem('aqro_token');
-          const response = await axios.get(
-            `${getApiUrl()}/users/restaurant/${selectedRestaurant._id}`, 
-            {
-              headers: { 
-                Authorization: `Bearer ${storedToken}`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-          setStaffMembers(response.data);
-        } catch (error) {
-          console.error('Error fetching staff:', error);
-          Alert.alert('Error', 'Failed to fetch staff members');
-        }
-      };
-
-    const fetchAvailableStaff = async () => {
-        try {
-            setIsLoadingStaff(true);
-            const storedToken = await AsyncStorage.getItem('aqro_token');
-            const response = await axios.get(
-                `${getApiUrl()}/users?userType=staff&available=true`, 
-                {
-                    headers: { 
-                        Authorization: `Bearer ${storedToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-            setAvailableStaff(response.data);
-        } catch (error) {
-            console.error('Error fetching available staff:', error);
-            Alert.alert('Error', 'Failed to fetch available staff');
-        } finally {
-            setIsLoadingStaff(false);
-        }
-    };
-
-    const handleDeleteStaff = async (staffId) => {
-        Alert.alert(
-            'Confirm Delete',
-            'Are you sure you want to remove this staff member?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            const storedToken = await AsyncStorage.getItem('aqro_token');
-                            await axios.patch(
-                                `${getApiUrl()}/users/${staffId}`,
-                                { restaurantId: null },
-                                {
-                                    headers: { 
-                                        Authorization: `Bearer ${storedToken}`,
-                                        'Content-Type': 'application/json'
-                                    }
-                                }
-                            );
-                            fetchStaffMembers();
-                            fetchAvailableStaff();
-                        } catch (error) {
-                            console.error('Error deleting staff:', error);
-                            Alert.alert('Error', error.response?.data?.message || 'Failed to remove staff');
-                        }
-                    },
-                },
-            ]
-        );
-    };
-
-    const handleAddStaff = async (staffId) => {
-        try {
-            const storedToken = await AsyncStorage.getItem('aqro_token');
-            await axios.patch(
-                `${getApiUrl()}/users/${staffId}`,
-                { restaurantId: selectedRestaurant._id },
-                {
-                    headers: { 
-                        Authorization: `Bearer ${storedToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-            fetchStaffMembers();
-            fetchAvailableStaff();
-            Alert.alert('Success', 'Staff member added successfully');
-        } catch (error) {
-            console.error('Error adding staff:', error);
-            Alert.alert('Error', error.response?.data?.message || 'Failed to add staff');
-        }
-    };
-
-    useFocusEffect(
-        useCallback(() => {
-          if (staffModalVisible && selectedRestaurant) {
-            fetchStaffMembers();
-            fetchAvailableStaff();
-          }
-        }, [staffModalVisible, selectedRestaurant?._id]) // Add _id to dependencies
-      );
-
-      useEffect(() => {
-        if (staffModalVisible && selectedRestaurant) {
-            fetchStaffMembers();
-            fetchAvailableStaff();
-        }
-    }, [staffModalVisible, selectedRestaurant]);
-
     return (
-        <>
-         <RNModal
-                animationType="fade"
-                transparent={true}
-                visible={actionModalVisible}
-                onRequestClose={() => {
-                    fadeOut(() => setActionModalVisible(false));
+      <RNModal
+        animationType="fade"
+        transparent={true}
+        visible={actionModalVisible}
+        onRequestClose={() => {
+          fadeOut(() => setActionModalVisible(false));
+        }}
+      >
+        <Animated.View 
+          style={[
+            styles.actionModalOverlay,
+            { opacity: fadeAnim }
+          ]} 
+        >
+          <TouchableOpacity 
+            style={styles.actionModalOverlayTouch} 
+            activeOpacity={1} 
+            onPressOut={() => {
+              fadeOut(() => setActionModalVisible(false));
+            }}
+          >
+            <View style={[
+              styles.actionModalContent, 
+              { 
+                backgroundColor: theme?.card || '#FFFFFF',
+                minWidth: width * 0.7,
+                position: 'absolute',
+                bottom: 20,
+                left: 20,
+                right: 20
+              }
+            ]}>
+              <TouchableOpacity 
+                style={styles.actionModalButton}
+                onPress={() => {
+                  handleViewContainers(selectedRestaurant._id);
                 }}
-            >
-                <Animated.View 
-                    style={[
-                        styles.actionModalOverlay,
-                        { opacity: fadeAnim }
-                    ]} 
-                >
-                    <TouchableOpacity 
-                        style={styles.actionModalOverlayTouch} 
-                        activeOpacity={1} 
-                        onPressOut={() => {
-                            fadeOut(() => setActionModalVisible(false));
-                        }}
-                    >
-                        <View style={[
-                            styles.actionModalContent, 
-                            { 
-                                backgroundColor: theme?.card || '#FFFFFF',
-                                minWidth: width * 0.7,
-                                position: 'absolute',
-                                bottom: 20,
-                                left: 20,
-                                right: 20
-                            }
-                        ]}>
-                <TouchableOpacity 
-                    style={styles.actionModalButton}
-                    onPress={() => {
-                    handleViewContainers(selectedRestaurant._id);
-                    }}
-                >
-                    <Ionicons 
-                    name="cube-outline" 
-                    size={24} 
-                    color={theme?.primary || '#007BFF'} 
-                    />
-                    <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
-                    View Containers
-                    </RegularText>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                    style={styles.actionModalButton}
-                    onPress={() => {
-                        setActionModalVisible(false);
-                        openStaffModal(selectedRestaurant);
-                    }}
-                    >
-                    <Ionicons 
-                        name="people-outline" 
-                        size={24} 
-                        color={theme?.text || '#000000'} 
-                    />
-                    <RegularText style={{ marginLeft: 10, color: theme?.text || '#000000' }}>
-                        View Staff
-                    </RegularText>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                    style={styles.actionModalButton}
-                    onPress={() => {
-                    setActionModalVisible(false);
-                    openRestaurantModal(selectedRestaurant);
-                    }}
-                >
-                    <Ionicons 
-                    name="create-outline" 
-                    size={24} 
-                    color={theme?.text || '#000000'} 
-                    />
-                    <RegularText style={{ marginLeft: 10, color: theme?.text || '#000000' }}>
-                    Edit Restaurant
-                    </RegularText>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                    style={styles.actionModalButton}
-                    onPress={() => {
-                    setActionModalVisible(false);
-                    handleDeleteRestaurant(selectedRestaurant._id);
-                    }}
-                >
-                    <Ionicons 
-                    name="trash-outline" 
-                    size={24} 
-                    color="red" 
-                    />
-                    <RegularText style={{ marginLeft: 10, color: 'red' }}>
-                    Delete Restaurant
-                    </RegularText>
-                </TouchableOpacity>
-                </View>
-            </TouchableOpacity>
-            </Animated.View>
-
-        </RNModal>
-
-        {/* Staff Modal */}
-        <RNModal
-                animationType="slide"
-                transparent={true}
-                visible={staffModalVisible}
-                onRequestClose={() => {
-                    setStaffModalVisible(false);
+              >
+                <Ionicons 
+                  name="cube-outline" 
+                  size={24} 
+                  color={theme?.primary || '#007BFF'} 
+                />
+                <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
+                  View Containers
+                </RegularText>
+              </TouchableOpacity>
+              
+              {/* New Staff Management Option */}
+          
+<TouchableOpacity 
+  style={styles.actionModalButton}
+  onPress={() => {
+    setActionModalVisible(false);
+    setTimeout(() => handleViewStaff(selectedRestaurant._id), 100); 
+  }}
+>
+  <Ionicons name="people-outline" size={24} color={theme?.primary || '#007BFF'} />
+  <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
+    Manage Staff
+  </RegularText>
+</TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.actionModalButton}
+                onPress={() => {
+                  setActionModalVisible(false);
+                  openRestaurantModal(selectedRestaurant);
                 }}
-            >
-                <View style={styles.staffModalContainer}>
-                    <View style={[
-                        styles.staffModalContent,
-                        { backgroundColor: theme?.background || '#FFFFFF' }
-                    ]}>
-                        <View style={styles.staffModalHeader}>
-                            <SemiBoldText style={{ color: theme?.text || '#000000', fontSize: 18 }}>
-                                {selectedRestaurant?.name} Staff
-                            </SemiBoldText>
-                            <TouchableOpacity onPress={() => setStaffModalVisible(false)}>
-                                <Ionicons name="close" size={24} color={theme?.text || '#000000'} />
-                            </TouchableOpacity>
-                        </View>
-                        {/* Current Staff Members */}
-                        <SemiBoldText style={{ color: theme?.text || '#000000', marginBottom: 8 }}>
-                            Current Staff
-                        </SemiBoldText>
-                        <FlatList
-                            data={staffMembers}
-                            keyExtractor={(item) => item._id}
-                            renderItem={({ item }) => (
-                                <View style={[
-                                    styles.staffItem,
-                                    { borderBottomColor: theme?.border || '#E0E0E0' }
-                                ]}>
-                                    <View style={styles.staffInfo}>
-                                        {item.profilePicture ? (
-                                            <Image 
-                                                source={{ uri: item.profilePicture }} 
-                                                style={styles.staffImage} 
-                                            />
-                                        ) : (
-                                            <View style={[
-                                                styles.staffInitials,
-                                                { backgroundColor: theme?.primary || '#007BFF' }
-                                            ]}>
-                                                <RegularText style={styles.staffInitialsText}>
-                                                    {item.firstName[0]}{item.lastName[0]}
-                                                </RegularText>
-                                            </View>
-                                        )}
-                                        <View style={styles.staffDetails}>
-                                            <SemiBoldText style={{ color: theme?.text || '#000000' }}>
-                                                {item.firstName} {item.lastName}
-                                            </SemiBoldText>
-                                            <RegularText style={{ color: theme?.textMuted || '#666666' }}>
-                                                {item.email}
-                                            </RegularText>
-                                        </View>
-                                    </View>
-                                    <TouchableOpacity 
-                                        onPress={() => handleDeleteStaff(item._id)}
-                                        style={styles.deleteStaffButton}
-                                    >
-                                        <Ionicons name="trash-outline" size={20} color="red" />
-                                    </TouchableOpacity>
-                                </View>
-                            )}
-                            ListEmptyComponent={() => (
-                                <View style={styles.noStaffContainer}>
-                                    <RegularText style={{ color: theme?.textMuted || '#666666' }}>
-                                        No staff members assigned
-                                    </RegularText>
-                                </View>
-                            )}
-                        />
-
-                        {/* Available Staff Members */}
-                        <SemiBoldText style={{ color: theme?.text || '#000000', marginTop: 16, marginBottom: 8 }}>
-                            Available Staff
-                        </SemiBoldText>
-                        {isLoadingStaff ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="small" color={theme?.primary || '#007BFF'} />
-                            </View>
-                        ) : (
-                            <FlatList
-                                data={availableStaff}
-                                keyExtractor={(item) => item._id}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={[
-                                            styles.staffItem,
-                                            { borderBottomColor: theme?.border || '#E0E0E0' }
-                                        ]}
-                                        onPress={() => handleAddStaff(item._id)}
-                                    >
-                                        <View style={styles.staffInfo}>
-                                            {item.profilePicture ? (
-                                                <Image 
-                                                    source={{ uri: item.profilePicture }} 
-                                                    style={styles.staffImage} 
-                                                />
-                                            ) : (
-                                                <View style={[
-                                                    styles.staffInitials,
-                                                    { backgroundColor: theme?.success || '#28A745' }
-                                                ]}>
-                                                    <RegularText style={styles.staffInitialsText}>
-                                                        {item.firstName[0]}{item.lastName[0]}
-                                                    </RegularText>
-                                                </View>
-                                            )}
-                                            <View style={styles.staffDetails}>
-                                                <SemiBoldText style={{ color: theme?.text || '#000000' }}>
-                                                    {item.firstName} {item.lastName}
-                                                </SemiBoldText>
-                                                <RegularText style={{ color: theme?.textMuted || '#666666' }}>
-                                                    {item.email}
-                                                </RegularText>
-                                            </View>
-                                        </View>
-                                        <TouchableOpacity 
-                                            onPress={() => handleAddStaff(item._id)}
-                                            style={styles.addStaffButtonSmall}
-                                        >
-                                            <Ionicons name="add" size={20} color={theme?.success || '#28A745'} />
-                                        </TouchableOpacity>
-                                    </TouchableOpacity>
-                                )}
-                                ListEmptyComponent={() => (
-                                    <View style={styles.noStaffContainer}>
-                                        <RegularText style={{ color: theme?.textMuted || '#666666' }}>
-                                            No available staff members
-                                        </RegularText>
-                                    </View>
-                                )}
-                            />
-                        )}
-                    </View>
-                </View>
-            </RNModal>
-        </>
+              >
+                <Ionicons 
+                  name="create-outline" 
+                  size={24} 
+                  color={theme?.text || '#000000'} 
+                />
+                <RegularText style={{ marginLeft: 10, color: theme?.text || '#000000' }}>
+                  Edit Restaurant
+                </RegularText>
+              </TouchableOpacity>
+  
+              <TouchableOpacity 
+                style={styles.actionModalButton}
+                onPress={() => {
+                  setActionModalVisible(false);
+                  handleDeleteRestaurant(selectedRestaurant._id);
+                }}
+              >
+                <Ionicons 
+                  name="trash-outline" 
+                  size={24} 
+                  color="red" 
+                />
+                <RegularText style={{ marginLeft: 10, color: 'red' }}>
+                  Delete Restaurant
+                </RegularText>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </RNModal>
     );
-};
+  };
+  const StaffModal = () => {
+    const [isVisible, setIsVisible] = useState(false);
 
+    useEffect(() => {
+      if (staffModalVisible) {
+        setIsVisible(true);
+      } else {
+        // Add closing animation
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => setIsVisible(false));
+      }
+    }, [staffModalVisible]);
+  
+    if (!isVisible) return null;
+    return (
+      <RNModal
+      animationType="fade"
+      transparent={true}
+      visible={isVisible}
+      onRequestClose={() => {
+        setStaffModalVisible(false);
+      }}
+    >
+       <View style={[
+        styles.modalOverlay, 
+        { backgroundColor: 'rgba(0,0,0,0.5)' }
+      ]}>
+        <TouchableWithoutFeedback 
+          onPress={() => setStaffModalVisible(false)}
+        >
+          <View style={styles.modalTouchableOverlay} />
+        </TouchableWithoutFeedback>
+
+        <View style={[
+          styles.staffModalContent,
+          { backgroundColor: theme?.background || '#FFFFFF' }
+        ]}>
+          {/* Header with close button */}
+          <View style={styles.staffModalHeader}>
+            <SemiBoldText style={{ color: theme?.text || '#000000' }}>
+              Staff Management - {selectedRestaurant?.name}
+            </SemiBoldText>
+            <TouchableOpacity 
+              onPress={() => setStaffModalVisible(false)}
+            >
+              <Ionicons 
+                name="close-outline" 
+                size={24} 
+                color={theme?.text || '#000000'} 
+              />
+            </TouchableOpacity>
+          </View>
+  
+            {/* Current Staff List */}
+            <View style={styles.sectionContainer}>
+              <SemiBoldText style={{ color: theme?.text || '#000000', marginBottom: 10 }}>
+                Current Staff
+              </SemiBoldText>
+              
+              {staffLoading ? (
+                <ActivityIndicator size="small" color={theme?.primary || '#007BFF'} />
+              ) : staffList.length > 0 ? (
+                <FlatList
+                  data={staffList}
+                  renderItem={({ item }) => (
+                    <View style={[
+                      styles.staffItem,
+                      { backgroundColor: theme?.card || '#FFFFFF', borderColor: theme.border }
+                    ]}>
+                      <View style={styles.staffInfo}>
+                        <View style={styles.avatarContainer}>
+                          {item.profilePicture ? (
+                            <Image 
+                              source={{ uri: item.profilePicture }} 
+                              style={styles.staffAvatar} 
+                            />
+                          ) : (
+                            <View style={[
+                              styles.staffInitials,
+                              { backgroundColor: theme?.primary || '#007BFF' }
+                            ]}>
+                              <RegularText style={styles.initialsText}>
+                                {`${item.firstName[0]}${item.lastName[0]}`}
+                              </RegularText>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.staffDetails}>
+                          <SemiBoldText style={{ color: theme?.text || '#000000' }}>
+                            {`${item.firstName} ${item.lastName}`}
+                          </SemiBoldText>
+                          <RegularText style={{ color: theme?.textMuted || '#666666', fontSize: 12 }}>
+                            {item.email}
+                          </RegularText>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.removeButton,
+                          { backgroundColor: theme?.danger + '20' || 'rgba(220,53,69,0.1)' }
+                        ]}
+                        onPress={() => {
+                          Alert.alert(
+                            'Remove Staff',
+                            `Are you sure you want to remove ${item.firstName} ${item.lastName} from this restaurant?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { 
+                                text: 'Remove', 
+                                style: 'destructive', 
+                                onPress: () => removeStaffFromRestaurant(item._id, selectedRestaurant._id)
+                              }
+                            ]
+                          );
+                        }}
+                      >
+                        <Ionicons 
+                          name="person-remove-outline" 
+                          size={16} 
+                          color={theme?.danger || '#DC3545'} 
+                        />
+                        <RegularText style={{ 
+                          marginLeft: 5, 
+                          color: theme?.danger || '#DC3545',
+                          fontSize: 12
+                        }}>
+                          Remove
+                        </RegularText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  keyExtractor={(item) => item._id}
+                  style={{ maxHeight: 200 }}
+                  showsVerticalScrollIndicator={true}
+                />
+              ) : (
+                <RegularText style={{ color: theme?.textMuted || '#666666', fontStyle: 'italic' }}>
+                  No staff assigned to this restaurant
+                </RegularText>
+              )}
+            </View>
+  
+            {/* Available Staff to Assign */}
+            <View style={styles.sectionContainer}>
+              <SemiBoldText style={{ color: theme?.text || '#000000', marginBottom: 10 }}>
+                Available Staff
+              </SemiBoldText>
+              
+              {staffLoading ? (
+                <ActivityIndicator size="small" color={theme?.primary || '#007BFF'} />
+              ) : availableStaff.length > 0 ? (
+                <FlatList
+                  data={availableStaff}
+                  renderItem={({ item }) => (
+                    <View style={[
+                      styles.staffItem,
+                      { backgroundColor: theme?.card || '#FFFFFF', borderColor: theme.border  }
+                    ]}>
+                      <View style={styles.staffInfo}>
+                        <View style={styles.avatarContainer}>
+                          {item.profilePicture ? (
+                            <Image 
+                              source={{ uri: item.profilePicture }} 
+                              style={styles.staffAvatar} 
+                            />
+                          ) : (
+                            <View style={[
+                              styles.staffInitials,
+                              { backgroundColor: theme?.primary || '#007BFF' }
+                            ]}>
+                              <RegularText style={styles.initialsText}>
+                                {`${item.firstName[0]}${item.lastName[0]}`}
+                              </RegularText>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.staffDetails}>
+                          <SemiBoldText style={{ color: theme?.text || '#000000' }}>
+                            {`${item.firstName} ${item.lastName}`}
+                          </SemiBoldText>
+                          <RegularText style={{ color: theme?.textMuted || '#666666', fontSize: 12 }}>
+                            {item.email}
+                          </RegularText>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.assignButton,
+                          { backgroundColor: theme?.success + '20' || 'rgba(40,167,69,0.1)' }
+                        ]}
+                        onPress={() => {
+                          assignStaffToRestaurant(item._id, selectedRestaurant._id);
+                        }}
+                      >
+                        <Ionicons 
+                          name="person-add-outline" 
+                          size={16} 
+                          color={theme?.success || '#28A745'} 
+                        />
+                        <RegularText style={{ 
+                          marginLeft: 5, 
+                          color: theme?.success || '#28A745',
+                          fontSize: 12
+                        }}>
+                          Assign
+                        </RegularText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  keyExtractor={(item) => item._id}
+                  style={{ maxHeight: 200 }}
+                  showsVerticalScrollIndicator={true}
+                />
+              ) : (
+                <RegularText style={{ color: theme?.textMuted || '#666666', fontStyle: 'italic' }}>
+                  No available staff to assign
+                </RegularText>
+              )}
+            </View>
+            </View>
+          </View>
+
+        
+        {staffLoading && (
+        <View style={[
+          styles.loadingOverlay,
+          { backgroundColor: theme?.modalOverlay || 'rgba(0,0,0,0.5)' }
+        ]}>
+          <View style={[
+            styles.loadingContainer,
+            { backgroundColor: theme?.card || '#FFFFFF' }
+          ]}>
+            <ActivityIndicator size="large" color={theme?.primary || '#007BFF'} />
+            <RegularText style={{marginTop: 10, color: theme?.text || '#000000'}}>
+              Loading staff...
+            </RegularText>
+          </View>
+        </View>
+      )}
+    </RNModal>
+  );
+};
   return (
     <SafeAreaView style={[
       styles.container, 
@@ -1109,6 +1216,7 @@ const handleSaveRestaurant = async (restaurantData) => {
 
       <RestaurantModal />
       <ActionModal />
+      <StaffModal /> 
     </SafeAreaView>
   );
 };
@@ -1185,10 +1293,8 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   modalContent: {
     borderRadius: 10,
@@ -1314,12 +1420,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  staffModalContent: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    maxHeight: '80%',
-  },
   staffModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1400,6 +1500,83 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+
+    sectionContainer: {
+      marginVertical: 10,
+    },
+    staffItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 10,
+      marginVertical: 5,
+      borderRadius: 8,
+      borderWidth: 1,
+
+    },
+    staffInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    avatarContainer: {
+      marginRight: 10,
+    },
+    staffAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+    },
+    staffInitials: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    initialsText: {
+      color: 'white',
+      fontSize: 16,
+    },
+    staffDetails: {
+      flex: 1,
+    },
+    assignButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 5,
+      borderRadius: 5,
+    },
+    removeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 5,
+      borderRadius: 5,
+    },
+    modalTouchableOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    staffModalContent: {
+      width: '90%',
+      maxWidth: 400,
+      maxHeight: '80%',
+      borderRadius: 10,
+      padding: 20,
+    },
+    staffModalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    closeButton: {
+      padding: 5,
+    },
 });
 
 export default AdminRestaurantsScreen;
