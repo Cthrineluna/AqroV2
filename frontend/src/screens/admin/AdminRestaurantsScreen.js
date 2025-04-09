@@ -194,11 +194,15 @@ const handleSaveRestaurant = async (restaurantData) => {
   };
 
   // Helper function for phone number validation
-  const isValidPhoneNumber = (phoneNumber) => {
-    // Basic validation for Philippine phone numbers
-    const phoneRegex = /^(\+?63|0)9\d{9}$/;
-    return phoneRegex.test(phoneNumber);
+  const isValidPhoneNumber = (number) => {
+    const digits = number.replace(/\D/g, '');
+    return /^639\d{9}$/.test(digits); 
   };
+  const getRawPhoneNumber = () => {
+    return localRestaurant.contactNumber.replace(/\D/g, ''); // e.g., 639123456789
+  };
+  
+  
   useEffect(() => {
     fetchRestaurants();
   }, []);
@@ -310,7 +314,7 @@ const handleSaveRestaurant = async (restaurantData) => {
         city: selectedRestaurant?.location?.city || '',
       },
       logo: selectedRestaurant?.logo || null,
-      isActive: selectedRestaurant?.isActive || false
+      isActive: selectedRestaurant?.isActive || true
     });
     const [localError, setLocalError] = useState('');
 
@@ -366,7 +370,35 @@ const handleSaveRestaurant = async (restaurantData) => {
       
       return true;
     };
+    
+    const formatPHPhoneNumber = (text) => {
+      // Remove non-digit characters
+      let digits = text.replace(/\D/g, '');
+    
+      // Remove leading 0
+      if (digits.startsWith('0')) {
+        digits = digits.slice(1);
+      }
+    
+      // Remove leading 63 if exists
+      if (digits.startsWith('63')) {
+        digits = digits.slice(2);
+      }
+    
+      // Limit to 10 digits (PH mobile numbers only)
+      digits = digits.slice(0, 10);
+    
+      // Format: 912 345 6789
+      const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+      if (!match) return '+63 ' + digits;
+    
+      const [, part1, part2, part3] = match;
+      return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
+    };
+    
+    
 
+    
     return (
       <RNModal
         animationType="fade"
@@ -478,24 +510,26 @@ const handleSaveRestaurant = async (restaurantData) => {
                 placeholderTextColor={theme?.textMuted || '#888888'}
               />
 
-              <TextInput
-                style={[
-                  styles.input, 
-                  { 
-                    backgroundColor: theme?.input || '#F5F5F5', 
-                    color: theme?.text || '#000000',
-                    borderColor: theme?.border || '#E0E0E0'
-                  }
-                ]}
-                placeholder="Contact Number (PH)"
-                value={localRestaurant.contactNumber}
-                onChangeText={(text) => {
-                  setLocalRestaurant(prev => ({ ...prev, contactNumber: text }));
-                  setLocalError('');
-                }}
-                keyboardType="phone-pad"
-                placeholderTextColor={theme?.textMuted || '#888888'}
-              />
+<TextInput
+  style={[
+    styles.input, 
+    { 
+      backgroundColor: theme?.input || '#F5F5F5', 
+      color: theme?.text || '#000000',
+      borderColor: theme?.border || '#E0E0E0'
+    }
+  ]}
+  placeholder="Contact Number (PH)"
+  value={localRestaurant.contactNumber}
+  onChangeText={(text) => {
+    const formatted = formatPHPhoneNumber(text);
+    setLocalRestaurant(prev => ({ ...prev, contactNumber: formatted }));
+    setLocalError('');
+  }}
+  keyboardType="phone-pad"
+  placeholderTextColor={theme?.textMuted || '#888888'}
+/>
+
 
               <TextInput
                 style={[

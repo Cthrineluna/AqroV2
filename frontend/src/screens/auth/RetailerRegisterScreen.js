@@ -49,6 +49,11 @@ const RetailerRegisterScreen = ({ navigation }) => {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
+  const isValidPhoneNumber = (number) => {
+    const digits = number.replace(/\D/g, '');
+    return /^639\d{9}$/.test(digits); 
+  };
+
 // Update the pickDocument function
 const pickBirDocument = async () => {
   try {
@@ -156,6 +161,10 @@ const pickImage = async () => {
       setError('All restaurant information fields are required');
       return false;
     }
+    if (!isValidPhoneNumber(contactNumber)) {
+      setError('Please enter a valid Philippine phone number (e.g., 09123456789)');
+      return false;
+    }
 
     if (!birRegistration) {
       setError('BIR registration document is required');
@@ -184,7 +193,31 @@ const pickImage = async () => {
 
     return true;
   };
-
+  const formatPHPhoneNumber = (text) => {
+    // Remove non-digit characters
+    let digits = text.replace(/\D/g, '');
+  
+    // Remove leading 0
+    if (digits.startsWith('0')) {
+      digits = digits.slice(1);
+    }
+  
+    // Remove leading 63 if exists
+    if (digits.startsWith('63')) {
+      digits = digits.slice(2);
+    }
+  
+    // Limit to 10 digits (PH mobile numbers only)
+    digits = digits.slice(0, 10);
+  
+    // Format: 912 345 6789
+    const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    if (!match) return '+63 ' + digits;
+  
+    const [, part1, part2, part3] = match;
+    return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
+  };
+  
   const handleRegister = async () => {
     setError('');
     if (!validateForm()) return;
@@ -434,13 +467,19 @@ const pickImage = async () => {
               <View style={styles.formInput}>
                 <MediumText style={styles.inputLabel}>CONTACT NUMBER</MediumText>
                 <TextInput
-                  style={[styles.input, {color: theme.text, borderColor: theme.border}]}
-                  value={contactNumber}
-                  onChangeText={setContactNumber}
-                  placeholder="Enter contact number"
-                  keyboardType="phone-pad"
-                  placeholderTextColor="#9e9e9e"
-                />
+  style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+  value={contactNumber}
+  onChangeText={(text) => {
+    if (!text.startsWith('+63') && contactNumber.startsWith('+63')) return;
+
+    const formatted = formatPHPhoneNumber(text);
+    setContactNumber(formatted);
+  }}
+  placeholder="Enter contact number"
+  keyboardType="phone-pad"
+  placeholderTextColor="#9e9e9e"
+/>
+
               </View>
 
               <View style={styles.formInput}>
