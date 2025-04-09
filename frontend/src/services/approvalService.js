@@ -150,27 +150,36 @@ export const registerStaff = async (staffData) => {
       });
     }
 
-    // Append restaurant logo if exists
+    // Append restaurant logo if exists as base64 string
     if (staffData.restaurantLogo) {
-      const uriParts = staffData.restaurantLogo.uri.split('.');
-      const fileExtension = uriParts[uriParts.length - 1] || 'jpg';
-      
-      let fileType = staffData.restaurantLogo.mimeType || staffData.restaurantLogo.type;
-      if (!fileType) {
-        if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
-          fileType = 'image/jpeg';
-        } else if (['png'].includes(fileExtension.toLowerCase())) {
-          fileType = 'image/png';
-        } else {
-          fileType = 'image/jpeg';
+      // Check if restaurantLogo is a base64 string
+      if (typeof staffData.restaurantLogo === 'string' && 
+          staffData.restaurantLogo.startsWith('data:image')) {
+        // Just append the base64 string directly
+        formData.append('restaurantLogo', staffData.restaurantLogo);
+      } 
+      // Check if it's a file object with URI
+      else if (staffData.restaurantLogo.uri) {
+        const uriParts = staffData.restaurantLogo.uri.split('.');
+        const fileExtension = uriParts[uriParts.length - 1] || 'jpg';
+        
+        let fileType = staffData.restaurantLogo.mimeType || staffData.restaurantLogo.type;
+        if (!fileType) {
+          if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
+            fileType = 'image/jpeg';
+          } else if (['png'].includes(fileExtension.toLowerCase())) {
+            fileType = 'image/png';
+          } else {
+            fileType = 'image/jpeg';
+          }
         }
+        
+        formData.append('restaurantLogo', {
+          uri: staffData.restaurantLogo.uri,
+          name: staffData.restaurantLogo.name || `restaurant_logo.${fileExtension}`,
+          type: fileType
+        });
       }
-      
-      formData.append('restaurantLogo', {
-        uri: staffData.restaurantLogo.uri,
-        name: staffData.restaurantLogo.name || `restaurant_logo.${fileExtension}`,
-        type: fileType
-      });
     }
 
     const response = await axios.post(`${getApiUrl()}/auth/register-staff`, formData, {
@@ -182,28 +191,28 @@ export const registerStaff = async (staffData) => {
       timeout: 15000
     });
       
-      return response.data;
-    } catch (error) {
-      console.error('Registration error details:', error.response?.data || error.message);
-      
-      let errorMessage = 'Registration failed';
-      
-      if (error.response) {
-        // Server responded with error status
-        errorMessage = error.response.data?.message || error.response.statusText || 'Server returned an error';
-        console.error('Server response:', error.response.status, error.response.data);
-      } else if (error.request) {
-        // Request was made but no response
-        errorMessage = 'No response from server. Check your network connection.';
-        console.error('No response received:', error.request);
-      } else {
-        // Error in setting up the request
-        console.error('Request setup error:', error.message);
-      }
-      
-      throw new Error(errorMessage);
+    return response.data;
+  } catch (error) {
+    console.error('Registration error details:', error.response?.data || error.message);
+    
+    let errorMessage = 'Registration failed';
+    
+    if (error.response) {
+      // Server responded with error status
+      errorMessage = error.response.data?.message || error.response.statusText || 'Server returned an error';
+      console.error('Server response:', error.response.status, error.response.data);
+    } else if (error.request) {
+      // Request was made but no response
+      errorMessage = 'No response from server. Check your network connection.';
+      console.error('No response received:', error.request);
+    } else {
+      // Error in setting up the request
+      console.error('Request setup error:', error.message);
     }
-  };
+    
+    throw new Error(errorMessage);
+  }
+};
 
 // Check approval status (for staff)
 export const checkApprovalStatus = async () => {

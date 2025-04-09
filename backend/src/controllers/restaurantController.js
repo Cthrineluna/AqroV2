@@ -112,7 +112,7 @@ exports.updateRestaurant = async (req, res) => {
         
         // If there was an old logo, delete it
         const oldRestaurant = await Restaurant.findById(restaurantId);
-        if (oldRestaurant?.logo && oldRestaurant.logo !== 'default-restaurant.png' && fs.existsSync(`./public${oldRestaurant.logo}`)) {
+        if (oldRestaurant?.logo && oldRestaurant.logo !== '' && fs.existsSync(`./public${oldRestaurant.logo}`)) {
           fs.unlinkSync(`./public${oldRestaurant.logo}`);
         }
       }

@@ -245,7 +245,8 @@ exports.registerStaff = async (req, res, next) => {
     // Destructure required fields
     const { 
       firstName, lastName, email, password,
-      restaurantName, address, city, contactNumber, description
+      restaurantName, address, city, contactNumber, description,
+      restaurantLogo // This will now be a base64 string instead of a file
     } = req.body;
 
     // Validate required fields
@@ -269,8 +270,7 @@ exports.registerStaff = async (req, res, next) => {
     // Process uploaded files
     const businessPermit = req.files.businessPermit[0];
     const birRegistration = req.files.birRegistration[0];
-    const restaurantLogo = req.files.restaurantLogo?.[0];
-
+    
     // Create new restaurant (initially inactive)
     restaurant = new Restaurant({
       name: restaurantName,
@@ -280,7 +280,8 @@ exports.registerStaff = async (req, res, next) => {
       },
       description: description || '', 
       contactNumber,
-      logo: restaurantLogo ? restaurantLogo.buffer : 'default-restaurant.png',
+      // Store base64 string directly if provided, otherwise use default
+      logo: restaurantLogo || '',
       businessPermit: {
         fileData: businessPermit.buffer,
         fileName: businessPermit.originalname,

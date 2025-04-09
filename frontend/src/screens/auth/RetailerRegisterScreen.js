@@ -112,10 +112,11 @@ const pickImage = async () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Updated this line
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 4],
       quality: 0.8,
+      base64: true // Add this to get base64 data
     });
 
     if (!result.canceled) {
@@ -129,7 +130,15 @@ const pickImage = async () => {
         return;
       }
       
-      setRestaurantLogo(imageAsset);
+      // Add the base64 string to the imageAsset object
+      const base64String = `data:image/jpeg;base64,${imageAsset.base64}`;
+      
+      // Store both original asset data and the base64 string
+      setRestaurantLogo({
+        ...imageAsset,
+        base64String: base64String
+      });
+      
       setError('');
     }
   } catch (err) {
@@ -137,7 +146,6 @@ const pickImage = async () => {
     setError('Failed to select image: ' + (err.message || 'Unknown error'));
   }
 };
-
   const validateForm = () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword) {
       setError('All personal information fields are required');
@@ -184,7 +192,7 @@ const pickImage = async () => {
     setLoading(true);
   
     try {
-      // Create staff data object with enhanced logging
+      // Create staff data object
       const staffData = {
         firstName,
         lastName,
@@ -194,12 +202,19 @@ const pickImage = async () => {
         address,
         city,
         contactNumber,
-        businessPermit: businessPermit,
-        birRegistration: birRegistration
+        businessPermit,
+        birRegistration
       };
   
+      // Add the restaurant logo - either base64 string or file reference
       if (restaurantLogo) {
-        staffData.restaurantLogo = restaurantLogo;
+        if (restaurantLogo.base64String) {
+          // Use the base64 string if available
+          staffData.restaurantLogo = restaurantLogo.base64String;
+        } else {
+          // Otherwise use the file object
+          staffData.restaurantLogo = restaurantLogo;
+        }
       }
       
       console.log('Submitting registration with data:', {
@@ -210,7 +225,9 @@ const pickImage = async () => {
         birRegistration: birRegistration ? 
           `File: ${birRegistration.name}, Size: ${(birRegistration.size/1024).toFixed(2)}KB` : null,
         restaurantLogo: restaurantLogo ? 
-          `File: ${restaurantLogo.uri.split('/').pop()}, Size: ${(restaurantLogo.fileSize/1024).toFixed(2)}KB` : null
+          (restaurantLogo.base64String ? 
+            `Base64 Image (${(restaurantLogo.fileSize/1024).toFixed(2)}KB)` : 
+            `File: ${restaurantLogo.name}, Size: ${(restaurantLogo.fileSize/1024).toFixed(2)}KB`) : null
       });
   
       const response = await registerStaff(staffData);
