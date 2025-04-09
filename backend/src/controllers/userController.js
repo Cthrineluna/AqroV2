@@ -96,8 +96,8 @@ exports.updateUserProfile = async (req, res) => {
 // Get all users (admin only)
 exports.getAllUsers = async (req, res) => {
   try {
-    // Exclude password field when fetching users
-    const users = await User.find().select('-password');
+    // Exclude password field when fetching users and only get approved users
+    const users = await User.find({ isApproved: true }).select('-password');
     res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -145,36 +145,38 @@ exports.createUser = async (req, res) => {
 exports.updateUserByAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, email, userType } = req.body;
+    const { firstName, lastName, email, userType, password } = req.body;
     
-    // Prepare update object
-    const updateData = { 
-      firstName, 
-      lastName,
-      userType
-    };
-    
-    // Only add email if it was provided and changed
-    if (email) {
-      // Check if email is already taken by another user
+    // Find the user first
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update basic fields
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.userType = userType;
+
+    // Handle email update with uniqueness check
+    if (email && email !== user.email) {
       const existingUser = await User.findOne({ email });
       if (existingUser && existingUser._id.toString() !== id) {
         return res.status(400).json({ message: 'Email is already in use' });
       }
-      updateData.email = email;
+      user.email = email;
     }
-    
-    // Find user and update
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
+    // Handle password update if provided
+    if (password && password.trim() !== '') {
+      user.password = password; // This will be hashed by the pre-save hook
     }
-    
+
+    // Save the user (triggers password hashing)
+    await user.save();
+
+    // Return updated user without password
+    const updatedUser = await User.findById(id).select('-password');
     res.json(updatedUser);
   } catch (error) {
     console.error('Error updating user:', error);
