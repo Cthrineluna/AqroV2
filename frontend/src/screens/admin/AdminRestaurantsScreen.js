@@ -29,6 +29,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { getApiUrl } from '../../services/apiConfig';
+import { Keyboard } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -44,33 +45,8 @@ const AdminRestaurantsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  useEffect(() => {
-    fetchRestaurants();
-  }, []);
 
-  const fadeIn = useCallback(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
-
-  const fadeOut = useCallback((callback) => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      if (callback) callback();
-    });
-  }, [fadeAnim]);
-
-  const openRestaurantModal = (restaurant = null) => {
-    setSelectedRestaurant(restaurant);
-    setModalVisible(true);
-    fadeIn();
-  };
+ 
  
   // Fetch restaurants
   const fetchRestaurants = async () => {
@@ -92,85 +68,75 @@ const AdminRestaurantsScreen = ({ navigation }) => {
     }
   };
 
-  // Pick Logo Image
-  const pickLogoImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Sorry, we need camera roll permissions to make this work!');
-      return;
-    }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      setLocalRestaurant(prev => ({ ...prev, logo: result.assets[0].uri }));
-    }
-  };
-
-  // Create/Update Restaurant
-  const handleSaveRestaurant = async (restaurantData) => {
-    try {
-      const storedToken = await AsyncStorage.getItem('aqro_token');
-      
-      // Create FormData for file uploads
-      const formData = new FormData();
-      formData.append('name', restaurantData.name);
-      formData.append('description', restaurantData.description);
-      formData.append('contactNumber', restaurantData.contactNumber);
-      formData.append('location[address]', restaurantData.location.address);
-      formData.append('location[city]', restaurantData.location.city);
-      formData.append('isActive', restaurantData.isActive);
-
-      // Add logo if it exists and is a URI (new upload)
-      if (restaurantData.logo && restaurantData.logo.startsWith('file:')) {
-        const logoFile = {
-          uri: restaurantData.logo,
-          type: 'image/jpeg',
-          name: 'logo.jpg'
-        };
-        formData.append('logo', logoFile);
-      }
+// Create/Update Restaurant
+const handleSaveRestaurant = async (restaurantData) => {
+  Keyboard.dismiss();
   
-      if (selectedRestaurant) {
-        // Update existing restaurant
-        await axios.put(
-          `${getApiUrl()}/restaurants/${selectedRestaurant._id}`, 
-          formData, 
-          { 
-            headers: { 
-              Authorization: `Bearer ${storedToken}`,
-              'Content-Type': 'multipart/form-data'
-            } 
-          }
-        );
-      } else {
-        // Create new restaurant
-        await axios.post(
-          `${getApiUrl()}/restaurants`, 
-          formData, 
-          { 
-            headers: { 
-              Authorization: `Bearer ${storedToken}`,
-              'Content-Type': 'multipart/form-data'
-            } 
-          }
-        );
+  try {
+    const storedToken = await AsyncStorage.getItem('aqro_token');
+    
+    const formData = new FormData();
+    formData.append('name', restaurantData.name);
+    formData.append('description', restaurantData.description);
+    formData.append('contactNumber', restaurantData.contactNumber);
+    formData.append('location[address]', restaurantData.location.address);
+    formData.append('location[city]', restaurantData.location.city);
+    formData.append('isActive', restaurantData.isActive.toString());
+    
+    // Handle logo upload
+    if (restaurantData.logo) {
+      if (restaurantData.logo.startsWith('data:image')) {
+        formData.append('logo', restaurantData.logo);
+      } else if (restaurantData.logo.startsWith('file:')) {
+        const filename = restaurantData.logo.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+        
+        formData.append('logo', {
+          uri: restaurantData.logo,
+          name: filename,
+          type: type
+        });
       }
-      
-      // Reset form and close modal
-      fetchRestaurants();
-      setModalVisible(false);
-      setSelectedRestaurant(null);
-    } catch (error) {
-      console.error('Error saving restaurant:', error.response?.data || error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to save restaurant');
     }
-  };
+    
+    // Make API request based on whether editing or creating
+    if (selectedRestaurant) {
+      await axios.put(
+        `${getApiUrl()}/restaurants/${selectedRestaurant._id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      Alert.alert('Success', 'Restaurant updated successfully!');
+    } else {
+      await axios.post(
+        `${getApiUrl()}/restaurants`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      Alert.alert('Success', 'Restaurant added successfully!');
+    }
+
+    fetchRestaurants();
+    setModalVisible(false);
+    setSelectedRestaurant(null);
+  } catch (error) {
+    console.error('Error saving restaurant:', error.response?.data || error);
+    Alert.alert('Error', error.response?.data?.message || 'Failed to save restaurant');
+  }
+};
+
 
   // Delete restaurant
   const handleDeleteRestaurant = async (restaurantId) => {
@@ -195,6 +161,7 @@ const AdminRestaurantsScreen = ({ navigation }) => {
                 }
               );
               fetchRestaurants();
+              Alert.alert('Success', 'Restaurant deleted successfully');
             } catch (error) {
               console.error('Error deleting restaurant:', error);
               Alert.alert(
@@ -214,6 +181,12 @@ const AdminRestaurantsScreen = ({ navigation }) => {
     navigation.navigate('AdminContainerScreen', { restaurantId });
   };
 
+  const openRestaurantModal = (restaurant = null) => {
+    setSelectedRestaurant(restaurant);
+    setModalVisible(true);
+    fadeIn();
+  };
+
   // Helper function for email validation
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -226,6 +199,33 @@ const AdminRestaurantsScreen = ({ navigation }) => {
     const phoneRegex = /^(\+?63|0)9\d{9}$/;
     return phoneRegex.test(phoneNumber);
   };
+  useEffect(() => {
+    fetchRestaurants();
+  }, []);
+  const fadeIn = () => {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    };
+  
+    const fadeOut = (callback) => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        if (callback) callback();
+      });
+    };
+  
+    // Handle modal visibility with animation
+    useEffect(() => {
+      if (modalVisible || actionModalVisible) {
+        fadeIn();
+      }
+    }, [modalVisible, actionModalVisible]);
 
   const renderRestaurantItem = ({ item }) => (
     <TouchableOpacity 
@@ -280,7 +280,7 @@ const AdminRestaurantsScreen = ({ navigation }) => {
           styles.statusBadge, 
           { 
             backgroundColor: item.isActive 
-              ? (theme?.success + '20' || 'rgba(40,167,69,0.1)') 
+              ? (theme?.primary + '20' || 'rgba(40,167,69,0.1)') 
               : (theme?.danger + '20' || 'rgba(220,53,69,0.1)') 
           }
         ]}>
@@ -288,7 +288,7 @@ const AdminRestaurantsScreen = ({ navigation }) => {
             styles.statusText, 
             { 
               color: item.isActive 
-                ? (theme?.success || '#28A745') 
+                ? (theme?.primary || '#28A745') 
                 : (theme?.danger || '#DC3545') 
             }
           ]}>
@@ -313,6 +313,34 @@ const AdminRestaurantsScreen = ({ navigation }) => {
       isActive: selectedRestaurant?.isActive || false
     });
     const [localError, setLocalError] = useState('');
+
+      // Pick Logo Image
+  const pickLogoImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+        return;
+      }
+  
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+      });
+  
+      if (!result.canceled) {
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setLocalRestaurant(prev => ({ ...prev, logo: base64Image }));
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
 
     const validateForm = () => {
       if (!localRestaurant.name.trim()) {
@@ -379,15 +407,12 @@ const AdminRestaurantsScreen = ({ navigation }) => {
                 style={styles.logoPickerContainer}
                 onPress={pickLogoImage}
               >
-                {localRestaurant.logo ? (
-                  <Image 
-                    source={{ 
-                      uri: localRestaurant.logo.startsWith('file:') 
-                        ? localRestaurant.logo 
-                        : `${getApiUrl()}/${localRestaurant.logo}`.replace('http://localhost:3000/', getApiUrl())
-                    }} 
-                    style={styles.logoPicker} 
-                  />
+               {localRestaurant.logo ? (
+  <Image 
+    source={{ uri: localRestaurant.logo }} 
+    style={styles.logoPicker} 
+    resizeMode="cover"
+  />
                 ) : (
                   <View style={[
                     styles.logoInitialsLarge,
@@ -582,6 +607,23 @@ const AdminRestaurantsScreen = ({ navigation }) => {
             </View>
           </ScrollView>
         </Animated.View>
+        {loading && (
+  <View style={[
+    styles.loadingOverlay,
+    { backgroundColor: theme?.modalOverlay || 'rgba(0,0,0,0.5)' }
+  ]}
+  pointerEvents={loading ? "auto" : "none"}>
+    <View style={[
+      styles.loadingContainer,
+      { backgroundColor: theme?.card || '#FFFFFF' }
+    ]}>
+      <ActivityIndicator size="large" color={theme?.primary || '#007BFF'} />
+      <RegularText style={{marginTop: 10, color: theme?.text || '#000000'}}>
+        {selectedRestaurant ? 'Updating restaurant...' : 'Creating restaurant...'}
+      </RegularText>
+    </View>
+  </View>
+)}
       </RNModal>
     );
   };
@@ -820,6 +862,7 @@ const AdminRestaurantsScreen = ({ navigation }) => {
                 </View>
             </TouchableOpacity>
             </Animated.View>
+
         </RNModal>
 
         {/* Staff Modal */}
@@ -1305,6 +1348,23 @@ const styles = StyleSheet.create({
   },
   addStaffButtonSmall: {
     padding: 8,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    pointerEvents: 'auto', // This allows the overlay to capture touch events
+  },
+  loadingContainer: {
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

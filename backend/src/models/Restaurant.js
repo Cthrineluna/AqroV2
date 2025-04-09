@@ -31,7 +31,7 @@ const restaurantSchema = new mongoose.Schema({
   },
   logo: {
     type: String,
-    default: 'default-restaurant.png'
+    default: ''
   },
   businessPermit: {  // Changed from businessLicense
     fileData: Buffer,
