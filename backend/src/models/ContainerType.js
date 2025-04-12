@@ -8,7 +8,6 @@ const containerTypeSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true
   },
   price: {
     type: Number,
@@ -20,7 +19,6 @@ const containerTypeSchema = new mongoose.Schema({
   },
   rebateValue: {
     type: Number,
-    required: true
   },
   maxUses: {
     type: Number,

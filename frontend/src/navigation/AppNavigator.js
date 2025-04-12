@@ -10,7 +10,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import RetailRegisterScreen from '../screens/auth/RetailerRegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
-import PendingApprovalScreen from '../screens/auth/PendingApprovalScreen'; // Add this import
+import PendingApprovalScreen from '../screens/auth/PendingApprovalScreen'; 
 
 // Shared screens
 import SettingsScreen from '../screens/shared/SettingsScreen';
@@ -30,6 +30,7 @@ import StaffScannerScreen from '../screens/staff/StaffScannerScreen';
 // Admin screens
 import AdminTabNavigator from './AdminTabNavigator';
 import ViewQRScreen from '../screens/admin/ViewQRScreen';
+import AdminContainerTypeScreen from '../screens/admin/AdminContainerTypeScreen';
 
 const Stack = createStackNavigator();
 
@@ -93,7 +94,10 @@ const AppNavigator = () => {
         <>
           <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
           <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
+          <Stack.Screen name="ContainerType" component={AdminContainerTypeScreen} />
           <Stack.Screen name="ViewQr" component={ViewQRScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
         </>
       )}
     </Stack.Navigator>

@@ -16,4 +16,23 @@ router.get('/restaurant/:restaurantId/totals',
   rebateController.getRestaurantRebateTotals
 );
 
+router.get('/:containerTypeId', 
+  protect,
+  rebateController.getRebatesByContainerType
+);
+
+// Create or update rebate
+router.post('/', 
+  protect,
+  authorize('admin', 'staff'),
+  rebateController.createOrUpdateRebate
+);
+
+// Delete rebate
+router.delete('/:id', 
+  protect,
+  authorize('admin'),
+  rebateController.deleteRebate
+);
+
 module.exports = router;

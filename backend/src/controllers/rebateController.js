@@ -1,5 +1,79 @@
 const mongoose = require('mongoose');
 const Rebate = require('../models/Rebate');
+const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
+
+// Get rebate values for a specific container type
+exports.getRebatesByContainerType = async (req, res) => {
+  try {
+    const containerTypeId = req.params.containerTypeId;
+    
+    const rebates = await RestaurantContainerRebate.find({ containerTypeId })
+      .populate('restaurantId', 'name');
+      
+    const formattedRebates = rebates.map(rebate => ({
+      restaurantId: rebate.restaurantId._id,
+      restaurantName: rebate.restaurantId.name,
+      rebateValue: rebate.rebateValue.toString(),
+      _id: rebate._id
+    }));
+    
+    res.status(200).json(formattedRebates);
+  } catch (error) {
+    console.error('Error fetching rebates:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Create or update rebate value
+exports.createOrUpdateRebate = async (req, res) => {
+  try {
+    const { restaurantId, containerTypeId, rebateValue } = req.body;
+    
+    // Validate inputs
+    if (!restaurantId || !containerTypeId || rebateValue === undefined) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+    
+    // Check if rebate already exists
+    let rebate = await RestaurantContainerRebate.findOne({ 
+      restaurantId, 
+      containerTypeId 
+    });
+    
+    if (rebate) {
+      // Update existing rebate
+      rebate.rebateValue = rebateValue;
+      await rebate.save();
+    } else {
+      // Create new rebate
+      rebate = new RestaurantContainerRebate({
+        restaurantId,
+        containerTypeId,
+        rebateValue
+      });
+      await rebate.save();
+    }
+    
+    res.status(200).json(rebate);
+  } catch (error) {
+    console.error('Error creating/updating rebate:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Delete rebate
+exports.deleteRebate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await RestaurantContainerRebate.findByIdAndDelete(id);
+    
+    res.status(200).json({ message: 'Rebate deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting rebate:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 exports.getStaffRebateTotals = async (req, res) => {
   try {

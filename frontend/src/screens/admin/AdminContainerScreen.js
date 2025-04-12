@@ -1795,21 +1795,35 @@ const AdminContainersScreen = ({ navigation, route }) => {
       />
       
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <BoldText style={[styles.headerTitle, { color: theme.text }]}>
-          {userId ? 'User Containers' : 'All Containers'}
-        </BoldText>
-        <TouchableOpacity onPress={() => setEditModalVisible(true)}>
-           <Ionicons 
-                      name="add-circle-outline" 
-                      size={24} 
-                      color={theme?.primary || '#007BFF'} 
-                    />
-        </TouchableOpacity>
-      </View>
+<View style={[styles.header, { backgroundColor: theme.background }]}>
+  <TouchableOpacity onPress={() => navigation.goBack()}>
+    <Ionicons name="arrow-back" size={24} color={theme.text} />
+  </TouchableOpacity>
+  <BoldText style={[styles.headerTitle, { color: theme.text }]}>
+    {userId ? 'User Containers' : 'All Containers'}
+  </BoldText>
+  <View style={{ flexDirection: 'row' }}>
+  <TouchableOpacity onPress={() => setEditModalVisible(true)}>
+      <Ionicons 
+        name="add-circle-outline" 
+        size={24} 
+        color={theme?.primary || '#007BFF'} 
+        style={{ marginRight: 16 }}
+      />
+    </TouchableOpacity>
+    <TouchableOpacity 
+      onPress={() => navigation.navigate('ContainerType')}
+      
+    >
+      <Ionicons 
+        name="list-outline" 
+        size={24} 
+        color={theme.text} 
+      />
+    </TouchableOpacity>
+    
+  </View>
+</View>
       
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
