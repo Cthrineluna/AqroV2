@@ -1073,7 +1073,10 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                       </TouchableOpacity>
                     )}
                   </View>
-                  
+                  <ScrollView 
+      style={{ maxHeight: 200 }}
+      nestedScrollEnabled={true}
+    >
                   <TouchableOpacity
                     style={[
                       styles.dropdownItem,
@@ -1126,10 +1129,12 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                     )}
                 </TouchableOpacity>
                 ))}
-
+            </ScrollView>
                 </View>
               )}
             </View>
+
+
             <View style={styles.formGroup}>
               <MediumText style={{ color: theme.text, marginBottom: 8 }}>Status</MediumText>
               <TouchableOpacity
@@ -1147,23 +1152,27 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
               </TouchableOpacity>
 
               {showStatusDropdown && (
-                <View style={[styles.dropdownMenu, { backgroundColor: theme.card }]}>
-                  {statusOptions.map(option => (
-                    <TouchableOpacity
-                      key={option.value}
-                      style={[
-                        styles.dropdownItem, 
-                        { 
-                          backgroundColor: status === option.value 
-                            ? theme.primary + '20' 
-                            : 'transparent' 
-                        }
-                      ]}
-                      onPress={() => {
-                        setStatus(option.value);
-                        setShowStatusDropdown(false);
-                      }}
-                    >
+                 <View style={[styles.dropdownMenu, { backgroundColor: theme.card }]}>
+            <ScrollView 
+              style={{ maxHeight: 200 }}
+              nestedScrollEnabled={true}
+            >
+              {statusOptions.map(option => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.dropdownItem, 
+                    { 
+                      backgroundColor: status === option.value 
+                        ? theme.primary + '20' 
+                        : 'transparent' 
+                    }
+                  ]}
+                  onPress={() => {
+                    setStatus(option.value);
+                    setShowStatusDropdown(false);
+                  }}
+                >
                       <RegularText style={{ 
                         color: status === option.value ? theme.primary : theme.text 
                       }}>
@@ -1174,9 +1183,11 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                       )}
                     </TouchableOpacity>
                   ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
+            
             <View style={styles.formGroup}>
               <MediumText style={{ color: theme.text, marginBottom: 8 }}>Uses Count</MediumText>
               <TextInput
@@ -1223,6 +1234,10 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                     )}
                   </View>
                   
+                  <ScrollView 
+                  style={{ maxHeight: 200 }}
+                  nestedScrollEnabled={true}
+                >
                   <TouchableOpacity
                     style={[
                       styles.dropdownItem,
@@ -1276,6 +1291,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                       )}
                     </TouchableOpacity>
                   ))}
+                   </ScrollView>
                 </View>
               )}
             </View>
@@ -1313,7 +1329,10 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                       </TouchableOpacity>
                     )}
                   </View>
-                  
+                  <ScrollView 
+                    style={{ maxHeight: 200 }}
+                    nestedScrollEnabled={true}
+                  >
                   {filteredContainerTypes.map(type => (
                     <TouchableOpacity
                       key={type._id}
@@ -1342,6 +1361,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                       )}
                     </TouchableOpacity>
                   ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
@@ -2256,17 +2276,17 @@ editModalContainer: {
     marginTop: 4,
     borderRadius: 8,
     maxHeight: 200,
-    paddingBottom: 10, // Add padding at the bottom
-    overflow: 'scroll', // Change from 'hidden' to 'scroll'
+    paddingBottom: 10,
+    overflow: 'scroll', 
     zIndex: 1000,
   },
 dropdownItem: {
   flexDirection: 'row',
   justifyContent: 'space-between',
   alignItems: 'center',
-  paddingVertical: 2,
+  paddingVertical: 12, 
   paddingHorizontal: 16,
-  minHeight: 44, // Ensure consistent touch targets
+  minHeight: 44, 
 },
   editModalFooter: {
     flexDirection: 'row',
