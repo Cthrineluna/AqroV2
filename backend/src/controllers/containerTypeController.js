@@ -37,11 +37,15 @@ exports.createContainerType = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
     
-    let image = 'default-container.png';
+    let image = '';
     
     // Handle image upload if provided
     if (req.file) {
-      image = req.file.filename;
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const base64Image = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+      image = base64Image;
+      // Delete the temporary file
+      fs.unlinkSync(req.file.path);
     }
     
     const containerType = new ContainerType({
@@ -81,15 +85,11 @@ exports.updateContainerType = async (req, res) => {
     
     // Handle image upload if provided
     if (req.file) {
-      // Delete old image if it's not the default
-      if (containerType.image !== 'default-container.png') {
-        const oldImagePath = path.join(__dirname, '../uploads', containerType.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
-      }
-      
-      containerType.image = req.file.filename;
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const base64Image = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+      containerType.image = base64Image;
+      // Delete the temporary file
+      fs.unlinkSync(req.file.path);
     }
     
     await containerType.save();

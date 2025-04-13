@@ -173,17 +173,25 @@ const AdminContainerTypeScreen = ({ navigation }) => {
       formData.append('maxUses', containerTypeData.maxUses);
       
       // Add image if it's a file URI
-      if (containerTypeData.image && containerTypeData.image.startsWith('file:')) {
-        const filename = containerTypeData.image.split('/').pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : 'image/jpeg';
-        
-        formData.append('image', {
-          uri: containerTypeData.image,
-          name: filename,
-          type,
-        });
-      }
+       // Handle image upload if it's a new image
+   // Handle image upload if it's a new image
+   if (containerTypeData.image && containerTypeData.image.startsWith('file:')) {
+    const filename = containerTypeData.image.split('/').pop();
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+    
+    formData.append('image', {
+      uri: containerTypeData.image,
+      name: filename,
+      type,
+    });
+  } else if (containerTypeData.image && !containerTypeData.image.startsWith('file:')) {
+    // If it's a base64 string (existing image), just send it as is
+    formData.append('image', containerTypeData.image);
+  } else {
+    // No image provided, use default
+    formData.append('image', 'default-container.png');
+  }
   
       if (selectedContainerType && selectedContainerType._id) {
         // First get current rebates to compare
@@ -357,21 +365,25 @@ const AdminContainerTypeScreen = ({ navigation }) => {
       <View style={styles.containerTypeCardContent}>
         {/* Container Type Image */}
         <View style={styles.containerTypeImageContainer}>
-          {item.image && item.image !== 'default-container.png' ? (
-            <Image 
-              source={{ uri: `${getApiUrl()}/uploads/${item.image}` }} 
-              style={styles.containerTypeImage} 
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={[
-              styles.containerTypeInitials, 
-              { backgroundColor: theme?.primary || '#007BFF' }
-            ]}>
-              <Ionicons name="cube-outline" size={24} color="white" />
-            </View>
-          )}
-        </View>
+        {item.image ? (
+          <Image 
+            source={{ 
+              uri: typeof item.image === 'string' && item.image.startsWith('data:image') 
+                ? item.image 
+                : `${getApiUrl()}/uploads/${item.image}`
+            }} 
+            style={styles.containerTypeImage} 
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[
+            styles.containerTypeInitials, 
+            { backgroundColor: theme?.primary || '#007BFF' }
+          ]}>
+            <Ionicons name="cube-outline" size={24} color="white" />
+          </View>
+        )}
+      </View>
 
         {/* Container Type Details */}
         <View style={styles.containerTypeDetails}>
@@ -635,12 +647,14 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                   style={styles.containerTypeImagePickerContainer}
                   onPress={handleImagePick}
                 >
-                  {localContainerType.image && localContainerType.image !== 'default-container.png' ? (
+                  {localContainerType.image ? (
                     <Image 
                       source={{ 
-                        uri: localContainerType.image.startsWith('file:') 
+                        uri: typeof localContainerType.image === 'string' && localContainerType.image.startsWith('data:image') 
                           ? localContainerType.image 
-                          : `${getApiUrl()}/uploads/${localContainerType.image}` 
+                          : localContainerType.image.startsWith('file:') 
+                            ? localContainerType.image 
+                            : `${getApiUrl()}/uploads/${localContainerType.image}`
                       }} 
                       style={styles.containerTypeImagePicker} 
                     />
@@ -649,11 +663,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                       styles.containerTypeImagePlaceholder,
                       { backgroundColor: theme?.primary || '#007BFF' }
                     ]}>
-                      <Ionicons 
-                        name="camera" 
-                        size={24} 
-                        color="white" 
-                      />
+                      <Ionicons name="camera" size={24} color="white" />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -1093,7 +1103,7 @@ const styles = StyleSheet.create({
   containerTypeImageContainer: {
     width: 50,
     height: 50,
-    borderRadius: 8,
+    borderRadius: 30,
     overflow: 'hidden',
     marginRight: 15,
   },
