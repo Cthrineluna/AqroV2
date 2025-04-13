@@ -163,7 +163,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
       // Prepare form data
       const formData = new FormData();
       formData.append('name', containerTypeData.name);
-      formData.append('description', containerTypeData.description);
+      formData.append('description', containerTypeData.description || ''); 
       formData.append('price', containerTypeData.price);
       formData.append('maxUses', containerTypeData.maxUses);
       
@@ -181,7 +181,9 @@ const AdminContainerTypeScreen = ({ navigation }) => {
       }
   
       if (selectedContainerType && selectedContainerType._id) {
-        // Update existing container type
+        // First get current rebates to compare
+        const currentRebates = await fetchRebateValues(selectedContainerType._id);
+        
         await axios.put(
           `${getApiUrl()}/container-types/${selectedContainerType._id}`, 
           formData, 
@@ -192,26 +194,48 @@ const AdminContainerTypeScreen = ({ navigation }) => {
             } 
           }
         );
-        
+
         // Update rebate values
-        if (containerTypeData.rebates && containerTypeData.rebates.length > 0) {
-          for (const rebate of containerTypeData.rebates) {
-            await axios.post(
-              `${getApiUrl()}/rebates`, 
-              {
-                restaurantId: rebate.restaurantId,
-                containerTypeId: selectedContainerType._id,
-                rebateValue: rebate.rebateValue
-              },
-              { 
-                headers: { 
-                  Authorization: `Bearer ${storedToken}`,
-                  'Content-Type': 'application/json'
-                } 
-              }
-            );
-          }
+       // Handle rebate updates and deletions
+      if (containerTypeData.rebates) {
+        // Find rebates that need to be deleted (present in current but not in new data)
+        const rebatesToDelete = currentRebates.filter(currentRebate => 
+          !containerTypeData.rebates.some(newRebate => 
+            newRebate.restaurantId === currentRebate.restaurantId
+          )
+        );
+        
+        // Delete removed rebates
+        for (const rebate of rebatesToDelete) {
+          await axios.delete(
+            `${getApiUrl()}/rebates/${rebate._id}`,
+            { 
+              headers: { 
+                Authorization: `Bearer ${storedToken}`,
+                'Content-Type': 'application/json'
+              } 
+            }
+          );
         }
+        
+        // Update or create remaining rebates
+        for (const rebate of containerTypeData.rebates) {
+          await axios.post(
+            `${getApiUrl()}/rebates`, 
+            {
+              restaurantId: rebate.restaurantId,
+              containerTypeId: selectedContainerType._id,
+              rebateValue: rebate.rebateValue
+            },
+            { 
+              headers: { 
+                Authorization: `Bearer ${storedToken}`,
+                'Content-Type': 'application/json'
+              } 
+            }
+          );
+        }
+      }
       } else {
         // Create new container type
         const response = await axios.post(

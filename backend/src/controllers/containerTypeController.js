@@ -74,7 +74,7 @@ exports.updateContainerType = async (req, res) => {
     
     // Update fields if provided
     if (name) containerType.name = name;
-    if (description) containerType.description = description;
+    if (description !== undefined) containerType.description = description; 
     if (price) containerType.price = price;
     if (maxUses) containerType.maxUses = maxUses;
     if (isActive !== undefined) containerType.isActive = isActive;
