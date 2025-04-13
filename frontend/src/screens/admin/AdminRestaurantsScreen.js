@@ -547,6 +547,7 @@ const handleSaveRestaurant = async (restaurantData) => {
           fadeOut(() => setModalVisible(false));
         }}
       >
+         <View style={styles.modalBackdrop} />
         <Animated.View 
           style={[
             styles.modalOverlay,
@@ -829,11 +830,14 @@ const handleSaveRestaurant = async (restaurantData) => {
               styles.actionModalContent, 
               { 
                 backgroundColor: theme?.card || '#FFFFFF',
-                minWidth: width * 0.7,
                 position: 'absolute',
-                bottom: 20,
-                left: 20,
-                right: 20
+                bottom: 0, 
+                left: 0,   
+                right: 0,  
+                borderTopLeftRadius: 15,
+                borderTopRightRadius: 15,
+                borderBottomLeftRadius: 0, 
+                borderBottomRightRadius: 0 
               }
             ]}>
               <TouchableOpacity 
@@ -854,19 +858,19 @@ const handleSaveRestaurant = async (restaurantData) => {
               
               {/* New Staff Management Option */}
           
-<TouchableOpacity 
-  style={styles.actionModalButton}
-  onPress={() => {
-    setActionModalVisible(false);
-    setTimeout(() => handleViewStaff(selectedRestaurant._id), 100); 
-  }}
->
-  <Ionicons name="people-outline" size={24} color={theme?.primary || '#007BFF'} />
-  <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
-    Manage Staff
-  </RegularText>
-</TouchableOpacity>
-              
+              <TouchableOpacity 
+                style={styles.actionModalButton}
+                onPress={() => {
+                  setActionModalVisible(false);
+                  setTimeout(() => handleViewStaff(selectedRestaurant._id), 100); 
+                }}
+              >
+                <Ionicons name="people-outline" size={24} color={theme?.primary || '#007BFF'} />
+                <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
+                  Manage Staff
+                </RegularText>
+              </TouchableOpacity>
+                            
               <TouchableOpacity 
                 style={styles.actionModalButton}
                 onPress={() => {
@@ -934,7 +938,7 @@ const handleSaveRestaurant = async (restaurantData) => {
     >
        <View style={[
         styles.modalOverlay, 
-        { backgroundColor: 'rgba(0,0,0,0.5)' }
+        { backgroundColor: 'rgba(0,0,0,0.8)' }
       ]}>
         <TouchableWithoutFeedback 
           onPress={() => setStaffModalVisible(false)}
@@ -1135,7 +1139,7 @@ const handleSaveRestaurant = async (restaurantData) => {
         {staffLoading && (
         <View style={[
           styles.loadingOverlay,
-          { backgroundColor: theme?.modalOverlay || 'rgba(0,0,0,0.5)' }
+          { backgroundColor: theme?.modalOverlay || 'rgba(0,0,0,0.8)' }
         ]}>
           <View style={[
             styles.loadingContainer,
@@ -1576,6 +1580,14 @@ const styles = StyleSheet.create({
     },
     closeButton: {
       padding: 5,
+    },
+    modalBackdrop: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
     },
 });
 

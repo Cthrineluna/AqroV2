@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   View, 
   StyleSheet, 
@@ -39,26 +39,31 @@ const AdminContainerTypeScreen = ({ navigation }) => {
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(0));
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Animation functions
-  const fadeIn = useCallback(() => {
+  const fadeIn = () => {
+    // Reset animation value if needed
+    fadeAnim.setValue(0);
+    
+    // Start the animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [fadeAnim]);
+  };
+  
 
-  const fadeOut = useCallback((callback) => {
+  const fadeOut = (callback) => {
     Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 200,
+      duration: 300,
       useNativeDriver: true,
     }).start(() => {
       if (callback) callback();
     });
-  }, [fadeAnim]);
+  };
 
   // Fetch container types
   const fetchContainerTypes = async () => {
@@ -400,7 +405,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
   // Action Modal for container type options
   const ActionModal = () => (
     <RNModal
-      animationType="fade"
+      animationType="none"
       transparent={true}
       visible={actionModalVisible}
       onRequestClose={() => {
@@ -1099,7 +1104,7 @@ const styles = StyleSheet.create({
   containerTypeInitials: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1146,12 +1151,12 @@ const styles = StyleSheet.create({
   containerTypeImagePicker: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: 50,
   },
   containerTypeImagePlaceholder: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1229,21 +1234,24 @@ const styles = StyleSheet.create({
   actionModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    justifyContent: 'flex-end', 
     alignItems: 'center',
   },
   actionModalOverlayTouch: {
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
   actionModalContent: {
-    width: '80%',
-    borderRadius: 12,
+    width: '100%', // Changed from '80%' to '100%'
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 0, // Remove bottom border radius
+    borderBottomRightRadius: 0, // Remove bottom border radius
     padding: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: -2 }, // Changed to come from the top
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
