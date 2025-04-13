@@ -381,16 +381,16 @@ const AdminContainerTypeScreen = ({ navigation }) => {
           </RegularText>
         </View>
 
-        {/* Container Type Price */}
+        {/* Container Type Uses */}
         <View style={[
-          styles.priceContainer, 
+          styles.maxUsesContainer, 
           { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
         ]}>
           <RegularText style={[
-            styles.priceText, 
+            styles.maxUsesText, 
             { color: theme?.primary || '#007BFF' }
           ]}>
-            ${item.price.toFixed(2)}
+            {item.maxUses} uses
           </RegularText>
         </View>
       </View>
@@ -552,10 +552,10 @@ const AdminContainerTypeScreen = ({ navigation }) => {
         setLocalError('Name is required');
         return false;
       }
-      if (isNaN(parseFloat(localContainerType.price)) || parseFloat(localContainerType.price) <= 0) {
-        setLocalError('Price must be a positive number');
-        return false;
-      }
+      // if (isNaN(parseFloat(localContainerType.price)) || parseFloat(localContainerType.price) <= 0) {
+      //   setLocalError('Price must be a positive number');
+      //   return false;
+      // }
       if (isNaN(parseInt(localContainerType.maxUses)) || parseInt(localContainerType.maxUses) <= 0) {
         setLocalError('Max uses must be a positive number');
         return false;
@@ -704,7 +704,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                 />
   
                 <View style={styles.rowInputContainer}>
-                  <TextInput
+                  {/* <TextInput
                     style={[
                       styles.input, 
                       styles.halfInput,
@@ -722,7 +722,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                     }}
                     keyboardType="numeric"
                     placeholderTextColor={theme?.textMuted || '#888888'}
-                  />
+                  /> */}
   
                   <TextInput
                     style={[
@@ -1317,6 +1317,15 @@ const styles = StyleSheet.create({
   modalScrollView: {
     width: '100%',
     maxHeight: Dimensions.get('window').height * 0.6, // Control scroll area height
+  },
+  maxUsesContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+    alignSelf: 'flex-start',
+  },
+  maxUsesText: {
+    fontSize: 14,
   },
 });
 
