@@ -616,7 +616,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                   key={restaurant._id} 
                   label={restaurant.name} 
                   value={restaurant._id} 
-                  color={theme?.text || '#000000'}
+                  color={'#000000'}
                 />
               ))}
           </Picker>
