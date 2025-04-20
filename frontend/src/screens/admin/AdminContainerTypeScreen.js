@@ -495,6 +495,8 @@ const AdminContainerTypeScreen = ({ navigation }) => {
     const [showAddRebateModal, setShowAddRebateModal] = useState(false);
     const [newRebateRestaurant, setNewRebateRestaurant] = useState('');
     const [newRebateValue, setNewRebateValue] = useState('0');
+    const [showIOSPicker, setShowIOSPicker] = useState(false);
+    const [tempRestaurantSelection, setTempRestaurantSelection] = useState('');
   
     useEffect(() => {
       if (restaurants.length > 0 && (!localContainerType.rebates || localContainerType.rebates.length === 0)) {
@@ -504,7 +506,124 @@ const AdminContainerTypeScreen = ({ navigation }) => {
         }));
       }
     }, [restaurants]);
-  
+
+    const renderRestaurantSelector = () => {
+      if (Platform.OS === 'ios') {
+        return (
+          <>
+            {/* Button to trigger iOS picker */}
+            <TouchableOpacity
+              style={[
+                styles.input,
+                { 
+                  backgroundColor: theme?.input || '#F5F5F5', 
+                  color: theme?.text || '#000000',
+                  borderColor: theme?.border || '#E0E0E0',
+                  justifyContent: 'center',
+                  paddingHorizontal: 10,
+                }
+              ]}
+              onPress={() => {
+                setTempRestaurantSelection(newRebateRestaurant); // Initialize with current selection
+                setShowIOSPicker(true);
+              }}
+            >
+              <RegularText style={{ color: newRebateRestaurant ? theme?.text : theme?.textMuted || '#888888' }}>
+                {newRebateRestaurant 
+                  ? restaurants.find(r => r._id === newRebateRestaurant)?.name 
+                  : "Select a restaurant"}
+              </RegularText>
+            </TouchableOpacity>
+            
+            {/* iOS picker modal */}
+          <RNModal
+            animationType="slide"
+            transparent={true}
+            visible={showIOSPicker}
+            onRequestClose={() => setShowIOSPicker(false)}
+          >
+            <View style={styles.iosPickerOverlay}>
+              <View style={[
+                styles.iosPickerContainer,
+                { backgroundColor: theme?.background || '#FFFFFF' }
+              ]}>
+                <View style={[
+                  styles.iosPickerHeader,
+                  { borderBottomColor: theme?.border || '#E0E0E0' }
+                ]}>
+                  <TouchableOpacity onPress={() => {
+                    // Just close without saving changes
+                    setShowIOSPicker(false);
+                  }}>
+                    <RegularText style={{ color: theme?.primary || '#007BFF' }}>Cancel</RegularText>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => {
+                    // Save the selection and close
+                    setNewRebateRestaurant(tempRestaurantSelection);
+                    setShowIOSPicker(false);
+                    setLocalError('');
+                  }}>
+                    <RegularText style={{ color: theme?.primary || '#007BFF' }}>Done</RegularText>
+                  </TouchableOpacity>
+                </View>
+                <Picker
+                  selectedValue={tempRestaurantSelection}
+                  onValueChange={(itemValue) => {
+                    // Only update the temporary selection
+                    setTempRestaurantSelection(itemValue);
+                  }}
+                  style={[styles.iosPicker, { color: theme?.text || '#000000' }]}
+                >
+                  <Picker.Item label="Select a restaurant" value="" />
+                  {restaurants
+                    .filter(r => !localContainerType.rebates.some(rebate => rebate.restaurantId === r._id))
+                    .map(restaurant => (
+                      <Picker.Item 
+                        key={restaurant._id} 
+                        label={restaurant.name} 
+                        value={restaurant._id} 
+                        color={theme?.text || '#000000'} 
+                      />
+                    ))}
+                </Picker>
+              </View>
+            </View>
+          </RNModal>
+          </>
+        );
+      } else {
+        // Android picker (unchanged)
+        return (
+          <Picker
+            selectedValue={newRebateRestaurant}
+            style={[
+              styles.picker,
+              { 
+                backgroundColor: theme?.input || '#F5F5F5',
+                color: theme?.text || '#000000'
+              }
+            ]}
+            onValueChange={(itemValue) => {
+              setNewRebateRestaurant(itemValue);
+              setLocalError('');
+            }}
+          >
+            <Picker.Item label="Select a restaurant" value="" />
+            {restaurants
+              .filter(r => !localContainerType.rebates.some(rebate => rebate.restaurantId === r._id))
+              .map(restaurant => (
+                <Picker.Item 
+                  key={restaurant._id} 
+                  label={restaurant.name} 
+                  value={restaurant._id} 
+                  color={theme?.text || '#000000'}
+                />
+              ))}
+          </Picker>
+        );
+      }
+    };
+
     const handleImagePick = async () => {
       const imageUri = await pickContainerTypeImage();
       if (imageUri) {
@@ -897,28 +1016,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                     </RegularText>
                   )}
   
-                  <Picker
-                    selectedValue={newRebateRestaurant}
-                    style={[
-                      styles.picker,
-                      { 
-                        backgroundColor: theme?.input || '#F5F5F5',
-                        color: theme?.text || '#000000'
-                      }
-                    ]}
-                    onValueChange={(itemValue) => setNewRebateRestaurant(itemValue)}
-                  >
-                    <Picker.Item label="Select a restaurant" value="" />
-                    {restaurants
-                      .filter(r => !localContainerType.rebates.some(rebate => rebate.restaurantId === r._id))
-                      .map(restaurant => (
-                        <Picker.Item 
-                          key={restaurant._id} 
-                          label={restaurant.name} 
-                          value={restaurant._id} 
-                        />
-                      ))}
-                  </Picker>
+                  {renderRestaurantSelector()}
   
                   <TextInput
                     style={[
@@ -1344,6 +1442,26 @@ const styles = StyleSheet.create({
   },
   maxUsesText: {
     fontSize: 14,
+  },
+  iosPickerOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  iosPickerContainer: {
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    paddingBottom: 30, // Add padding for iPhone home bar
+  },
+  iosPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+  },
+  iosPicker: {
+    width: '100%',
   },
 });
 
