@@ -116,13 +116,16 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Create new user
+    // Create new user with admin-created flags
     const user = new User({
       email,
       password,
       firstName,
       lastName,
-      userType: userType || 'customer'
+      userType: userType || 'customer',
+      isEmailVerified: true,  // Admin-created users should be verified
+      isApproved: true,       // Admin-created users should be approved
+      isActive: true
     });
 
     await user.save();
