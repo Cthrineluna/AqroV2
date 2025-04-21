@@ -54,7 +54,7 @@ const RetailerRegisterScreen = ({ navigation }) => {
     return /^639\d{9}$/.test(digits); 
   };
 
-// Update the pickDocument function
+
 const pickBirDocument = async () => {
   try {
     const result = await DocumentPicker.getDocumentAsync({
@@ -162,7 +162,7 @@ const pickImage = async () => {
       return false;
     }
     if (!isValidPhoneNumber(contactNumber)) {
-      setError('Please enter a valid Philippine phone number (e.g., 09123456789)');
+      setError('Please enter a valid Philippine phone number (e.g., +639123456789)');
       return false;
     }
 
@@ -249,7 +249,10 @@ const pickImage = async () => {
           staffData.restaurantLogo = restaurantLogo;
         }
       }
-      
+      console.log('Submitting registration with data:', {
+        businessPermit: businessPermit ? `File: ${businessPermit.name}, Size: ${(businessPermit.size/1024).toFixed(2)}KB` : null,
+        birRegistration: birRegistration ? `File: ${birRegistration.name}, Size: ${(birRegistration.size/1024).toFixed(2)}KB` : null,
+      });
       console.log('Submitting registration with data:', {
         ...staffData,
         password: '[REDACTED]',

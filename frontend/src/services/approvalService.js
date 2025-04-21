@@ -102,92 +102,74 @@ export const registerStaff = async (staffData) => {
 
     // Append business permit file
     if (staffData.businessPermit) {
-      const uriParts = staffData.businessPermit.uri.split('.');
-      const fileExtension = uriParts[uriParts.length - 1] || 'pdf';
-      
-      let fileType = staffData.businessPermit.mimeType || staffData.businessPermit.type;
-      if (!fileType) {
-        if (['pdf'].includes(fileExtension.toLowerCase())) {
-          fileType = 'application/pdf';
-        } else if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
-          fileType = 'image/jpeg';
-        } else if (['png'].includes(fileExtension.toLowerCase())) {
-          fileType = 'image/png';
-        } else {
-          fileType = 'application/octet-stream';
-        }
-      }
+      // Generate a safe filename by removing special characters and spaces
+      const safeFileName = staffData.businessPermit.name
+        ? staffData.businessPermit.name.replace(/[^\w.-]/g, '_')
+        : 'business_permit.pdf';
       
       formData.append('businessPermit', {
         uri: staffData.businessPermit.uri,
-        name: staffData.businessPermit.name || `business_permit.${fileExtension}`,
-        type: fileType
+        name: safeFileName,
+        type: staffData.businessPermit.mimeType || 
+              staffData.businessPermit.type || 
+              'application/pdf'
       });
     }
 
     // Append BIR registration file
     if (staffData.birRegistration) {
-      const uriParts = staffData.birRegistration.uri.split('.');
-      const fileExtension = uriParts[uriParts.length - 1] || 'pdf';
-      
-      let fileType = staffData.birRegistration.mimeType || staffData.birRegistration.type;
-      if (!fileType) {
-        if (['pdf'].includes(fileExtension.toLowerCase())) {
-          fileType = 'application/pdf';
-        } else if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
-          fileType = 'image/jpeg';
-        } else if (['png'].includes(fileExtension.toLowerCase())) {
-          fileType = 'image/png';
-        } else {
-          fileType = 'application/octet-stream';
-        }
-      }
+      // Generate a safe filename by removing special characters and spaces
+      const safeFileName = staffData.birRegistration.name
+        ? staffData.birRegistration.name.replace(/[^\w.-]/g, '_')
+        : 'bir_registration.pdf';
       
       formData.append('birRegistration', {
         uri: staffData.birRegistration.uri,
-        name: staffData.birRegistration.name || `bir_registration.${fileExtension}`,
-        type: fileType
+        name: safeFileName,
+        type: staffData.birRegistration.mimeType || 
+              staffData.birRegistration.type || 
+              'application/pdf'
       });
     }
 
-    // Append restaurant logo if exists as base64 string
+    // Append restaurant logo if exists
     if (staffData.restaurantLogo) {
       // Check if restaurantLogo is a base64 string
       if (typeof staffData.restaurantLogo === 'string' && 
           staffData.restaurantLogo.startsWith('data:image')) {
-        // Just append the base64 string directly
         formData.append('restaurantLogo', staffData.restaurantLogo);
       } 
       // Check if it's a file object with URI
       else if (staffData.restaurantLogo.uri) {
-        const uriParts = staffData.restaurantLogo.uri.split('.');
-        const fileExtension = uriParts[uriParts.length - 1] || 'jpg';
-        
-        let fileType = staffData.restaurantLogo.mimeType || staffData.restaurantLogo.type;
-        if (!fileType) {
-          if (['jpg', 'jpeg'].includes(fileExtension.toLowerCase())) {
-            fileType = 'image/jpeg';
-          } else if (['png'].includes(fileExtension.toLowerCase())) {
-            fileType = 'image/png';
-          } else {
-            fileType = 'image/jpeg';
-          }
-        }
+        const safeFileName = staffData.restaurantLogo.name
+          ? staffData.restaurantLogo.name.replace(/[^\w.-]/g, '_')
+          : 'restaurant_logo.jpg';
         
         formData.append('restaurantLogo', {
           uri: staffData.restaurantLogo.uri,
-          name: staffData.restaurantLogo.name || `restaurant_logo.${fileExtension}`,
-          type: fileType
+          name: safeFileName,
+          type: staffData.restaurantLogo.mimeType || 
+                staffData.restaurantLogo.type || 
+                'image/jpeg'
         });
       }
     }
+
+    // Log exactly what we're sending (for debugging)
+    console.log('Sending form data with files:', {
+      businessPermitName: staffData.businessPermit?.name,
+      birRegistrationName: staffData.birRegistration?.name,
+      formDataEntries: [...formData._parts].map(part => 
+        part[0] === 'password' ? [part[0], '[REDACTED]'] : part[0]
+      )
+    });
 
     const response = await axios.post(`${getApiUrl()}/auth/register-staff`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         'Accept': 'application/json'
       },
-      transformRequest: (data) => data,
+      // No need for custom transformRequest, let Axios handle it
       timeout: 15000
     });
       
