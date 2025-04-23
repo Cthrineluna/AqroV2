@@ -10,7 +10,8 @@ import {
   Modal,
   Platform,
   ActivityIndicator,
-  Alert
+  Alert,
+  RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -42,6 +43,7 @@ const GenerateReportScreen = ({ navigation }) => {
   const [exportModalVisible, setExportModalVisible] = useState(false);
   const [totalTransactions, setTotalTransactions] = useState(0);
   const [totalRebateAmount, setTotalRebateAmount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Filter states
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)));
@@ -85,7 +87,17 @@ const GenerateReportScreen = ({ navigation }) => {
     { id: 'rebate', name: 'Rebate' },
     { id: 'status_change', name: 'Status Change' }
   ];
-
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchReportData();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      Alert.alert('Error', 'Failed to refresh data. Please try again.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -484,7 +496,18 @@ const GenerateReportScreen = ({ navigation }) => {
           </MediumText>
         </View>
       ) : (
-        <ScrollView style={styles.contentContainer}>
+        <ScrollView 
+          style={styles.contentContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[theme.primary]}
+              tintColor={theme.primary}
+              progressBackgroundColor={theme.background}
+            />
+          }
+        >
           {/* Table Header */}
           <View style={[styles.tableHeader, { backgroundColor: theme.cardBackground }]}>
                     <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1.2, fontSize: 10 }]}>
