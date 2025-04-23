@@ -25,6 +25,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { getApiUrl } from '../../services/apiConfig';
+import FilterTabs from '../../components/FilterTabs';
+import SearchComponent from '../../components/SearchComponent';
 
 const AdminUsersScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
@@ -38,6 +40,55 @@ const AdminUsersScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
 
+const [activeFilter, setActiveFilter] = useState('all');
+const [searchQuery, setSearchQuery] = useState('');
+const [filteredUsers, setFilteredUsers] = useState([]);
+
+const filterOptions = [
+  { id: 'all', label: 'All' },
+  { id: 'customer', label: 'Customers' },
+  { id: 'staff', label: 'Staff' },
+  { id: 'admin', label: 'Admins' },
+];
+
+const handleSearch = (query) => {
+  setSearchQuery(query);
+  
+  // This is the key part - when query is empty, properly reset to the filtered list
+  if (!query || query.trim() === '') {
+    applyFilter(activeFilter, users);
+    return;
+  }
+
+  const filtered = activeFilter === 'all' 
+    ? users 
+    : users.filter(item => item.userType === activeFilter);
+
+  const results = filtered.filter(user => {
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+    const email = user.email?.toLowerCase() || '';
+    const searchLower = query.toLowerCase();
+
+    return fullName.includes(searchLower) || 
+           email.includes(searchLower);
+  });
+
+  setFilteredUsers(results);
+};
+
+const applyFilter = (filter, userList = users) => {
+  if (filter === 'all') {
+    setFilteredUsers(userList);
+  } else {
+    const filtered = userList.filter(item => item.userType === filter);
+    setFilteredUsers(filtered);
+  }
+};
+
+const handleFilterChange = (filter) => {
+  setActiveFilter(filter);
+  applyFilter(filter);
+};
   // Fetch users
   const fetchUsers = async () => {
     try {
@@ -50,6 +101,7 @@ const AdminUsersScreen = ({ navigation }) => {
         }
       });
       setUsers(response.data);
+      setFilteredUsers(response.data); // Initialize filtered users
     } catch (error) {
       console.error('Error fetching users:', error.response?.data || error.message);
       Alert.alert('Error', error.response?.data?.message || 'Failed to fetch users');
@@ -196,6 +248,10 @@ const AdminUsersScreen = ({ navigation }) => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    applyFilter(activeFilter);
+  }, [users, activeFilter]);
 
   // Fade in/out animation for modals
   const fadeIn = () => {
@@ -687,9 +743,25 @@ const AdminUsersScreen = ({ navigation }) => {
           />
         </TouchableOpacity>
       </View>
-      
+      <View style={styles.section}>
+
+  <FilterTabs 
+    options={filterOptions}
+    activeFilter={activeFilter}
+    onFilterChange={handleFilterChange}
+    theme={theme}
+  />
+  <SearchComponent 
+    onSearch={handleSearch}
+    searchQuery={searchQuery}
+    setSearchQuery={setSearchQuery}
+    theme={theme}
+    placeholder="Search by name or email..."
+  />
+</View>
+
       <FlatList
-        data={users}
+        data={filteredUsers}
         renderItem={renderUserItem}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
@@ -704,11 +776,13 @@ const AdminUsersScreen = ({ navigation }) => {
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <RegularText style={{ color: theme?.text || '#000000' }}>
-              No users found
+              {users.length === 0 
+                ? "No users found" 
+                : "No users match the selected filter."}
             </RegularText>
           </View>
-        )}
-      />
+              )}
+            />
 
       <UserModal />
       <ActionModal />
@@ -903,6 +977,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 50,
+  },
+  section: {
+    marginBottom: 12,
+    paddingHorizontal: 16,
   },
   emptyContainer: {
     flex: 1,
