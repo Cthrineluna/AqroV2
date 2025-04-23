@@ -176,15 +176,16 @@ exports.recordActivity = async (req, res) => {
 // Add this new function to your existing activityController.js file
 
 // Get activity reports with advanced filtering
+// In activityController.js - modify the getActivityReportsFiltered function
 exports.getActivityReportsFiltered = async (req, res) => {
   try {
     const {
       startDate,
       endDate,
       type,
-      restaurantId,
-      userId,
-      containerTypeId
+      restaurantIds, // Changed from restaurantId
+      userIds,      // Changed from userId
+      containerTypeIds // Changed from containerTypeId
     } = req.query;
     
     const userRole = req.user.userType;
@@ -209,13 +210,18 @@ exports.getActivityReportsFiltered = async (req, res) => {
     
     // User role based restrictions
     if (userRole === 'admin') {
-      // Admin can see all data but apply filters if provided
-      if (restaurantId) {
-        query.restaurantId = restaurantId;
+      // Handle restaurantIds as array
+      if (restaurantIds) {
+        query.restaurantId = Array.isArray(restaurantIds) 
+          ? { $in: restaurantIds }
+          : restaurantIds;
       }
       
-      if (userId) {
-        query.userId = userId;
+      // Handle userIds as array
+      if (userIds) {
+        query.userId = Array.isArray(userIds)
+          ? { $in: userIds }
+          : userIds;
       }
     } else if (userRole === 'staff') {
       // Staff can only see their restaurant's data
@@ -225,12 +231,14 @@ exports.getActivityReportsFiltered = async (req, res) => {
       query.userId = currentUserId;
     }
     
-    // Container type filter
-    if (containerTypeId) {
-      query.containerTypeId = containerTypeId;
+    // Handle containerTypeIds as array
+    if (containerTypeIds) {
+      query.containerTypeId = Array.isArray(containerTypeIds)
+        ? { $in: containerTypeIds }
+        : containerTypeIds;
     }
     
-    // Execute query with pagination
+    // Rest of the function remains the same...
     const activities = await Activity.find(query)
       .populate({
         path: 'containerId',
@@ -248,7 +256,6 @@ exports.getActivityReportsFiltered = async (req, res) => {
     
     const totalActivities = activities.length;
     
-    // Calculate total rebate amount if needed
     let totalRebateAmount = 0;
     if (!type || type === 'all' || type === 'rebate') {
       totalRebateAmount = activities

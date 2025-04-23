@@ -45,15 +45,24 @@ const GenerateReportScreen = ({ navigation }) => {
   const [totalRebateAmount, setTotalRebateAmount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Activity types
+  const activityTypes = [
+    { id: 'all', name: 'All Types' },
+    { id: 'registration', name: 'Registration' },
+    { id: 'return', name: 'Return' },
+    { id: 'rebate', name: 'Rebate' },
+    { id: 'status_change', name: 'Status Change' }
+  ];
+
   // Filter states
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [selectedActivityType, setSelectedActivityType] = useState(null);
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [selectedContainerType, setSelectedContainerType] = useState(null);
+  const [selectedActivityType, setSelectedActivityType] = useState(activityTypes[0]); 
+  const [selectedRestaurants, setSelectedRestaurants] = useState([]); 
+  const [selectedCustomers, setSelectedCustomers] = useState([]);
+  const [selectedContainerTypes, setSelectedContainerTypes] = useState([]);
   
   // Data for filters
   const [restaurants, setRestaurants] = useState([]);
@@ -79,14 +88,7 @@ const GenerateReportScreen = ({ navigation }) => {
     type.name.toLowerCase().includes(containerTypeSearchQuery.toLowerCase())
   );
 
-  // Activity types
-  const activityTypes = [
-    { id: 'all', name: 'All Types' },
-    { id: 'registration', name: 'Registration' },
-    { id: 'return', name: 'Return' },
-    { id: 'rebate', name: 'Rebate' },
-    { id: 'status_change', name: 'Status Change' }
-  ];
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -113,6 +115,11 @@ const GenerateReportScreen = ({ navigation }) => {
       
       await fetchContainerTypes();
       
+      // Set default filters before loading data
+      setSelectedActivityType(activityTypes[0]); // "All Types"
+      setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
+      setEndDate(new Date());
+      
       // Load report data with default filters
       await fetchReportData();
     } catch (error) {
@@ -122,7 +129,23 @@ const GenerateReportScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-  
+  useEffect(() => {
+    // Don't fetch on initial render (loadInitialData handles that)
+    if (startDate && endDate) {
+      const timer = setTimeout(() => {
+        fetchReportData();
+      }, 500); // Debounce to avoid rapid requests
+      
+      return () => clearTimeout(timer);
+    }
+  }, [
+    startDate, 
+    endDate, 
+    selectedActivityType, 
+    selectedRestaurants, 
+    selectedCustomers, 
+    selectedContainerTypes
+  ]);
   const fetchRestaurants = async () => {
     try {
       const token = await AsyncStorage.getItem('aqro_token');
@@ -195,22 +218,32 @@ const GenerateReportScreen = ({ navigation }) => {
         params.append('type', selectedActivityType.id);
       }
       
-      if (selectedRestaurant) {
-        params.append('restaurantId', selectedRestaurant._id);
+      if (selectedRestaurants.length > 0) {
+        // For multiple restaurant selection
+        selectedRestaurants.forEach(restaurant => {
+          params.append('restaurantIds[]', restaurant._id);
+        });
+      }
+      console.log('Selected restaurants:', selectedRestaurants);
+      if (selectedCustomers.length > 0) {
+        // For multiple customer selection
+        selectedCustomers.forEach(customer => {
+          params.append('userIds[]', customer._id);
+        });
       }
       
-      if (selectedCustomer) {
-        params.append('userId', selectedCustomer._id); // Changed from userId to user._id if needed
+      if (selectedContainerTypes.length > 0) {
+        // For multiple container type selection
+        selectedContainerTypes.forEach(type => {
+          params.append('containerTypeIds[]', type._id);
+        });
       }
-      
-      if (selectedContainerType) {
-        params.append('containerTypeId', selectedContainerType._id);
-      }
-      
-      // Call API
+      const urlWithParams = getApiUrl('/activities/reports/filtered') + '?' + params.toString();
+console.log('Request URL with params:', urlWithParams);
+      // Rest of the API call remains the same
       const token = await AsyncStorage.getItem('aqro_token');
       const response = await axios.get(
-        getApiUrl('/activities/reports/filtered') + '?' + params.toString(), // Changed endpoint to match backend
+        getApiUrl('/activities/reports/filtered') + '?' + params.toString(),
         { 
           headers: { 
             Authorization: `Bearer ${token}` 
@@ -221,7 +254,6 @@ const GenerateReportScreen = ({ navigation }) => {
       setActivities(response.data.activities);
       setTotalTransactions(response.data.totalActivities);
       
-      // Calculate total rebate amount if applicable
       if (selectedActivityType?.id === 'rebate' || !selectedActivityType) {
         const rebateTotal = response.data.activities
           .filter(activity => activity.type === 'rebate')
@@ -257,17 +289,17 @@ const GenerateReportScreen = ({ navigation }) => {
   };
 
   const applyFilters = () => {
-    fetchReportData();
     setFilterModalVisible(false);
+    fetchReportData();
   };
 
   const resetFilters = () => {
     setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
     setEndDate(new Date());
-    setSelectedActivityType(null);
-    setSelectedRestaurant(null);
-    setSelectedCustomer(null);
-    setSelectedContainerType(null);
+    setSelectedActivityType(activityTypes[0]); // Reset to 'All Types'
+    setSelectedRestaurants([]);
+    setSelectedCustomers([]);
+    setSelectedContainerTypes([]);
   };
 
   const exportToCSV = async () => {
@@ -279,7 +311,7 @@ const GenerateReportScreen = ({ navigation }) => {
         csvContent += "\"Restaurant\",";
       }
       
-      csvContent += "\"Container Type\",\"Activity Type\",\"Status\"";
+      csvContent += "\"Container Type\",\"Activity Type\"";
       
       if (selectedActivityType?.id === 'rebate' || !selectedActivityType) {
         csvContent += ",\"Rebate Amount\"";
@@ -291,7 +323,6 @@ const GenerateReportScreen = ({ navigation }) => {
       activities.forEach(activity => {
         const customerName = `${activity.userId?.firstName || ''} ${activity.userId?.lastName || ''}`;
         const containerTypeName = activity.containerTypeId?.name || activity.containerId?.containerTypeId?.name || 'N/A';
-        // Format date to avoid CSV splitting it
         const date = new Date(activity.createdAt).toLocaleString();
         
         let row = `\"${activity._id}\",\"${date}\",\"${customerName}\",`;
@@ -300,7 +331,7 @@ const GenerateReportScreen = ({ navigation }) => {
           row += `\"${activity.restaurantId?.name || 'N/A'}\",`;
         }
         
-        row += `\"${containerTypeName}\",\"${activity.type}\",\"${activity.status}\"`;
+        row += `\"${containerTypeName}\",\"${activity.type}\"`;
         
         if (selectedActivityType?.id === 'rebate' || !selectedActivityType) {
           row += `,\"${activity.type === 'rebate' ? activity.amount.toFixed(2) : '0.00'}\"`;
@@ -317,7 +348,7 @@ const GenerateReportScreen = ({ navigation }) => {
         totalsRow += `\"\",`;
       }
       
-      totalsRow += `\"\",\"\",\"${totalTransactions} transactions\"`;
+      totalsRow += `\"\",\"${totalTransactions} transactions\"`;
       
       if (selectedActivityType?.id === 'rebate' || !selectedActivityType) {
         totalsRow += `,\"${totalRebateAmount.toFixed(2)}\"`;
@@ -325,15 +356,13 @@ const GenerateReportScreen = ({ navigation }) => {
       
       csvContent += totalsRow;
       
-      // Generate filename with current date
+      // Rest of the export function remains the same...
       const dateString = new Date().toISOString().split('T')[0];
       const fileName = `AQRO_Report_${dateString}.csv`;
       
-      // Create file
       const fileUri = FileSystem.documentDirectory + fileName;
       await FileSystem.writeAsStringAsync(fileUri, csvContent);
       
-      // Share file
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(fileUri);
       } else {
@@ -350,11 +379,12 @@ const GenerateReportScreen = ({ navigation }) => {
       Alert.alert('Export Failed', 'Failed to export report. Please try again.');
     }
   };
+  
 
   const renderFilterBadges = () => {
     const badges = [];
     
-    if (selectedActivityType) {
+    if (selectedActivityType && selectedActivityType.id !== 'all') {
       badges.push(
         <TouchableOpacity 
           key="type" 
@@ -369,49 +399,55 @@ const GenerateReportScreen = ({ navigation }) => {
       );
     }
     
-    if (selectedRestaurant) {
-      badges.push(
-        <TouchableOpacity 
-          key="restaurant" 
-          style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => setFilterModalVisible(true)}
-        >
-          <MediumText style={{ color: theme.primary, fontSize: 12 }}>
-            {selectedRestaurant.name}
-          </MediumText>
-          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
-        </TouchableOpacity>
-      );
+    if (selectedRestaurants.length > 0) {
+      selectedRestaurants.forEach((restaurant, index) => {
+        badges.push(
+          <TouchableOpacity 
+            key={`restaurant-${index}`} 
+            style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+            onPress={() => setFilterModalVisible(true)}
+          >
+            <MediumText style={{ color: theme.primary, fontSize: 12 }}>
+              {restaurant.name}
+            </MediumText>
+            <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+        );
+      });
     }
     
-    if (selectedCustomer) {
-      badges.push(
-        <TouchableOpacity 
-          key="customer" 
-          style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => setFilterModalVisible(true)}
-        >
-          <MediumText style={{ color: theme.primary, fontSize: 12 }}>
-            {selectedCustomer.firstName} {selectedCustomer.lastName}
-          </MediumText>
-          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
-        </TouchableOpacity>
-      );
+    if (selectedCustomers.length > 0) {
+      selectedCustomers.forEach((customer, index) => {
+        badges.push(
+          <TouchableOpacity 
+            key={`customer-${index}`} 
+            style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+            onPress={() => setFilterModalVisible(true)}
+          >
+            <MediumText style={{ color: theme.primary, fontSize: 12 }}>
+              {customer.firstName} {customer.lastName}
+            </MediumText>
+            <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+        );
+      });
     }
     
-    if (selectedContainerType) {
-      badges.push(
-        <TouchableOpacity 
-          key="containerType" 
-          style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => setFilterModalVisible(true)}
-        >
-          <MediumText style={{ color: theme.primary, fontSize: 12 }}>
-            {selectedContainerType.name}
-          </MediumText>
-          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
-        </TouchableOpacity>
-      );
+    if (selectedContainerTypes.length > 0) {
+      selectedContainerTypes.forEach((type, index) => {
+        badges.push(
+          <TouchableOpacity 
+            key={`containerType-${index}`} 
+            style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+            onPress={() => setFilterModalVisible(true)}
+          >
+            <MediumText style={{ color: theme.primary, fontSize: 12 }}>
+              {type.name}
+            </MediumText>
+            <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+        );
+      });
     }
     
     return badges;
@@ -664,244 +700,292 @@ const GenerateReportScreen = ({ navigation }) => {
               
               {/* Activity Type Section */}
               <View style={styles.filterSection}>
-                <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-                  Activity Type
-                </MediumText>
-                
-                <ScrollView 
-                  style={styles.optionsList} 
-                  nestedScrollEnabled={true}
-                  contentContainerStyle={styles.optionsContentContainer}
-                >
-                  {activityTypes.map(type => (
-                    <TouchableOpacity 
-                      key={type.id}
-                      style={[
-                        styles.optionItem, 
-                        { 
-                          backgroundColor: selectedActivityType?.id === type.id 
-                            ? theme.primary + '20' 
-                            : 'transparent' 
-                        }
-                      ]}
-                      onPress={() => setSelectedActivityType(type)}
-                    >
-                      <MediumText style={{ 
-                        color: selectedActivityType?.id === type.id 
-                          ? theme.primary 
-                          : theme.text 
-                      }}>
-                        {type.name}
-                      </MediumText>
-                      {selectedActivityType?.id === type.id && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+  <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
+    Activity Type
+  </MediumText>
+  
+  <ScrollView 
+    style={styles.optionsList} 
+    nestedScrollEnabled={true}
+    contentContainerStyle={styles.optionsContentContainer}
+  >
+    {activityTypes.map(type => (
+      <TouchableOpacity 
+        key={type.id}
+        style={[
+          styles.optionItem, 
+          { 
+            backgroundColor: selectedActivityType?.id === type.id 
+              ? theme.primary + '20' 
+              : 'transparent' 
+          }
+        ]}
+        onPress={() => setSelectedActivityType(type)}
+      >
+        <MediumText style={{ 
+          color: selectedActivityType?.id === type.id 
+            ? theme.primary 
+            : theme.text 
+        }}>
+          {type.name}
+        </MediumText>
+        {selectedActivityType?.id === type.id && (
+          <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+        )}
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+</View>
               
               {/* Restaurant Section (Admin only) */}
               {isAdmin && (
-                <View style={styles.filterSection}>
-                  <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-                    Filter by Restaurant
-                  </MediumText>
-                  
-                  <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
-                    <Ionicons name="search" size={20} color={theme.text} />
-                    <TextInput
-                      style={[styles.searchInput, { color: theme.text }]}
-                      placeholder="Search restaurants..."
-                      placeholderTextColor={theme.text}
-                      value={restaurantSearchQuery}
-                      onChangeText={setRestaurantSearchQuery}
-                    />
-                    {restaurantSearchQuery !== '' && (
-                      <TouchableOpacity onPress={() => setRestaurantSearchQuery('')}>
-                        <Ionicons name="close-circle" size={20} color={theme.text} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  
-                  <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
-                    <TouchableOpacity 
-                      style={[
-                        styles.optionItem, 
-                        { backgroundColor: !selectedRestaurant ? theme.primary + '20' : 'transparent' }
-                      ]}
-                      onPress={() => setSelectedRestaurant(null)}
-                    >
-                      <MediumText style={{ color: !selectedRestaurant ? theme.primary : theme.text }}>
-                        All Restaurants
-                      </MediumText>
-                      {!selectedRestaurant && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                      )}
-                    </TouchableOpacity>
-                    
-                    {filteredRestaurants.map(restaurant => (
-                      <TouchableOpacity 
-                        key={restaurant._id}
-                        style={[
-                          styles.optionItem, 
-                          { 
-                            backgroundColor: selectedRestaurant?._id === restaurant._id 
-                              ? theme.primary + '20' 
-                              : 'transparent' 
-                          }
-                        ]}
-                        onPress={() => setSelectedRestaurant(restaurant)}
-                      >
-                        <MediumText style={{ 
-                          color: selectedRestaurant?._id === restaurant._id 
-                            ? theme.primary 
-                            : theme.text 
-                        }}>
-                          {restaurant.name}
-                        </MediumText>
-                        {selectedRestaurant?._id === restaurant._id && (
-                          <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
+  <View style={styles.filterSection}>
+    <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
+      Filter by Restaurant
+    </MediumText>
+    
+    <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
+      <Ionicons name="search" size={20} color={theme.text} />
+      <TextInput
+        style={[styles.searchInput, { color: theme.text }]}
+        placeholder="Search restaurants..."
+        placeholderTextColor={theme.text}
+        value={restaurantSearchQuery}
+        onChangeText={setRestaurantSearchQuery}
+      />
+      {restaurantSearchQuery !== '' && (
+        <TouchableOpacity onPress={() => setRestaurantSearchQuery('')}>
+          <Ionicons name="close-circle" size={20} color={theme.text} />
+        </TouchableOpacity>
+      )}
+    </View>
+    
+    <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
+      <TouchableOpacity 
+        style={[
+          styles.optionItem, 
+          { 
+            backgroundColor: selectedRestaurants.length === 0 
+              ? theme.primary + '20' 
+              : 'transparent' 
+          }
+        ]}
+        onPress={() => setSelectedRestaurants([])}
+      >
+        <MediumText style={{ 
+          color: selectedRestaurants.length === 0 
+            ? theme.primary 
+            : theme.text 
+        }}>
+          All Restaurants
+        </MediumText>
+        {selectedRestaurants.length === 0 && (
+          <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+        )}
+      </TouchableOpacity>
+      
+      {filteredRestaurants.map(restaurant => (
+        <TouchableOpacity 
+          key={restaurant._id}
+          style={[
+            styles.optionItem, 
+            { 
+              backgroundColor: selectedRestaurants.some(r => r._id === restaurant._id)
+                ? theme.primary + '20' 
+                : 'transparent' 
+            }
+          ]}
+          onPress={() => {
+            if (selectedRestaurants.some(r => r._id === restaurant._id)) {
+              // Remove if already selected
+              setSelectedRestaurants(selectedRestaurants.filter(r => r._id !== restaurant._id));
+            } else {
+              // Add to selection
+              setSelectedRestaurants([...selectedRestaurants, restaurant]);
+            }
+          }}
+        >
+          <MediumText style={{ 
+            color: selectedRestaurants.some(r => r._id === restaurant._id)
+              ? theme.primary 
+              : theme.text 
+          }}>
+            {restaurant.name}
+          </MediumText>
+          {selectedRestaurants.some(r => r._id === restaurant._id) && (
+            <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+          )}
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  </View>
+)}
               
               {/* Customer Section */}
               {isAdmin && (
-                <View style={styles.filterSection}>
-                  <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-                    Filter by Customer
-                  </MediumText>
-                  
-                  <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
-                    <Ionicons name="search" size={20} color={theme.text} />
-                    <TextInput
-                      style={[styles.searchInput, { color: theme.text }]}
-                      placeholder="Search customers..."
-                      placeholderTextColor={theme.text}
-                      value={customerSearchQuery}
-                      onChangeText={setCustomerSearchQuery}
-                    />
-                    {customerSearchQuery !== '' && (
-                      <TouchableOpacity onPress={() => setCustomerSearchQuery('')}>
-                        <Ionicons name="close-circle" size={20} color={theme.text} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  
-                  <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
-                    <TouchableOpacity 
-                      style={[
-                        styles.optionItem, 
-                        { backgroundColor: !selectedCustomer ? theme.primary + '20' : 'transparent' }
-                      ]}
-                      onPress={() => setSelectedCustomer(null)}
-                    >
-                      <MediumText style={{ color: !selectedCustomer ? theme.primary : theme.text }}>
-                        All Customers
-                      </MediumText>
-                      {!selectedCustomer && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                      )}
-                    </TouchableOpacity>
-                    
-                    {filteredUsers.map(user => (
-                      <TouchableOpacity 
-                        key={user._id}
-                        style={[
-                          styles.optionItem, 
-                          { 
-                            backgroundColor: selectedCustomer?._id === user._id 
-                              ? theme.primary + '20' 
-                              : 'transparent' 
-                          }
-                        ]}
-                        onPress={() => setSelectedCustomer(user)}
-                      >
-                        <MediumText style={{ 
-                          color: selectedCustomer?._id === user._id 
-                            ? theme.primary 
-                            : theme.text 
-                        }}>
-                          {user.firstName} {user.lastName}
-                        </MediumText>
-                        {selectedCustomer?._id === user._id && (
-                          <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
+  <View style={styles.filterSection}>
+    <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
+      Filter by Customer
+    </MediumText>
+    
+    <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
+      <Ionicons name="search" size={20} color={theme.text} />
+      <TextInput
+        style={[styles.searchInput, { color: theme.text }]}
+        placeholder="Search customers..."
+        placeholderTextColor={theme.text}
+        value={customerSearchQuery}
+        onChangeText={setCustomerSearchQuery}
+      />
+      {customerSearchQuery !== '' && (
+        <TouchableOpacity onPress={() => setCustomerSearchQuery('')}>
+          <Ionicons name="close-circle" size={20} color={theme.text} />
+        </TouchableOpacity>
+      )}
+    </View>
+    
+    <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
+      <TouchableOpacity 
+        style={[
+          styles.optionItem, 
+          { 
+            backgroundColor: selectedCustomers.length === 0 
+              ? theme.primary + '20' 
+              : 'transparent' 
+          }
+        ]}
+        onPress={() => setSelectedCustomers([])}
+      >
+        <MediumText style={{ 
+          color: selectedCustomers.length === 0 
+            ? theme.primary 
+            : theme.text 
+        }}>
+          All Customers
+        </MediumText>
+        {selectedCustomers.length === 0 && (
+          <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+        )}
+      </TouchableOpacity>
+      
+      {filteredUsers.map(user => (
+        <TouchableOpacity 
+          key={user._id}
+          style={[
+            styles.optionItem, 
+            { 
+              backgroundColor: selectedCustomers.some(c => c._id === user._id)
+                ? theme.primary + '20' 
+                : 'transparent' 
+            }
+          ]}
+          onPress={() => {
+            if (selectedCustomers.some(c => c._id === user._id)) {
+              // Remove if already selected
+              setSelectedCustomers(selectedCustomers.filter(c => c._id !== user._id));
+            } else {
+              // Add to selection
+              setSelectedCustomers([...selectedCustomers, user]);
+            }
+          }}
+        >
+          <MediumText style={{ 
+            color: selectedCustomers.some(c => c._id === user._id)
+              ? theme.primary 
+              : theme.text 
+          }}>
+            {user.firstName} {user.lastName}
+          </MediumText>
+          {selectedCustomers.some(c => c._id === user._id) && (
+            <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+          )}
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  </View>
+)}
               
               {/* Container Type Section */}
               <View style={styles.filterSection}>
-                <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-                  Filter by Container Type
-                </MediumText>
-                
-                <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
-                  <Ionicons name="search" size={20} color={theme.text} />
-                  <TextInput
-                    style={[styles.searchInput, { color: theme.text }]}
-                    placeholder="Search container types..."
-                    placeholderTextColor={theme.text}
-                    value={containerTypeSearchQuery}
-                    onChangeText={setContainerTypeSearchQuery}
-                  />
-                  {containerTypeSearchQuery !== '' && (
-                    <TouchableOpacity onPress={() => setContainerTypeSearchQuery('')}>
-                      <Ionicons name="close-circle" size={20} color={theme.text} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-                
-                <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.optionItem, 
-                      { backgroundColor: !selectedContainerType ? theme.primary + '20' : 'transparent' }
-                    ]}
-                    onPress={() => setSelectedContainerType(null)}
-                  >
-                    <MediumText style={{ color: !selectedContainerType ? theme.primary : theme.text }}>
-                      All Container Types
-                    </MediumText>
-                    {!selectedContainerType && (
-                      <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                    )}
-                  </TouchableOpacity>
-                  
-                  {filteredContainerTypes.map(type => (
-                    <TouchableOpacity 
-                      key={type._id}
-                      style={[
-                        styles.optionItem, 
-                        { 
-                          backgroundColor: selectedContainerType?._id === type._id 
-                            ? theme.primary + '20' 
-                            : 'transparent' 
-                        }
-                      ]}
-                      onPress={() => setSelectedContainerType(type)}
-                    >
-                      <MediumText style={{ 
-                        color: selectedContainerType?._id === type._id 
-                          ? theme.primary 
-                          : theme.text 
-                      }}>
-                        {type.name}
-                      </MediumText>
-                      {selectedContainerType?._id === type._id && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+  <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
+    Filter by Container Type
+  </MediumText>
+  
+  <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
+    <Ionicons name="search" size={20} color={theme.text} />
+    <TextInput
+      style={[styles.searchInput, { color: theme.text }]}
+      placeholder="Search container types..."
+      placeholderTextColor={theme.text}
+      value={containerTypeSearchQuery}
+      onChangeText={setContainerTypeSearchQuery}
+    />
+    {containerTypeSearchQuery !== '' && (
+      <TouchableOpacity onPress={() => setContainerTypeSearchQuery('')}>
+        <Ionicons name="close-circle" size={20} color={theme.text} />
+      </TouchableOpacity>
+    )}
+  </View>
+  
+  <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
+    <TouchableOpacity 
+      style={[
+        styles.optionItem, 
+        { 
+          backgroundColor: selectedContainerTypes.length === 0 
+            ? theme.primary + '20' 
+            : 'transparent' 
+        }
+      ]}
+      onPress={() => setSelectedContainerTypes([])}
+    >
+      <MediumText style={{ 
+        color: selectedContainerTypes.length === 0 
+          ? theme.primary 
+          : theme.text 
+      }}>
+        All Container Types
+      </MediumText>
+      {selectedContainerTypes.length === 0 && (
+        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+      )}
+    </TouchableOpacity>
+    
+    {filteredContainerTypes.map(type => (
+      <TouchableOpacity 
+        key={type._id}
+        style={[
+          styles.optionItem, 
+          { 
+            backgroundColor: selectedContainerTypes.some(t => t._id === type._id)
+              ? theme.primary + '20' 
+              : 'transparent' 
+          }
+        ]}
+        onPress={() => {
+          if (selectedContainerTypes.some(t => t._id === type._id)) {
+            // Remove if already selected
+            setSelectedContainerTypes(selectedContainerTypes.filter(t => t._id !== type._id));
+          } else {
+            // Add to selection
+            setSelectedContainerTypes([...selectedContainerTypes, type]);
+          }
+        }}
+      >
+        <MediumText style={{ 
+          color: selectedContainerTypes.some(t => t._id === type._id)
+            ? theme.primary 
+            : theme.text 
+        }}>
+          {type.name}
+        </MediumText>
+        {selectedContainerTypes.some(t => t._id === type._id) && (
+          <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+        )}
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+</View>
             </ScrollView>
             
             <View style={styles.filterButtons}>
