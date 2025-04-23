@@ -13,6 +13,8 @@ import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
 import AdminRestaurantsScreen from '../screens/admin/AdminRestaurantsScreen';
 import AdminApprovalScreen from '../screens/admin/AdminApprovalScreen';
 import AdminContainerScreen from '../screens/admin/AdminContainerScreen';
+import ReportsScreen from '../screens/shared/ReportsScreen';
+import GenerateReportScreen from '../screens/shared/GenerateReportScreen';
 import StaffActivityListScreen from '../screens/staff/StaffActivityListScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import SettingsScreen from '../screens/shared/SettingsScreen';
@@ -73,7 +75,11 @@ const AdminTabNavigator = () => {
           },    
         })}
       >
-        <Tab.Screen name="Home" component={AdminHomeScreen} />
+        <Tab.Screen 
+          name="Home" 
+          component={ReportsScreen}
+          initialParams={{ isAdminHome: true }}
+        />
         <Tab.Screen name="Users" component={AdminUsersScreen} />
         <Tab.Screen 
           name="Containers" 

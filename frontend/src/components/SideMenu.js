@@ -94,6 +94,7 @@ useEffect(() => {
     }, 300);
   };
   const isStaffOrAdmin = user?.userType === 'staff' || user?.userType === 'admin';
+  const isAdmin = user?.userType === 'admin';
 
   const navigateToReports = () => {
     onClose();
@@ -195,7 +196,7 @@ useEffect(() => {
               <Ionicons name="settings-outline" size={24} color={theme.text} />
               <MediumText style={[styles.menuItemText, { color: theme.text }]}>Settings & Privacy</MediumText>
             </TouchableOpacity>
-            {isStaffOrAdmin && (
+            {isStaffOrAdmin && !isAdmin && (
             <TouchableOpacity
               style={styles.menuItem}
               onPress={navigateToReports}

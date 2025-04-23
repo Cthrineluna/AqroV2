@@ -11,7 +11,9 @@ import {
   Dimensions,
   RefreshControl,
   TextInput,
-  Modal
+  Modal,
+  Image,
+  Text
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -33,7 +35,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 const ReportsScreen = ({ navigation, route }) => {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
-  const { userType } = route.params || {};
+  const { userType, isAdminHome } = route.params || {};
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,7 +52,6 @@ const ReportsScreen = ({ navigation, route }) => {
   const [showFilters, setShowFilters] = useState(false);
   
   // Filter states
- 
   const [selectedActivityType, setSelectedActivityType] = useState(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [selectedContainerType, setSelectedContainerType] = useState(null);
@@ -109,10 +110,18 @@ const ReportsScreen = ({ navigation, route }) => {
     try {
       setLoading(true);
       setError(null);
-      
+
+      if (!user) {
+        console.log('No user found, skipping report loading');
+        setLoading(false);
+        return; 
+      }
+
       const token = await AsyncStorage.getItem('aqro_token');
       if (!token) {
-        throw new Error('No authentication token found');
+        console.log('No authentication token found, user may have logged out');
+        setLoading(false);
+        return;
       }
       
       // Load filter data if admin
@@ -168,7 +177,7 @@ const ReportsScreen = ({ navigation, route }) => {
       
       const totalActivities = timeFrameFilteredActivities.length;
       const rebateActivities = timeFrameFilteredActivities.filter(a => a.type === 'rebate');
-      const totalRebates = rebateActivities.reduce((sum, activity) => sum + (activity.amount || 0), 0);
+      const totalRebates = rebateActivities ? rebateActivities.reduce((sum, activity) => sum + (activity.amount || 0), 0) : 0;
       const distinctContainers = new Set(timeFrameFilteredActivities.map(a => a.containerId?._id.toString()));
       const activeContainers = distinctContainers.size;
       const registrations = timeFrameFilteredActivities.filter(a => a.type === 'registration').length;
@@ -206,6 +215,20 @@ const ReportsScreen = ({ navigation, route }) => {
     }
   };
 
+  useEffect(() => {
+    // If no user exists, don't try to fetch any data
+    if (!user) {
+      // Clear any loaded data
+      setReportData(null);
+      setSummaryData({
+        totalActivities: 0,
+        totalRebates: '0.00',
+        activeContainers: 0,
+        returnRate: 0
+      });
+    }
+  }, [user]);
+  
   const fetchContainerTypes = async () => {
     try {
       const token = await AsyncStorage.getItem('aqro_token');
@@ -232,13 +255,10 @@ const ReportsScreen = ({ navigation, route }) => {
       let key;
       
       if (timeFrame === 'week') {
-        // Weekly - group by day of week (Sun-Sat)
         key = date.toLocaleDateString('en-US', { weekday: 'short' });
       } else if (timeFrame === 'month') {
-        // Monthly - group by month name (Jan-Dec)
         key = date.toLocaleDateString('en-US', { month: 'short' });
       } else if (timeFrame === 'year') {
-        // Yearly - group by full year (2020, 2021, etc.)
         key = date.getFullYear().toString();
       }
       
@@ -305,14 +325,12 @@ const ReportsScreen = ({ navigation, route }) => {
     let data = [];
     
     if (timeFrame === 'week') {
-      // Weekly - show all days of week in order
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       days.forEach(day => {
         labels.push(day);
         data.push(groupedData[day] || 0);
       });
     } else if (timeFrame === 'month') {
-      // Monthly - show all months in order
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       months.forEach(month => {
@@ -320,7 +338,6 @@ const ReportsScreen = ({ navigation, route }) => {
         data.push(groupedData[month] || 0);
       });
     } else if (timeFrame === 'year') {
-      // Yearly - show years in ascending order
       const years = Object.keys(groupedData)
         .map(year => parseInt(year))
         .sort((a, b) => a - b);
@@ -365,8 +382,6 @@ const ReportsScreen = ({ navigation, route }) => {
     setRefreshing(true);
     fetchReportData().then(() => setRefreshing(false));
   }, [fetchReportData]);
-
-
 
   const resetFilters = () => {
     setSelectedActivityType(null);
@@ -541,6 +556,69 @@ const ReportsScreen = ({ navigation, route }) => {
     </View>
   );
 
+  const renderProfileImage = () => {
+    if (user?.profilePicture) {
+      return (
+        <Image
+          source={{ uri: user.profilePicture }}
+          style={styles.profileImage}
+          onError={(e) => {
+            console.log("Image loading error:", e.nativeEvent.error);
+          }}
+        />
+      );
+    } else {
+      return (
+        <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.primary + '20' }]}>
+          <Ionicons name="person" size={35} color={theme.primary} />
+        </View>
+      );
+    }
+  };
+
+  const renderHeader = () => {
+    if (isAdminHome) {
+      return (
+        <View style={[styles.header, { backgroundColor: theme.background }]}>
+          <View style={{ flexDirection: 'row' }}>
+            <Text style={[styles.headerLetter, { color: theme.text }]}>A</Text>
+            <Text style={[styles.headerLetter, { color: theme.primary }]}>Q</Text>
+            <Text style={[styles.headerLetter, { color: theme.primary }]}>R</Text>
+            <Text style={[styles.headerLetter, { color: theme.text }]}>O</Text>
+          </View>
+          
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity onPress={() => setShowFilters(true)} style={{ marginRight: 16 }}>
+              <Ionicons name="options-outline" size={24} color={theme.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('GenerateReport')}>
+              <Ionicons name="calendar-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    } else {
+      return (
+        <View style={[styles.header, { backgroundColor: theme.background }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </TouchableOpacity>
+          
+          <BoldText style={[styles.headerTitle, { color: theme.text }]}>Reports</BoldText>
+          
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity onPress={() => setShowFilters(true)} style={{ marginRight: 16 }}>
+              <Ionicons name="options-outline" size={24} color={theme.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('GenerateReport')}>
+              <Ionicons name="calendar-outline" size={24} color={theme.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar
@@ -548,24 +626,25 @@ const ReportsScreen = ({ navigation, route }) => {
         barStyle={isDark ? "light-content" : "dark-content"}
       />
       
-      <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        
-        <BoldText style={[styles.headerTitle, { color: theme.text }]}>Reports</BoldText>
-        
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity onPress={() => setShowFilters(true)} style={{ marginRight: 16 }}>
-            <Ionicons name="options-outline" size={24} color={theme.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('GenerateReport')}>
-            <Ionicons name="calendar-outline" size={24} color={theme.text} />
+      {renderHeader()}
+      
+      {isAdminHome && (
+        <View style={styles.greetings}>
+          <View>
+            <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
+              Hello, {user?.firstName || 'User'}!
+            </SemiBoldText>
+            <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
+              Ready to close the loop?
+            </RegularText> 
+          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Profile')}
+          >
+            {renderProfileImage()}
           </TouchableOpacity>
         </View>
-      </View>
-
-   
+      )}
       
       {/* Filter Badges */}
       {renderFilterBadges().length > 0 && (
@@ -910,11 +989,41 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 2 : 10,
-    height: Platform.OS === 'android' ? 76 : 56,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 4 : 10,
+    marginBottom: 16,  
+  },
+  headerLetter: {
+    fontSize: 26,
+    fontFamily: 'Blanka',
+    lineHeight: 30,
   },
   headerTitle: {
     fontSize: 20,
+  },
+  greetings: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 50, 
+    height: 50, 
+    borderRadius: 25, 
+  },  
+  profileImagePlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 40, 
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  greetingsHeader: {
+    fontSize: 24,
+  },
+  subGreetings: {
+    fontSize: 16,
   },
   scrollView: {
     flex: 1,
@@ -949,18 +1058,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     marginHorizontal: 4,
-
   },
   timeFrameText: {
     fontSize: 14,
   },
-chartContainer: {
-  padding: 16,
-  borderRadius: 12,
-  marginBottom: 24,
-  overflow: 'hidden', 
-  width: '100%', 
-},
+  chartContainer: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    overflow: 'hidden', 
+    width: '100%', 
+  },
   chartTitle: {
     fontSize: 18,
     marginBottom: 16,
@@ -1011,7 +1119,6 @@ chartContainer: {
     fontSize: 20,
     marginTop: 4,
   },
-  // New styles for filtering
   dateRangeContainer: {
     paddingHorizontal: 16,
     paddingVertical: 8,
