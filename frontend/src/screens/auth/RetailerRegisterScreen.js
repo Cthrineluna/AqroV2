@@ -483,61 +483,70 @@ const pickImage = async () => {
   placeholderTextColor="#9e9e9e"
 />
 
-              </View>
+</View>
 
-              <View style={styles.formInput}>
-                <MediumText style={styles.inputLabel}>RESTAURANT LOGO (OPTIONAL)</MediumText>
-                <TouchableOpacity 
-                  style={[styles.uploadButton, {borderColor: theme.border}]}
-                  onPress={pickImage}
-                >
-                  {restaurantLogo ? (
-                    <Image 
-                      source={{ uri: restaurantLogo.uri }} 
-                      style={styles.uploadPreview}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <MediumText style={[styles.uploadButtonText, {color: theme.text}]}>
-                      Select Logo Image
-                    </MediumText>
-                  )}
-                </TouchableOpacity>
-              </View>
+        <View style={styles.formInput}>
+          <MediumText style={styles.inputLabel}>RESTAURANT LOGO (OPTIONAL)</MediumText>
+          <TouchableOpacity 
+            style={[styles.uploadButton, {borderColor: theme.border}]}
+            onPress={pickImage}
+          >
+            {restaurantLogo ? (
+              <Image 
+                source={{ uri: restaurantLogo.uri }} 
+                style={styles.uploadPreview}
+                resizeMode="contain"
+              />
+            ) : (
+              <MediumText style={[styles.uploadButtonText, {color: theme.text}]}>
+                Select Logo Image
+              </MediumText>
+            )}
+          </TouchableOpacity>
+          <RegularText style={[styles.fileTypeText, {color: theme.text, fontSize: 12, marginTop: 8, opacity: 0.8}]}>
+            Accepts JPG/PNG images (max 5MB)
+          </RegularText>
+        </View>
 
-              <View style={styles.formInput}>
-                <MediumText style={styles.inputLabel}>BUSINESS PERMIT*</MediumText>
-                <TouchableOpacity 
-                  style={[styles.uploadButton, {borderColor: theme.border}]}
-                  onPress={pickDocument}
-                >
-                  <MediumText style={[styles.uploadButtonText, {color: theme.text}]}>
-                    {businessPermit ? businessPermit.name : 'Select Document'}
-                  </MediumText>
-                </TouchableOpacity>
-                {businessPermit && (
-                  <MediumText style={[styles.fileSizeText, {color: theme.text}]}>
-                    {`${(businessPermit.size / 1024).toFixed(2)} KB`}
-                  </MediumText>
-                )}
-              </View>
+        <View style={styles.formInput}>
+          <MediumText style={styles.inputLabel}>BUSINESS PERMIT*</MediumText>
+          <TouchableOpacity 
+            style={[styles.uploadButton, {borderColor: theme.border}]}
+            onPress={pickDocument}
+          >
+            <MediumText style={[styles.uploadButtonText, {color: theme.text}]}>
+              {businessPermit ? businessPermit.name : 'Select Document'}
+            </MediumText>
+          </TouchableOpacity>
+          {businessPermit && (
+            <MediumText style={[styles.fileSizeText, {color: theme.text}]}>
+              {`${(businessPermit.size / 1024).toFixed(2)} KB`}
+            </MediumText>
+          )}
+          <RegularText style={[styles.fileTypeText, {color: theme.text, fontSize: 12, marginTop: 8, opacity: 0.8}]}>
+            Accepts PDF or JPG/PNG images (max 5MB)
+          </RegularText>
+        </View>
 
-              <View style={styles.formInput}>
-                <MediumText style={styles.inputLabel}>BIR REGISTRATION*</MediumText>
-                <TouchableOpacity 
-                  style={[styles.uploadButton, {borderColor: theme.border}]}
-                  onPress={pickBirDocument}
-                >
-                  <MediumText style={[styles.uploadButtonText, {color: theme.text}]}>
-                    {birRegistration ? birRegistration.name : 'Select Document'}
-                  </MediumText>
-                </TouchableOpacity>
-                {birRegistration && (
-                  <MediumText style={[styles.fileSizeText, {color: theme.text}]}>
-                    {`${(birRegistration.size / 1024).toFixed(2)} KB`}
-                  </MediumText>
-                )}
-              </View>
+            <View style={styles.formInput}>
+              <MediumText style={styles.inputLabel}>BIR REGISTRATION*</MediumText>
+              <TouchableOpacity 
+                style={[styles.uploadButton, {borderColor: theme.border}]}
+                onPress={pickBirDocument}
+              >
+                <MediumText style={[styles.uploadButtonText, {color: theme.text}]}>
+                  {birRegistration ? birRegistration.name : 'Select Document'}
+                </MediumText>
+              </TouchableOpacity>
+              {birRegistration && (
+                <MediumText style={[styles.fileSizeText, {color: theme.text,}]}>
+                  {`${(birRegistration.size / 1024).toFixed(2)} KB`}
+                </MediumText>
+              )}
+              <RegularText style={[styles.fileTypeText, {color: theme.text, fontSize: 12, marginTop: 8, opacity: 0.8}]}>
+                Accepts PDF or JPG/PNG images (max 5MB)
+              </RegularText>
+            </View>
             </View>
 
             <View style={styles.actionButtons}>
