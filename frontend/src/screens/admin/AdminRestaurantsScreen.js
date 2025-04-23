@@ -31,6 +31,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { getApiUrl } from '../../services/apiConfig';
 import { Keyboard } from 'react-native';
+import SearchComponent from '../../components/SearchComponent';
 
 const { width } = Dimensions.get('window');
 
@@ -51,6 +52,32 @@ const AdminRestaurantsScreen = ({ navigation }) => {
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [staffActionModalVisible, setStaffActionModalVisible] = useState(false);
   const [staffLoading, setStaffLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    
+    if (!query || query.trim() === '') {
+      setFilteredRestaurants(restaurants);
+      return;
+    }
+  
+    const results = restaurants.filter(restaurant => {
+      const name = restaurant.name?.toLowerCase() || '';
+      const city = restaurant.location?.city?.toLowerCase() || '';
+      const address = restaurant.location?.address?.toLowerCase() || '';
+      const contact = restaurant.contactNumber?.toLowerCase() || '';
+      const searchLower = query.toLowerCase();
+  
+      return name.includes(searchLower) || 
+             city.includes(searchLower) ||
+             address.includes(searchLower) ||
+             contact.includes(searchLower);
+    });
+  
+    setFilteredRestaurants(results);
+  };
   useEffect(() => {
 
     return () => {
@@ -182,6 +209,7 @@ const fetchAvailableStaff = async () => {
         }
       });
       setRestaurants(response.data);
+      setFilteredRestaurants(response.data); // Initialize filtered restaurants
     } catch (error) {
       console.error('Error fetching restaurants:', error.response?.data || error.message);
       Alert.alert('Error', error.response?.data?.message || 'Failed to fetch restaurants');
@@ -1195,9 +1223,20 @@ const handleSaveRestaurant = async (restaurantData) => {
           />
         </TouchableOpacity>
       </View>
-      
+      {/* Searc hComponent */}
+
+      <View style={styles.section}>
+        <SearchComponent 
+          onSearch={handleSearch}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          theme={theme}
+          placeholder="Search by name, city, address or contact..."
+        />
+      </View>
+
       <FlatList
-        data={restaurants}
+        data={filteredRestaurants}  // Changed from restaurants to filteredRestaurants
         renderItem={renderRestaurantItem}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
@@ -1212,7 +1251,9 @@ const handleSaveRestaurant = async (restaurantData) => {
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <RegularText style={{ color: theme?.text || '#000000' }}>
-              No restaurants found
+              {restaurants.length === 0 
+                ? "No restaurants found" 
+                : "No restaurants match your search."}
             </RegularText>
           </View>
         )}
@@ -1505,7 +1546,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-
+  section: {
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
     sectionContainer: {
       marginVertical: 10,
     },
