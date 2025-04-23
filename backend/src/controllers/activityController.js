@@ -173,7 +173,100 @@ exports.recordActivity = async (req, res) => {
 };
 
 // Add this to your existing activityController.js file
+// Add this new function to your existing activityController.js file
 
+// Get activity reports with advanced filtering
+exports.getActivityReportsFiltered = async (req, res) => {
+  try {
+    const {
+      startDate,
+      endDate,
+      type,
+      restaurantId,
+      userId,
+      containerTypeId
+    } = req.query;
+    
+    const userRole = req.user.userType;
+    const currentUserId = req.user._id;
+    const currentUserRestaurantId = req.user.restaurantId;
+    
+    // Build query based on filters
+    let query = {};
+    
+    // Date range filter
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+    
+    // Type filter
+    if (type && type !== 'all') {
+      query.type = type;
+    }
+    
+    // User role based restrictions
+    if (userRole === 'admin') {
+      // Admin can see all data but apply filters if provided
+      if (restaurantId) {
+        query.restaurantId = restaurantId;
+      }
+      
+      if (userId) {
+        query.userId = userId;
+      }
+    } else if (userRole === 'staff') {
+      // Staff can only see their restaurant's data
+      query.restaurantId = currentUserRestaurantId;
+    } else {
+      // Customers can only see their own data
+      query.userId = currentUserId;
+    }
+    
+    // Container type filter
+    if (containerTypeId) {
+      query.containerTypeId = containerTypeId;
+    }
+    
+    // Execute query with pagination
+    const activities = await Activity.find(query)
+      .populate({
+        path: 'containerId',
+        populate: {
+          path: 'containerTypeId'
+        }
+      })
+      .populate('restaurantId')
+      .populate({
+        path: 'userId',
+        select: 'firstName lastName email'
+      })
+      .populate('containerTypeId')
+      .sort({ createdAt: -1 });
+    
+    const totalActivities = activities.length;
+    
+    // Calculate total rebate amount if needed
+    let totalRebateAmount = 0;
+    if (!type || type === 'all' || type === 'rebate') {
+      totalRebateAmount = activities
+        .filter(activity => activity.type === 'rebate')
+        .reduce((sum, activity) => sum + (activity.amount || 0), 0);
+    }
+    
+    res.json({
+      activities,
+      totalActivities,
+      totalRebateAmount
+    });
+    
+  } catch (error) {
+    console.error('Error generating filtered activity reports:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 // Get activity reports for analytics
 exports.getActivityReports = async (req, res) => {
   try {

@@ -9,7 +9,9 @@ import {
   StatusBar,
   Platform,
   Dimensions,
-  RefreshControl
+  RefreshControl,
+  TextInput,
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -18,8 +20,7 @@ import {
   RegularText,
   SemiBoldText,
   BoldText,
-  ThemedView,
-  PrimaryButton
+  MediumText
 } from '../../components/StyledComponents';
 import { getRestaurantActivities, getAllActivities, getAllActivitiesAdmin } from '../../services/activityService';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -27,9 +28,7 @@ import { LineChart, BarChart } from 'react-native-chart-kit';
 import axios from 'axios';
 import { getApiUrl } from '../../services/apiConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from 'expo-datepicker';
-import { Picker } from '@react-native-picker/picker';
-import Modal from 'react-native-modal';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const ReportsScreen = ({ navigation, route }) => {
   const { theme, isDark } = useTheme();
@@ -48,42 +47,40 @@ const ReportsScreen = ({ navigation, route }) => {
     returnRate: 0
   });
   const [error, setError] = useState(null);
-  const [startFilterDate, setStartFilterDate] = useState(null);
-  const [endFilterDate, setEndFilterDate] = useState(null);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [selectedActivityType, setSelectedActivityType] = useState(null);
-  const [selectedContainerType, setSelectedContainerType] = useState(null);
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-  const [restaurantsList, setRestaurantsList] = useState([]);
-  const [customersList, setCustomersList] = useState([]);
-  const [containerTypesList, setContainerTypesList] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [datePickerMode, setDatePickerMode] = useState('start');
-
-  const getFilteredActivities = useCallback((activities) => {
-    if (!activities) return [];
-    
-    return activities.filter(activity => {
-      const activityDate = new Date(activity.createdAt);
-      
-      if (startFilterDate && activityDate < new Date(startFilterDate)) return false;
-      if (endFilterDate && activityDate > new Date(endFilterDate)) return false;
-      
-      if (selectedCustomer && activity.userId?._id !== selectedCustomer) return false;
-      
-      if (selectedActivityType && activity.type !== selectedActivityType) return false;
-      
-      if (selectedContainerType && 
-          activity.containerId?.containerTypeId?._id !== selectedContainerType) return false;
-      
-      if (selectedRestaurant && activity.restaurantId?._id !== selectedRestaurant) return false;
-      
-      return true;
-    });
-  }, [startFilterDate, endFilterDate, selectedCustomer, selectedActivityType, 
-      selectedContainerType, selectedRestaurant]);
   
+  // Filter states
+ 
+  const [selectedActivityType, setSelectedActivityType] = useState(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [selectedContainerType, setSelectedContainerType] = useState(null);
+  
+  // Data for filters
+  const [restaurants, setRestaurants] = useState([]);
+  const [containerTypes, setContainerTypes] = useState([]);
+  
+  // Search queries
+  const [restaurantSearchQuery, setRestaurantSearchQuery] = useState('');
+  const [containerTypeSearchQuery, setContainerTypeSearchQuery] = useState('');
+
+  // Filtered data
+  const filteredRestaurants = restaurants.filter(restaurant => 
+    restaurant.name.toLowerCase().includes(restaurantSearchQuery.toLowerCase())
+  );
+  
+  const filteredContainerTypes = containerTypes.filter(type => 
+    type.name.toLowerCase().includes(containerTypeSearchQuery.toLowerCase())
+  );
+
+  // Activity types
+  const activityTypes = [
+    { id: null, name: 'All Types' },
+    { id: 'registration', name: 'Registration' },
+    { id: 'return', name: 'Return' },
+    { id: 'rebate', name: 'Rebate' },
+    { id: 'status_change', name: 'Status Change' }
+  ];
+
   const screenWidth = Dimensions.get('window').width - 32;
 
   useEffect(() => {
@@ -92,6 +89,21 @@ const ReportsScreen = ({ navigation, route }) => {
       NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
     }
   }, [theme, isDark]);
+
+  const getFilteredActivities = useCallback((activities) => {
+    if (!activities) return [];
+    
+    return activities.filter(activity => {    
+      if (selectedActivityType && activity.type !== selectedActivityType) return false;
+      
+      if (selectedContainerType && 
+          activity.containerId?.containerTypeId?._id !== selectedContainerType._id) return false;
+      
+      if (selectedRestaurant && activity.restaurantId?._id !== selectedRestaurant._id) return false;
+      
+      return true;
+    });
+  }, [selectedActivityType, selectedContainerType, selectedRestaurant]);
 
   const fetchReportData = useCallback(async () => {
     try {
@@ -103,129 +115,64 @@ const ReportsScreen = ({ navigation, route }) => {
         throw new Error('No authentication token found');
       }
       
-      const now = new Date();
-      let startDate = new Date();
-      
-      if (timeFrame === 'week') {
-        startDate.setDate(now.getDate() - 7);
-      } else if (timeFrame === 'month') {
-        startDate.setMonth(now.getMonth() - 1);
-      } else if (timeFrame === 'year') {
-        startDate.setFullYear(now.getFullYear() - 1);
+      // Load filter data if admin
+      if (user?.userType === 'admin' && restaurants.length === 0) {
+        await fetchRestaurants();
       }
-
+      
+      if (containerTypes.length === 0) {
+        await fetchContainerTypes();
+      }
+      
       let activitiesResponse;
-      try {
-        if (user?.userType === 'admin') {
-          activitiesResponse = await getAllActivitiesAdmin(1, 1000);
-        } else if (user?.userType === 'staff') {
-          activitiesResponse = await getRestaurantActivities(1, 1000);
-        } else {
-          activitiesResponse = await getAllActivities(1, 1000);
-        }
-      
-        const activities = activitiesResponse?.activities || [];
-      } catch (error) {
-        console.error('Error fetching activities:', error);
-        setError('Failed to load activity data');
-        setLoading(false);
+      if (user?.userType === 'admin') {
+        activitiesResponse = await getAllActivitiesAdmin(1, 1000);
+      } else if (user?.userType === 'staff') {
+        activitiesResponse = await getRestaurantActivities(1, 1000);
+      } else {
+        activitiesResponse = await getAllActivities(1, 1000);
       }
       
-      const activities = activitiesResponse.activities || [];
-      let filteredActivities = activities.filter(activity => 
-        new Date(activity.createdAt) >= startDate
-      );
+      const activities = activitiesResponse?.activities || [];
+      const filteredActivities = getFilteredActivities(activities);
       
-      if (startFilterDate || endFilterDate || selectedCustomer || 
-          selectedActivityType || selectedContainerType || selectedRestaurant) {
+      // Filter activities by time frame
+      const now = new Date();
+      let timeFrameFilteredActivities = filteredActivities.filter(activity => {
+        const activityDate = new Date(activity.createdAt);
         
-        filteredActivities = filteredActivities.filter(activity => {
-          const activityDate = new Date(activity.createdAt);
-          
-          if (startFilterDate && activityDate < new Date(startFilterDate)) return false;
-          if (endFilterDate && activityDate > new Date(endFilterDate)) return false;
-          
-          if (selectedCustomer && activity.userId?._id !== selectedCustomer) return false;
-          
-          if (selectedActivityType && activity.type !== selectedActivityType) return false;
-          
-          if (selectedContainerType && 
-              activity.containerId?.containerTypeId?._id !== selectedContainerType) return false;
-          
-          if (selectedRestaurant && activity.restaurantId?._id !== selectedRestaurant) return false;
-          
-          return true;
-        });
-      }
-      
-      if (user?.userType === 'admin' && (!restaurantsList || !restaurantsList.length)) {
-        try {
-          const response = await axios.get(getApiUrl('/restaurants'), {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setRestaurantsList(response.data.restaurants);
-        } catch (err) {
-          console.log('Failed to fetch restaurants list:', err.message);
-          if (err.response) {
-            console.log('Error response:', err.response.status, err.response.data);
-          } else if (err.request) {
-            console.log('No response received:', err.request);
-          }
+        if (timeFrame === 'week') {
+          const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+          return activityDate >= weekStart;
+        } else if (timeFrame === 'month') {
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          return activityDate >= monthStart;
+        } else if (timeFrame === 'year') {
+          const yearStart = new Date(now.getFullYear(), 0, 1);
+          return activityDate >= yearStart;
         }
-      }
-      
-      if (!containerTypesList.length) {
-        try {
-          const response = await axios.get(`${getApiUrl()}/container-types`, {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          if (response.data && Array.isArray(response.data)) {
-            setContainerTypesList(response.data);
-          } else {
-            setContainerTypesList([]);
-          }
-        } catch (err) {
-          console.error('Failed to fetch container types:', err);
-          setContainerTypesList([]);
-        }
-      }
-      
-      if (user?.userType === 'admin' && !customersList.length) {
-        const uniqueCustomers = [...new Set(activities.map(a => a.userId?._id))]
-          .filter(id => id)
-          .map(id => {
-            const userActivity = activities.find(a => a.userId?._id === id);
-            return {
-              _id: id,
-              name: `${userActivity.userId?.firstName || ''} ${userActivity.userId?.lastName || ''}`,
-              email: userActivity.userId?.email || ''
-            };
-          });
-        setCustomersList(uniqueCustomers);
-      }
+        return true;
+      });
       
       if (activeReport === 'activity') {
-        const groupedByDay = groupActivitiesByTimeFrame(filteredActivities, timeFrame);
+        const groupedByDay = groupActivitiesByTimeFrame(timeFrameFilteredActivities, timeFrame);
         setReportData(formatChartData(groupedByDay, 'Activity Count', timeFrame));
       } else if (activeReport === 'rebate') {
-        const rebateActivities = filteredActivities.filter(a => a.type === 'rebate');
+        const rebateActivities = timeFrameFilteredActivities.filter(a => a.type === 'rebate');
         const groupedRebates = groupRebatesByTimeFrame(rebateActivities, timeFrame);
         setReportData(formatChartData(groupedRebates, 'Rebate Amount (₱)', timeFrame));
       } else if (activeReport === 'container') {
-        const groupedByType = groupByContainerType(filteredActivities);
+        const groupedByType = groupByContainerType(timeFrameFilteredActivities);
         setReportData(formatBarChartData(groupedByType, 'Container Usage'));
       }
       
-      const totalActivities = filteredActivities.length;
-      const rebateActivities = filteredActivities.filter(a => a.type === 'rebate');
+      const totalActivities = timeFrameFilteredActivities.length;
+      const rebateActivities = timeFrameFilteredActivities.filter(a => a.type === 'rebate');
       const totalRebates = rebateActivities.reduce((sum, activity) => sum + (activity.amount || 0), 0);
-      const distinctContainers = new Set(filteredActivities.map(a => a.containerId?._id.toString()));
+      const distinctContainers = new Set(timeFrameFilteredActivities.map(a => a.containerId?._id.toString()));
       const activeContainers = distinctContainers.size;
-      const registrations = filteredActivities.filter(a => a.type === 'registration').length;
-      const returns = filteredActivities.filter(a => a.type === 'return').length;
+      const registrations = timeFrameFilteredActivities.filter(a => a.type === 'registration').length;
+      const returns = timeFrameFilteredActivities.filter(a => a.type === 'return').length;
       const returnRate = registrations > 0 ? Math.round((returns / registrations) * 100) : 0;
       
       setSummaryData({
@@ -241,9 +188,41 @@ const ReportsScreen = ({ navigation, route }) => {
       setError('Failed to load report data. Please try again.');
       setLoading(false);
     }
-  }, [activeReport, timeFrame, user, startFilterDate, endFilterDate, selectedCustomer, 
-    selectedActivityType, selectedContainerType, selectedRestaurant, 
-    restaurantsList?.length, containerTypesList?.length, customersList?.length]);
+  }, [activeReport, timeFrame, user, selectedActivityType, 
+      selectedContainerType, selectedRestaurant, restaurants.length, containerTypes.length]);
+
+  const fetchRestaurants = async () => {
+    try {
+      const token = await AsyncStorage.getItem('aqro_token');
+      const response = await axios.get(getApiUrl('/restaurants'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data) {
+        setRestaurants(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+    }
+  };
+
+  const fetchContainerTypes = async () => {
+    try {
+      const token = await AsyncStorage.getItem('aqro_token');
+      const response = await axios.get(getApiUrl('/container-types'), {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data) {
+        setContainerTypes(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching container types:', error);
+    }
+  };
 
   const groupActivitiesByTimeFrame = (activities, timeFrame) => {
     const grouped = {};
@@ -253,10 +232,13 @@ const ReportsScreen = ({ navigation, route }) => {
       let key;
       
       if (timeFrame === 'week') {
+        // Weekly - group by day of week (Sun-Sat)
         key = date.toLocaleDateString('en-US', { weekday: 'short' });
       } else if (timeFrame === 'month') {
+        // Monthly - group by month name (Jan-Dec)
         key = date.toLocaleDateString('en-US', { month: 'short' });
       } else if (timeFrame === 'year') {
+        // Yearly - group by full year (2020, 2021, etc.)
         key = date.getFullYear().toString();
       }
       
@@ -280,9 +262,9 @@ const ReportsScreen = ({ navigation, route }) => {
       if (timeFrame === 'week') {
         key = date.toLocaleDateString('en-US', { weekday: 'short' });
       } else if (timeFrame === 'month') {
-        key = date.getDate().toString();
-      } else if (timeFrame === 'year') {
         key = date.toLocaleDateString('en-US', { month: 'short' });
+      } else if (timeFrame === 'year') {
+        key = date.getFullYear().toString();
       }
       
       if (!grouped[key]) {
@@ -323,34 +305,38 @@ const ReportsScreen = ({ navigation, route }) => {
     let data = [];
     
     if (timeFrame === 'week') {
+      // Weekly - show all days of week in order
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       days.forEach(day => {
         labels.push(day);
         data.push(groupedData[day] || 0);
       });
     } else if (timeFrame === 'month') {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      // Monthly - show all months in order
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       months.forEach(month => {
         labels.push(month);
         data.push(groupedData[month] || 0);
       });
     } else if (timeFrame === 'year') {
-      const currentYear = new Date().getFullYear();
-      for (let i = currentYear - 4; i <= currentYear; i++) {
-        const year = i.toString();
-        labels.push(year);
-        data.push(groupedData[year] || 0);
-      }
+      // Yearly - show years in ascending order
+      const years = Object.keys(groupedData)
+        .map(year => parseInt(year))
+        .sort((a, b) => a - b);
+      
+      years.forEach(year => {
+        labels.push(year.toString());
+        data.push(groupedData[year.toString()]);
+      });
     }
     
     return {
       labels,
-      datasets: [
-        {
-          data,
-          color: () => theme.primary,
-        }
-      ],
+      datasets: [{
+        data,
+        color: () => theme.primary,
+      }],
       legend: [legend]
     };
   };
@@ -380,6 +366,70 @@ const ReportsScreen = ({ navigation, route }) => {
     fetchReportData().then(() => setRefreshing(false));
   }, [fetchReportData]);
 
+
+
+  const resetFilters = () => {
+    setSelectedActivityType(null);
+    setSelectedRestaurant(null);
+    setSelectedContainerType(null);
+  };
+
+  const applyFilters = () => {
+    fetchReportData();
+    setShowFilters(false);
+  };
+
+  const renderFilterBadges = () => {
+    const badges = [];
+    
+    if (selectedActivityType) {
+      badges.push(
+        <TouchableOpacity 
+          key="type" 
+          style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+          onPress={() => setShowFilters(true)}
+        >
+          <MediumText style={{ color: theme.primary, fontSize: 12 }}>
+            {activityTypes.find(t => t.id === selectedActivityType)?.name}
+          </MediumText>
+          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+      );
+    }
+    
+    if (selectedRestaurant) {
+      badges.push(
+        <TouchableOpacity 
+          key="restaurant" 
+          style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+          onPress={() => setShowFilters(true)}
+        >
+          <MediumText style={{ color: theme.primary, fontSize: 12 }}>
+            {selectedRestaurant.name}
+          </MediumText>
+          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+      );
+    }
+    
+    if (selectedContainerType) {
+      badges.push(
+        <TouchableOpacity 
+          key="containerType" 
+          style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+          onPress={() => setShowFilters(true)}
+        >
+          <MediumText style={{ color: theme.primary, fontSize: 12 }}>
+            {selectedContainerType.name}
+          </MediumText>
+          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+      );
+    }
+    
+    return badges;
+  };
+
   const chartConfig = {
     backgroundGradientFrom: theme.background,
     backgroundGradientTo: theme.background,
@@ -398,12 +448,12 @@ const ReportsScreen = ({ navigation, route }) => {
 
   const renderChart = () => {
     if (!reportData) return null;
-    
+    const chartWidth = screenWidth - 32;
     if (activeReport === 'container') {
       return (
         <BarChart
           data={reportData}
-          width={screenWidth}
+          width={chartWidth}
           height={220}
           chartConfig={chartConfig}
           style={styles.chart}
@@ -417,7 +467,7 @@ const ReportsScreen = ({ navigation, route }) => {
     return (
       <LineChart
         data={reportData}
-        width={screenWidth}
+        width={chartWidth}
         height={220}
         chartConfig={chartConfig}
         bezier
@@ -490,12 +540,33 @@ const ReportsScreen = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
+        
         <BoldText style={[styles.headerTitle, { color: theme.text }]}>Reports</BoldText>
-        <TouchableOpacity>
-          <Ionicons name="calendar-outline" size={24} color={theme.text} />
-        </TouchableOpacity>
+        
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity onPress={() => setShowFilters(true)} style={{ marginRight: 16 }}>
+            <Ionicons name="options-outline" size={24} color={theme.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('GenerateReport')}>
+            <Ionicons name="calendar-outline" size={24} color={theme.text} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+   
       
+      {/* Filter Badges */}
+      {renderFilterBadges().length > 0 && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.filterBadgesContainer}
+          contentContainerStyle={styles.filterBadgesContent}
+        >
+          {renderFilterBadges()}
+        </ScrollView>
+      )}
+
       <ScrollView
         refreshControl={
           <RefreshControl
@@ -597,6 +668,223 @@ const ReportsScreen = ({ navigation, route }) => {
           />
         </View>
       </ScrollView>
+
+      {/* Filter Modal */}
+      <Modal
+        transparent={true}
+        animationType="slide"
+        visible={showFilters}
+        onRequestClose={() => setShowFilters(false)}
+      >
+        <View style={styles.filterModalOverlay}>
+          <View style={[styles.filterModalContainer, { backgroundColor: theme.background }]}>
+            <View style={styles.filterModalHeader}>
+              <BoldText style={{ fontSize: 20, color: theme.text }}>
+                Filter Reports
+              </BoldText>
+              <TouchableOpacity onPress={() => setShowFilters(false)}>
+                <Ionicons name="close" size={24} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.filterContent}>
+              
+              {/* Activity Type Section */}
+              <View style={styles.filterSection}>
+                <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
+                  Activity Type
+                </MediumText>
+                
+                <ScrollView 
+                  style={styles.optionsList} 
+                  nestedScrollEnabled={true}
+                  contentContainerStyle={styles.optionsContentContainer}
+                >
+                  {activityTypes.map(type => (
+                    <TouchableOpacity 
+                      key={type.id || 'all'}
+                      style={[
+                        styles.optionItem, 
+                        { 
+                          backgroundColor: selectedActivityType === type.id 
+                            ? theme.primary + '20' 
+                            : 'transparent' 
+                        }
+                      ]}
+                      onPress={() => setSelectedActivityType(type.id)}
+                    >
+                      <MediumText style={{ 
+                        color: selectedActivityType === type.id 
+                          ? theme.primary 
+                          : theme.text 
+                      }}>
+                        {type.name}
+                      </MediumText>
+                      {selectedActivityType === type.id && (
+                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              
+              {/* Restaurant Section (Admin only) */}
+              {user?.userType === 'admin' && (
+                <View style={styles.filterSection}>
+                  <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
+                    Filter by Restaurant
+                  </MediumText>
+                  
+                  <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
+                    <Ionicons name="search" size={20} color={theme.text} />
+                    <TextInput
+                      style={[styles.searchInput, { color: theme.text }]}
+                      placeholder="Search restaurants..."
+                      placeholderTextColor={theme.text}
+                      value={restaurantSearchQuery}
+                      onChangeText={setRestaurantSearchQuery}
+                    />
+                    {restaurantSearchQuery !== '' && (
+                      <TouchableOpacity onPress={() => setRestaurantSearchQuery('')}>
+                        <Ionicons name="close-circle" size={20} color={theme.text} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  
+                  <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
+                    <TouchableOpacity 
+                      style={[
+                        styles.optionItem, 
+                        { backgroundColor: !selectedRestaurant ? theme.primary + '20' : 'transparent' }
+                      ]}
+                      onPress={() => setSelectedRestaurant(null)}
+                    >
+                      <MediumText style={{ color: !selectedRestaurant ? theme.primary : theme.text }}>
+                        All Restaurants
+                      </MediumText>
+                      {!selectedRestaurant && (
+                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+                      )}
+                    </TouchableOpacity>
+                    
+                    {filteredRestaurants.map(restaurant => (
+                      <TouchableOpacity 
+                        key={restaurant._id}
+                        style={[
+                          styles.optionItem, 
+                          { 
+                            backgroundColor: selectedRestaurant?._id === restaurant._id 
+                              ? theme.primary + '20' 
+                              : 'transparent' 
+                          }
+                        ]}
+                        onPress={() => setSelectedRestaurant(restaurant)}
+                      >
+                        <MediumText style={{ 
+                          color: selectedRestaurant?._id === restaurant._id 
+                            ? theme.primary 
+                            : theme.text 
+                        }}>
+                          {restaurant.name}
+                        </MediumText>
+                        {selectedRestaurant?._id === restaurant._id && (
+                          <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              
+              {/* Container Type Section */}
+              <View style={styles.filterSection}>
+                <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
+                  Filter by Container Type
+                </MediumText>
+                
+                <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
+                  <Ionicons name="search" size={20} color={theme.text} />
+                  <TextInput
+                    style={[styles.searchInput, { color: theme.text }]}
+                    placeholder="Search container types..."
+                    placeholderTextColor={theme.text}
+                    value={containerTypeSearchQuery}
+                    onChangeText={setContainerTypeSearchQuery}
+                  />
+                  {containerTypeSearchQuery !== '' && (
+                    <TouchableOpacity onPress={() => setContainerTypeSearchQuery('')}>
+                      <Ionicons name="close-circle" size={20} color={theme.text} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                
+                <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.optionItem, 
+                      { backgroundColor: !selectedContainerType ? theme.primary + '20' : 'transparent' }
+                    ]}
+                    onPress={() => setSelectedContainerType(null)}
+                  >
+                    <MediumText style={{ color: !selectedContainerType ? theme.primary : theme.text }}>
+                      All Container Types
+                    </MediumText>
+                    {!selectedContainerType && (
+                      <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+                    )}
+                  </TouchableOpacity>
+                  
+                  {filteredContainerTypes.map(type => (
+                    <TouchableOpacity 
+                      key={type._id}
+                      style={[
+                        styles.optionItem, 
+                        { 
+                          backgroundColor: selectedContainerType?._id === type._id 
+                            ? theme.primary + '20' 
+                            : 'transparent' 
+                        }
+                      ]}
+                      onPress={() => setSelectedContainerType(type)}
+                    >
+                      <MediumText style={{ 
+                        color: selectedContainerType?._id === type._id 
+                          ? theme.primary 
+                          : theme.text 
+                      }}>
+                        {type.name}
+                      </MediumText>
+                      {selectedContainerType?._id === type._id && (
+                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </ScrollView>
+            
+            <View style={styles.filterButtons}>
+              <TouchableOpacity 
+                style={[styles.resetButton, { borderColor: theme.primary }]}
+                onPress={resetFilters}
+              >
+                <MediumText style={{ color: theme.primary }}>
+                  Reset Filters
+                </MediumText>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.applyButton, { backgroundColor: theme.primary }]}
+                onPress={applyFilters}
+              >
+                <MediumText style={{ color: '#FFFFFF' }}>
+                  Apply Filters
+                </MediumText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -649,16 +937,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     marginHorizontal: 4,
-    borderWidth: 1,
+
   },
   timeFrameText: {
     fontSize: 14,
   },
-  chartContainer: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
+chartContainer: {
+  padding: 16,
+  borderRadius: 12,
+  marginBottom: 24,
+  overflow: 'hidden', 
+  width: '100%', 
+},
   chartTitle: {
     fontSize: 18,
     marginBottom: 16,
@@ -709,86 +999,120 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginTop: 4,
   },
-  filterSection: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  filterToggleButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  filterToggleContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filtersContainer: {
-    marginTop: 12,
-    padding: 16,
-    borderRadius: 12,
-  },
-  filterTitle: {
-    fontSize: 18,
-    marginBottom: 16,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  filterLabel: {
-    width: 100,
-    fontSize: 14,
-  },
+  // New styles for filtering
   dateRangeContainer: {
-    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  filterBadgesContainer: {
+    maxHeight: 40,
+    paddingHorizontal: 16,
+  },
+  filterBadgesContent: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  filterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    marginRight: 8,
   },
-  dateInput: {
+  filterModalOverlay: {
     flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
-  picker: {
-    height: 40,
+  filterModalContainer: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 16,
+    maxHeight: '80%',
+  },
+  filterModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  filterContent: {
+    paddingHorizontal: 16,
+  },
+  filterSection: {
+    marginVertical: 12,
+  },
+  datePickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginVertical: 8,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    padding: 0,
+  },
+  optionsList: {
+    maxHeight: 200,
+    marginTop: 8,
+  },
+  optionsContentContainer: {
+    paddingBottom: 16,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginVertical: 4,
   },
   filterButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
   },
-  clearButton: {
+  resetButton: {
     flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderRadius: 8,
-    marginRight: 8,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8,
   },
   applyButton: {
-    flex: 1,
-    height: 40,
+    flex: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
     borderRadius: 8,
-    marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  modalContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  datePickerContainer: {
-    width: '80%',
-    padding: 20,
-    borderRadius: 12,
-  }
 });
 
 export default ReportsScreen;

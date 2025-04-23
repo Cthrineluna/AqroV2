@@ -16,6 +16,7 @@ import PendingApprovalScreen from '../screens/auth/PendingApprovalScreen';
 import SettingsScreen from '../screens/shared/SettingsScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import ReportsScreen from '../screens/shared/ReportsScreen';
+import GenerateReportScreen from '../screens/shared/GenerateReportScreen';
 
 // Customer screens
 import CustomerTabNavigator from './CustomerTabNavigator';
@@ -71,6 +72,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
+          <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ headerShown: false }} />
         </>
       ) : userType === 'customer' ? (
         // Customer flow
@@ -91,6 +93,7 @@ const AppNavigator = () => {
           <Stack.Screen name="StaffScanner" component={StaffScannerScreen} />
           <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
+          <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ headerShown: false }} />
         </>
       ) : (
         // Admin flow
@@ -102,6 +105,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
+          <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ headerShown: false }} />
         </>
       )}
     </Stack.Navigator>

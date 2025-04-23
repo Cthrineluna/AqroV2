@@ -89,16 +89,16 @@ export const getRestaurantActivities = async (page = 1, limit = 20) => {
   }
 };
 // Update getActivityReports in activityService.js
-export const getActivityReports = async (reportType, timeFrame) => {
+export const getActivityReports = async (queryParams) => {
   try {
-    const token = await AsyncStorage.getItem('aqro_token'); // Consistent token key
+    const token = await AsyncStorage.getItem('aqro_token');
     
     if (!token) {
       throw new Error('No authentication token found');
     }
     
     const response = await axios.get(
-      `${getApiUrl('/activities/reports')}?type=${reportType}&timeFrame=${timeFrame}`, 
+      `${getApiUrl('/activities/reports/filtered')}?${queryParams}`, 
       {
         headers: { Authorization: `Bearer ${token}` }
       }

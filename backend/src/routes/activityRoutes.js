@@ -24,4 +24,6 @@ router.get('/restaurant', protect, authorize('staff', 'admin'), activityControll
 
 router.get('/admin', protect, activityController.getAllActivitiesAdmin);
 
+router.get('/reports/filtered', protect, activityController.getActivityReportsFiltered);
+
 module.exports = router;
