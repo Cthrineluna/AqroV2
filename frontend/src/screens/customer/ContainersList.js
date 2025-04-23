@@ -412,10 +412,14 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
 
           <RebateSection container={container} theme={theme} />
 
-          <View style={styles.detailRow}>
-            <RegularText style={styles.detailLabel}>Rebate Value:</RegularText>
-            <RegularText style={{ color: theme.text }}>₱{container.containerTypeId.rebateValue.toFixed(2)}</RegularText>
-          </View>
+          {container.containerTypeId && container.containerTypeId.rebateValue !== undefined && (
+            <View style={styles.detailRow}>
+              <RegularText style={styles.detailLabel}>Rebate Value:</RegularText>
+              <RegularText style={{ color: theme.text }}>
+                ₱{container.containerTypeId.rebateValue.toFixed(2)}
+              </RegularText>
+            </View>
+          )}
           
           {container.restaurantId && (
             <View style={styles.detailRow}>
