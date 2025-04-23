@@ -100,4 +100,11 @@ router.put(
   containerController.updateContainer
 );
 
+router.delete(
+  '/:id',
+  protect,
+  authorize('admin'),
+  containerController.deleteContainer
+);
+
 module.exports = router;

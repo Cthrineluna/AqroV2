@@ -14,5 +14,14 @@ router.post('/', protect, activityController.recordActivity);
 
 router.get('/restaurant', protect, authorize('staff', 'admin'), activityController.getRestaurantActivities);
 
+router.get('/reports', protect, activityController.getActivityReports);
+
+router.get('/all', protect, activityController.getAllActivitiesAdmin);
+
+router.get('/', protect, activityController.getAllActivities);
+router.get('/all', protect, activityController.getAllActivitiesAdmin);
+router.get('/restaurant', protect, authorize('staff', 'admin'), activityController.getRestaurantActivities);
+
+router.get('/admin', protect, activityController.getAllActivitiesAdmin);
 
 module.exports = router;

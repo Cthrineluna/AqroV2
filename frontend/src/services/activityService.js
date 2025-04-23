@@ -49,6 +49,24 @@ export const getAllActivities = async (page = 1, limit = 20) => {
   }
 };
 
+export const getAllActivitiesAdmin = async (page = 1, limit = 20) => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    if (!token) {
+      throw new Error('No auth token found');
+    }
+    
+    const response = await axios.get(
+      getApiUrl(`/activities/admin?page=${page}&limit=${limit}`), // Updated endpoint
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching admin activities:', error);
+    throw error;
+  }
+};
+
 export const getRestaurantActivities = async (page = 1, limit = 20) => {
   try {
     const token = await AsyncStorage.getItem('aqro_token');
@@ -67,6 +85,28 @@ export const getRestaurantActivities = async (page = 1, limit = 20) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching restaurant activities:', error);
+    throw error;
+  }
+};
+// Update getActivityReports in activityService.js
+export const getActivityReports = async (reportType, timeFrame) => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token'); // Consistent token key
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axios.get(
+      `${getApiUrl('/activities/reports')}?type=${reportType}&timeFrame=${timeFrame}`, 
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching activity reports:', error);
     throw error;
   }
 };

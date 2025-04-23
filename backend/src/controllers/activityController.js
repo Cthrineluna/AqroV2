@@ -25,6 +25,44 @@ exports.getRecentActivities = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+// Add to activityController.js
+exports.getAllActivitiesAdmin = async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.userType !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+    
+    const activities = await Activity.find({})
+      .populate({
+        path: 'containerId',
+        populate: {
+          path: 'containerTypeId'
+        }
+      })
+      .populate('restaurantId')
+      .populate('userId', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    const total = await Activity.countDocuments({});
+    
+    res.json({
+      activities,
+      page,
+      totalPages: Math.ceil(total / limit),
+      totalActivities: total
+    });
+  } catch (error) {
+    console.error('Error fetching all activities:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 // Get all activities for a user with pagination
 exports.getAllActivities = async (req, res) => {
   try {
@@ -130,6 +168,164 @@ exports.recordActivity = async (req, res) => {
     res.status(201).json(newActivity);
   } catch (error) {
     console.error('Error recording activity:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Add this to your existing activityController.js file
+
+// Get activity reports for analytics
+exports.getActivityReports = async (req, res) => {
+  try {
+    const { type, timeFrame } = req.query;
+    const userId = req.user._id;
+    const userType = req.user.userType;
+    const restaurantId = req.user.restaurantId;
+    
+    // Define date ranges based on timeFrame
+    const now = new Date();
+    let startDate;
+    
+    switch (timeFrame) {
+      case 'week':
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case 'year':
+        startDate = new Date(now);
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+    }
+    
+    // Build query based on user type
+    let query = { createdAt: { $gte: startDate } };
+    
+    if (userType === 'staff') {
+      query.restaurantId = restaurantId;
+    } else if (userType === 'customer') {
+      query.userId = userId;
+    }
+    // Admin can see all data, so no additional filters needed
+    
+    // Different aggregations based on report type
+    let aggregation;
+    
+    if (type === 'activity') {
+      // Group activities by day
+      aggregation = await Activity.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+              day: { $dayOfMonth: "$createdAt" }
+            },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
+      ]);
+      
+      // Format for chart display
+      const labels = [];
+      const data = [];
+      
+      aggregation.forEach(item => {
+        const date = new Date(item._id.year, item._id.month - 1, item._id.day);
+        labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+        data.push(item.count);
+      });
+      
+      return res.json({
+        labels,
+        datasets: [{ data }],
+        legend: ['Container Activity']
+      });
+      
+    } else if (type === 'rebate') {
+      // Group rebates by day
+      aggregation = await Activity.aggregate([
+        { $match: { ...query, type: 'rebate' } },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+              day: { $dayOfMonth: "$createdAt" }
+            },
+            totalAmount: { $sum: "$amount" }
+          }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
+      ]);
+      
+      // Format for chart display
+      const labels = [];
+      const data = [];
+      
+      aggregation.forEach(item => {
+        const date = new Date(item._id.year, item._id.month - 1, item._id.day);
+        labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+        data.push(item.totalAmount);
+      });
+      
+      return res.json({
+        labels,
+        datasets: [{ data }],
+        legend: ['Rebate Amounts ($)']
+      });
+      
+    } else if (type === 'container') {
+      // Group by container type
+      aggregation = await Activity.aggregate([
+        { $match: query },
+        {
+          $lookup: {
+            from: 'containertypes',
+            localField: 'containerTypeId',
+            foreignField: '_id',
+            as: 'containerType'
+          }
+        },
+        { $unwind: '$containerType' },
+        {
+          $group: {
+            _id: '$containerType.name',
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { count: -1 } }
+      ]);
+      
+      // Format for chart display
+      const labels = [];
+      const data = [];
+      
+      aggregation.forEach(item => {
+        labels.push(item._id);
+        data.push(item.count);
+      });
+      
+      return res.json({
+        labels,
+        datasets: [{ data }],
+        legend: ['Container Usage']
+      });
+    }
+    
+    // Default response if type not specified
+    res.status(400).json({ message: 'Invalid report type specified' });
+    
+  } catch (error) {
+    console.error('Error generating activity reports:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

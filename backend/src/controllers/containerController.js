@@ -7,6 +7,31 @@ const QRCode = require('qrcode');
 const Restaurant = require('../models/Restaurant');
 const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
 
+exports.deleteContainer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // First check if container exists
+    const container = await Container.findById(id);
+    if (!container) {
+      return res.status(404).json({ message: 'Container not found' });
+    }
+
+    // Delete the container
+    await Container.findByIdAndDelete(id);
+
+    res.status(200).json({ 
+      success: true,
+      message: 'Container deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting container:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      error: error.message 
+    });
+  }
+};
 
 // Create a new container (admin only)
 exports.createContainer = async (req, res) => {
@@ -26,6 +51,7 @@ exports.createContainer = async (req, res) => {
         existingContainerId: existing._id 
       });
     }
+
 
     // Validate container type
     const containerType = await ContainerType.findById(containerTypeId);

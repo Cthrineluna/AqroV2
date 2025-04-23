@@ -935,9 +935,9 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
         savedContainer = createResponse.data;
         
         // Show QR code
-        const baseUrl = getApiUrl('').replace('/api', '');
-        setGeneratedQRCode(`${baseUrl}/qr-codes/${generateResponse.data.qrCode}.png`);
-        setShowQRModal(true);
+        // const baseUrl = getApiUrl('').replace('/api', '');
+        // setGeneratedQRCode(`${baseUrl}/qr-codes/${generateResponse.data.qrCode}.png`);
+        // setShowQRModal(true);
       }
   
       Alert.alert('Success', container?._id ? 'Container updated' : 'Container created');

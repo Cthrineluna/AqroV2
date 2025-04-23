@@ -15,6 +15,7 @@ import PendingApprovalScreen from '../screens/auth/PendingApprovalScreen';
 // Shared screens
 import SettingsScreen from '../screens/shared/SettingsScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
+import ReportsScreen from '../screens/shared/ReportsScreen';
 
 // Customer screens
 import CustomerTabNavigator from './CustomerTabNavigator';
@@ -69,6 +70,7 @@ const AppNavigator = () => {
           <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
         </>
       ) : userType === 'customer' ? (
         // Customer flow
@@ -88,6 +90,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="StaffScanner" component={StaffScannerScreen} />
           <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
+          <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
         </>
       ) : (
         // Admin flow
@@ -98,6 +101,7 @@ const AppNavigator = () => {
           <Stack.Screen name="ViewQr" component={ViewQRScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
         </>
       )}
     </Stack.Navigator>

@@ -20,6 +20,7 @@ import {
     SemiBoldText 
   } from './StyledComponents';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRoute } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 const MENU_WIDTH = width * 0.85;
@@ -33,7 +34,8 @@ const SideMenu = ({ visible, onClose, theme, user }) => {
   const isDarkMode = theme.background === '#121212' || theme.isDark;
 
 // In SideMenu.js
-// Modify your animation to ensure it uses the native driver consistently
+
+
 
 useEffect(() => {
   if (visible) {
@@ -91,7 +93,14 @@ useEffect(() => {
       logout();
     }, 300);
   };
+  const isStaffOrAdmin = user?.userType === 'staff' || user?.userType === 'admin';
 
+  const navigateToReports = () => {
+    onClose();
+    setTimeout(() => {
+      navigation.navigate('Reports', { userType: user?.userType });
+    }, 300);
+  };
  // Add this useEffect to SideMenu.js
 useEffect(() => {
     // This will ensure the component re-renders when the user data changes
@@ -186,6 +195,18 @@ useEffect(() => {
               <Ionicons name="settings-outline" size={24} color={theme.text} />
               <MediumText style={[styles.menuItemText, { color: theme.text }]}>Settings & Privacy</MediumText>
             </TouchableOpacity>
+            {isStaffOrAdmin && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={navigateToReports}
+            >
+              <Ionicons name="document-text-outline" size={24} color={theme.text} />
+              <MediumText style={[styles.menuItemText, { color: theme.text }]}>
+                Reports
+              </MediumText>
+            </TouchableOpacity>
+          )}
+
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={24} color={theme.error || '#ff4d4d'} />
               <MediumText style={[styles.menuItemText, { color: theme.error || '#ff4d4d' }]}>
