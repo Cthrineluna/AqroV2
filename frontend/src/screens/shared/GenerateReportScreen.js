@@ -254,7 +254,7 @@ console.log('Request URL with params:', urlWithParams);
       setActivities(response.data.activities);
       setTotalTransactions(response.data.totalActivities);
       
-      if (selectedActivityType?.id === 'rebate' || !selectedActivityType) {
+      if (selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) {
         const rebateTotal = response.data.activities
           .filter(activity => activity.type === 'rebate')
           .reduce((sum, activity) => sum + (activity.amount || 0), 0);
@@ -327,7 +327,7 @@ console.log('Request URL with params:', urlWithParams);
       
       csvContent += "\"Container Type\",\"Activity Type\"";
       
-      if (selectedActivityType?.id === 'rebate' || !selectedActivityType) {
+      if (selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) {
         csvContent += ",\"Rebate Amount\"";
       }
       
@@ -347,7 +347,7 @@ console.log('Request URL with params:', urlWithParams);
         
         row += `\"${containerTypeName}\",\"${activity.type}\"`;
         
-        if (selectedActivityType?.id === 'rebate' || !selectedActivityType) {
+        if (selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) {
           row += `,\"${activity.type === 'rebate' ? activity.amount.toFixed(2) : '0.00'}\"`;
         }
         
@@ -364,7 +364,7 @@ console.log('Request URL with params:', urlWithParams);
       
       totalsRow += `\"\",\"${totalTransactions} transactions\"`;
       
-      if (selectedActivityType?.id === 'rebate' || !selectedActivityType) {
+      if (selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) {
         totalsRow += `,\"${totalRebateAmount.toFixed(2)}\"`;
       }
       
@@ -533,7 +533,7 @@ console.log('Request URL with params:', urlWithParams);
           </BoldText>
         </View>
         
-        {(selectedActivityType?.id === 'rebate' || !selectedActivityType) && (
+        {(selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) && (
           <View style={styles.summaryItem}>
             <RegularText style={{ color: theme.text, fontSize: 12 }}>
               Total Rebate
@@ -585,7 +585,7 @@ console.log('Request URL with params:', urlWithParams);
                     <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1, fontSize: 10  }]}>
                         Activity
                     </MediumText>
-                    {(selectedActivityType?.id === 'rebate' || !selectedActivityType) && (
+                    {(selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) && (
                         <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 0.8 }]}>
                         Amount
                         </MediumText>
@@ -638,7 +638,7 @@ console.log('Request URL with params:', urlWithParams);
                     </RegularText>
                   </View>
                 </View>
-                {(selectedActivityType?.id === 'rebate' || !selectedActivityType) && (
+                {(selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) && (
                   <RegularText style={[styles.tableCell, { color: theme.text, flex: 0.8 }]}>
                     {activity.type === 'rebate' ? `₱${activity.amount?.toFixed(2) || '0.00'}` : '-'}
                   </RegularText>
