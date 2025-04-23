@@ -387,12 +387,16 @@ const ReportsScreen = ({ navigation, route }) => {
         <TouchableOpacity 
           key="type" 
           style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => setShowFilters(true)}
         >
           <MediumText style={{ color: theme.primary, fontSize: 12 }}>
             {activityTypes.find(t => t.id === selectedActivityType)?.name}
           </MediumText>
-          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+          <TouchableOpacity 
+            onPress={() => setSelectedActivityType(null)}
+            style={{ marginLeft: 4 }}
+          >
+            <Ionicons name="close-circle" size={14} color={theme.primary} />
+          </TouchableOpacity>
         </TouchableOpacity>
       );
     }
@@ -402,12 +406,16 @@ const ReportsScreen = ({ navigation, route }) => {
         <TouchableOpacity 
           key="restaurant" 
           style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => setShowFilters(true)}
         >
           <MediumText style={{ color: theme.primary, fontSize: 12 }}>
             {selectedRestaurant.name}
           </MediumText>
-          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+          <TouchableOpacity 
+            onPress={() => setSelectedRestaurant(null)}
+            style={{ marginLeft: 4 }}
+          >
+            <Ionicons name="close-circle" size={14} color={theme.primary} />
+          </TouchableOpacity>
         </TouchableOpacity>
       );
     }
@@ -417,12 +425,16 @@ const ReportsScreen = ({ navigation, route }) => {
         <TouchableOpacity 
           key="containerType" 
           style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
-          onPress={() => setShowFilters(true)}
         >
           <MediumText style={{ color: theme.primary, fontSize: 12 }}>
             {selectedContainerType.name}
           </MediumText>
-          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+          <TouchableOpacity 
+            onPress={() => setSelectedContainerType(null)}
+            style={{ marginLeft: 4 }}
+          >
+            <Ionicons name="close-circle" size={14} color={theme.primary} />
+          </TouchableOpacity>
         </TouchableOpacity>
       );
     }
@@ -657,7 +669,7 @@ const ReportsScreen = ({ navigation, route }) => {
         
         <View style={styles.summaryContainer}>
           <SummaryCard 
-            title="Containers Registered" 
+            title="Containers" 
             value={summaryData.activeContainers.toString()} 
             icon="cube-outline" 
           />
