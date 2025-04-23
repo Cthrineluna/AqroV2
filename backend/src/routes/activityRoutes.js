@@ -16,11 +16,9 @@ router.get('/restaurant', protect, authorize('staff', 'admin'), activityControll
 
 router.get('/reports', protect, activityController.getActivityReports);
 
+
 router.get('/all', protect, activityController.getAllActivitiesAdmin);
 
-router.get('/', protect, activityController.getAllActivities);
-router.get('/all', protect, activityController.getAllActivitiesAdmin);
-router.get('/restaurant', protect, authorize('staff', 'admin'), activityController.getRestaurantActivities);
 
 router.get('/admin', protect, activityController.getAllActivitiesAdmin);
 

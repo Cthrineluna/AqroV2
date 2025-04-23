@@ -657,7 +657,7 @@ const ReportsScreen = ({ navigation, route }) => {
         
         <View style={styles.summaryContainer}>
           <SummaryCard 
-            title="Active Containers" 
+            title="Containers Registered" 
             value={summaryData.activeContainers.toString()} 
             icon="cube-outline" 
           />

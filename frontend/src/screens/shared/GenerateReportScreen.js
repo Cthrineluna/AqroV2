@@ -292,7 +292,21 @@ console.log('Request URL with params:', urlWithParams);
     setFilterModalVisible(false);
     fetchReportData();
   };
-
+  const removeActivityTypeFilter = () => {
+    setSelectedActivityType(activityTypes[0]); // Reset to 'All Types'
+  };
+  
+  const removeRestaurantFilter = (restaurantId) => {
+    setSelectedRestaurants(selectedRestaurants.filter(r => r._id !== restaurantId));
+  };
+  
+  const removeCustomerFilter = (customerId) => {
+    setSelectedCustomers(selectedCustomers.filter(c => c._id !== customerId));
+  };
+  
+  const removeContainerTypeFilter = (typeId) => {
+    setSelectedContainerTypes(selectedContainerTypes.filter(t => t._id !== typeId));
+  };
   const resetFilters = () => {
     setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
     setEndDate(new Date());
@@ -394,7 +408,9 @@ console.log('Request URL with params:', urlWithParams);
           <MediumText style={{ color: theme.primary, fontSize: 12 }}>
             {selectedActivityType.name}
           </MediumText>
-          <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+          <TouchableOpacity onPress={removeActivityTypeFilter}>
+            <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
         </TouchableOpacity>
       );
     }
@@ -410,7 +426,9 @@ console.log('Request URL with params:', urlWithParams);
             <MediumText style={{ color: theme.primary, fontSize: 12 }}>
               {restaurant.name}
             </MediumText>
-            <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+            <TouchableOpacity onPress={() => removeRestaurantFilter(restaurant._id)}>
+              <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
           </TouchableOpacity>
         );
       });
@@ -427,7 +445,9 @@ console.log('Request URL with params:', urlWithParams);
             <MediumText style={{ color: theme.primary, fontSize: 12 }}>
               {customer.firstName} {customer.lastName}
             </MediumText>
-            <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+            <TouchableOpacity onPress={() => removeCustomerFilter(customer._id)}>
+              <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
           </TouchableOpacity>
         );
       });
@@ -444,7 +464,9 @@ console.log('Request URL with params:', urlWithParams);
             <MediumText style={{ color: theme.primary, fontSize: 12 }}>
               {type.name}
             </MediumText>
-            <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+            <TouchableOpacity onPress={() => removeContainerTypeFilter(type._id)}>
+              <Ionicons name="close-circle" size={14} color={theme.primary} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
           </TouchableOpacity>
         );
       });
