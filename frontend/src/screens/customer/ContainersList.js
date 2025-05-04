@@ -165,10 +165,13 @@ const RebateSection = ({ container, theme }) => {
         );
     
         if (response.data && response.data.length > 0) {
-          const rebatesWithNames = response.data.map(mapping => ({
-            restaurantName: mapping.restaurantId.name,
-            rebateValue: mapping.rebateValue
-          }));
+          // Filter out any mappings where restaurantId is null
+          const rebatesWithNames = response.data
+            .filter(mapping => mapping.restaurantId) // Only include mappings with restaurantId
+            .map(mapping => ({
+              restaurantName: mapping.restaurantId?.name || 'Unknown Restaurant',
+              rebateValue: mapping.rebateValue
+            }));
     
           setRestaurantRebates(rebatesWithNames);
         }
@@ -183,14 +186,12 @@ const RebateSection = ({ container, theme }) => {
   }, [container]); 
 
   const toggleExpand = () => {
-
     const dynamicHeight = isExpanded 
       ? 0 
       : Math.min(
           (restaurantRebates.length || 1) * 50, 
           250
         );
-
 
     Animated.timing(animatedHeight, {
       toValue: dynamicHeight,
@@ -200,7 +201,6 @@ const RebateSection = ({ container, theme }) => {
       setIsExpanded(!isExpanded);
     });
   };
-
 
   if (isLoading && restaurantRebates.length === 0) {
     return (

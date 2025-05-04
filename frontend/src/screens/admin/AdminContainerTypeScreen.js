@@ -112,10 +112,10 @@ const AdminContainerTypeScreen = ({ navigation }) => {
           'Content-Type': 'application/json'
         }
       });
-      return response.data;
+      return response.data || []; // Ensure we always return an array
     } catch (error) {
       console.error('Error fetching rebate values:', error.response?.data || error.message);
-      return [];
+      return []; // Return empty array on error
     }
   };
 

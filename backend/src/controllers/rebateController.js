@@ -3,19 +3,29 @@ const Rebate = require('../models/Rebate');
 const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
 
 // Get rebate values for a specific container type
+// Get rebate values for a specific container type
 exports.getRebatesByContainerType = async (req, res) => {
   try {
     const containerTypeId = req.params.containerTypeId;
     
     const rebates = await RestaurantContainerRebate.find({ containerTypeId })
-      .populate('restaurantId', 'name');
+      .populate({
+        path: 'restaurantId',
+        select: 'name',
+        match: { _id: { $ne: null } } // Only populate if restaurant exists
+      });
       
-    const formattedRebates = rebates.map(rebate => ({
-      restaurantId: rebate.restaurantId._id,
-      restaurantName: rebate.restaurantId.name,
-      rebateValue: rebate.rebateValue.toString(),
-      _id: rebate._id
-    }));
+    const formattedRebates = rebates.map(rebate => {
+      // Skip rebates with no restaurant or invalid restaurant reference
+      if (!rebate.restaurantId) return null;
+      
+      return {
+        restaurantId: rebate.restaurantId._id,
+        restaurantName: rebate.restaurantId.name,
+        rebateValue: rebate.rebateValue.toString(),
+        _id: rebate._id
+      };
+    }).filter(rebate => rebate !== null); // Remove null entries
     
     res.status(200).json(formattedRebates);
   } catch (error) {
