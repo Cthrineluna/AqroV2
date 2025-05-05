@@ -226,38 +226,56 @@ const [selectedQuarter, setSelectedQuarter] = useState(1);
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      // Build query parameters
-      const params = new URLSearchParams();
-      params.append('startDate', startDate.toISOString());
-      params.append('endDate', endDate.toISOString());
+      // Create UTC date objects to match MongoDB storage format
+      const startUTC = new Date(Date.UTC(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+        0, 0, 0, 0
+      ));
       
+      const endUTC = new Date(Date.UTC(
+        endDate.getFullYear(),
+        endDate.getMonth(),
+        endDate.getDate(),
+        23, 59, 59, 999
+      ));
+  
+      const params = new URLSearchParams();
+      params.append('startDate', startUTC.toISOString());
+      params.append('endDate', endUTC.toISOString());
+      
+      console.log('Date range in UTC:', {
+        start: startUTC.toISOString(),
+        end: endUTC.toISOString(),
+        startOriginal: startDate.toISOString(),
+        endOriginal: endDate.toISOString()
+      });
+      
+      // Rest of your parameters...
       if (selectedActivityType && selectedActivityType.id !== 'all') {
         params.append('type', selectedActivityType.id);
       }
       
       if (selectedRestaurants.length > 0) {
-        // For multiple restaurant selection
         selectedRestaurants.forEach(restaurant => {
           params.append('restaurantIds[]', restaurant._id);
         });
       }
-      console.log('Selected restaurants:', selectedRestaurants);
+      
       if (selectedCustomers.length > 0) {
-        // For multiple customer selection
         selectedCustomers.forEach(customer => {
           params.append('userIds[]', customer._id);
         });
       }
       
       if (selectedContainerTypes.length > 0) {
-        // For multiple container type selection
         selectedContainerTypes.forEach(type => {
           params.append('containerTypeIds[]', type._id);
         });
       }
-      const urlWithParams = getApiUrl('/activities/reports/filtered') + '?' + params.toString();
-console.log('Request URL with params:', urlWithParams);
-      // Rest of the API call remains the same
+      
+      // API call
       const token = await AsyncStorage.getItem('aqro_token');
       const response = await axios.get(
         getApiUrl('/activities/reports/filtered') + '?' + params.toString(),
@@ -271,7 +289,7 @@ console.log('Request URL with params:', urlWithParams);
       setActivities(response.data.activities);
       setTotalTransactions(response.data.totalActivities);
       
-      if (selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) {
+      if (selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) {
         const rebateTotal = response.data.activities
           .filter(activity => activity.type === 'rebate')
           .reduce((sum, activity) => sum + (activity.amount || 0), 0);
@@ -356,6 +374,12 @@ console.log('Request URL with params:', urlWithParams);
     setSelectedRestaurants([]);
     setSelectedCustomers([]);
     setSelectedContainerTypes([]);
+  };
+  const formatDate = (date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}-${day}-${year}`;
   };
 
   const exportToCSV = async () => {
@@ -1319,8 +1343,8 @@ console.log('Request URL with params:', urlWithParams);
                     Date Range:
                   </RegularText>
                   <MediumText style={{ color: theme.text }}>
-                    {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
-                  </MediumText>
+                  {formatDate(startDate)} - {formatDate(endDate)}
+                </MediumText>
                 </View>
                 
                 <View style={styles.exportDetailItem}>
