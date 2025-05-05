@@ -54,6 +54,18 @@ const GenerateReportScreen = ({ navigation }) => {
     { id: 'status_change', name: 'Status Change' }
   ];
 
+  const MONTHS = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  
+  const QUARTERS = [
+    { id: 1, name: 'Q1 (Jan-Mar)' },
+    { id: 2, name: 'Q2 (Apr-Jun)' },
+    { id: 3, name: 'Q3 (Jul-Sep)' },
+    { id: 4, name: 'Q4 (Oct-Dec)' }
+  ];
+
   // Filter states
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState(new Date());
@@ -63,6 +75,11 @@ const GenerateReportScreen = ({ navigation }) => {
   const [selectedRestaurants, setSelectedRestaurants] = useState([]); 
   const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [selectedContainerTypes, setSelectedContainerTypes] = useState([]);
+
+const [dateFilterMode, setDateFilterMode] = useState('range'); // 'range', 'month', 'year', 'quarter'
+const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+const [selectedQuarter, setSelectedQuarter] = useState(1);
   
   // Data for filters
   const [restaurants, setRestaurants] = useState([]);
@@ -289,9 +306,29 @@ console.log('Request URL with params:', urlWithParams);
   };
 
   const applyFilters = () => {
+    // Calculate dates based on selected mode
+    if (dateFilterMode === 'month') {
+      const firstDay = new Date(selectedYear, selectedMonth, 1);
+      const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
+      setStartDate(firstDay);
+      setEndDate(lastDay);
+    } else if (dateFilterMode === 'quarter') {
+      const quarterStartMonth = (selectedQuarter - 1) * 3;
+      const firstDay = new Date(selectedYear, quarterStartMonth, 1);
+      const lastDay = new Date(selectedYear, quarterStartMonth + 3, 0);
+      setStartDate(firstDay);
+      setEndDate(lastDay);
+    } else if (dateFilterMode === 'year') {
+      const firstDay = new Date(selectedYear, 0, 1);
+      const lastDay = new Date(selectedYear, 11, 31);
+      setStartDate(firstDay);
+      setEndDate(lastDay);
+    }
+    
     setFilterModalVisible(false);
     fetchReportData();
   };
+
   const removeActivityTypeFilter = () => {
     setSelectedActivityType(activityTypes[0]); // Reset to 'All Types'
   };
@@ -307,10 +344,15 @@ console.log('Request URL with params:', urlWithParams);
   const removeContainerTypeFilter = (typeId) => {
     setSelectedContainerTypes(selectedContainerTypes.filter(t => t._id !== typeId));
   };
+
   const resetFilters = () => {
+    setDateFilterMode('range');
     setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
     setEndDate(new Date());
-    setSelectedActivityType(activityTypes[0]); // Reset to 'All Types'
+    setSelectedMonth(new Date().getMonth());
+    setSelectedYear(new Date().getFullYear());
+    setSelectedQuarter(Math.floor(new Date().getMonth() / 3) + 1);
+    setSelectedActivityType(activityTypes[0]);
     setSelectedRestaurants([]);
     setSelectedCustomers([]);
     setSelectedContainerTypes([]);
@@ -502,13 +544,36 @@ console.log('Request URL with params:', urlWithParams);
       
       {/* Date Range Display */}
       <View style={styles.dateRangeContainer}>
-        <RegularText style={{ color: theme.text, fontSize: 12 }}>
-          Report Period:
-        </RegularText>
-        <MediumText style={{ color: theme.text, marginTop: 4 }}>
-          {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
-        </MediumText>
-      </View>
+  <RegularText style={{ color: theme.text, fontSize: 12 }}>
+    Report Period:
+  </RegularText>
+  
+  <TouchableOpacity 
+    style={styles.dateModeSelector}
+    onPress={() => setFilterModalVisible(true)}
+  >
+    <MediumText style={{ color: theme.text, marginTop: 4 }}>
+      {dateFilterMode === 'range' && (
+        `${startDate.toISOString().split('T')[0]} - ${endDate.toISOString().split('T')[0]}`
+      )}
+      {dateFilterMode === 'month' && (
+        `${MONTHS[selectedMonth]} ${selectedYear}`
+      )}
+      {dateFilterMode === 'quarter' && (
+        `${QUARTERS.find(q => q.id === selectedQuarter).name} ${selectedYear}`
+      )}
+      {dateFilterMode === 'year' && (
+        `Year ${selectedYear}`
+      )}
+    </MediumText>
+    <Ionicons 
+      name="chevron-down" 
+      size={16} 
+      color={theme.text} 
+      style={{ marginLeft: 8 }}
+    />
+  </TouchableOpacity>
+</View>
       
       {/* Filter Badges */}
       {renderFilterBadges().length > 0 && (
@@ -670,55 +735,241 @@ console.log('Request URL with params:', urlWithParams);
             <ScrollView style={styles.filterContent}>
               {/* Date Range Section */}
               <View style={styles.filterSection}>
-                <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-                  Date Range
-                </MediumText>
-                
-                <View style={styles.datePickerContainer}>
-                  <TouchableOpacity 
-                    style={[styles.datePickerButton, { backgroundColor: theme.input }]}
-                    onPress={() => setShowStartDatePicker(true)}
-                  >
-                    <Ionicons name="calendar-outline" size={20} color={theme.text} />
-                    <RegularText style={{ marginLeft: 8, color: theme.text }}>
-                      {startDate.toLocaleDateString()}
-                    </RegularText>
-                  </TouchableOpacity>
-                  
-                  <RegularText style={{ marginHorizontal: 8, color: theme.text }}>to</RegularText>
-                  
-                  <TouchableOpacity 
-                    style={[styles.datePickerButton, { backgroundColor: theme.input }]}
-                    onPress={() => setShowEndDatePicker(true)}
-                  >
-                    <Ionicons name="calendar-outline" size={20} color={theme.text} />
-                    <RegularText style={{ marginLeft: 8, color: theme.text }}>
-                      {endDate.toLocaleDateString()}
-                    </RegularText>
-                  </TouchableOpacity>
-                </View>
-                
-                {showStartDatePicker && (
-                  <DateTimePicker
-                    value={startDate}
-                    mode="date"
-                    display="default"
-                    onChange={(event, date) => handleDateChange(event, date, 'start')}
-                    maximumDate={endDate}
-                  />
-                )}
-                
-                {showEndDatePicker && (
-                  <DateTimePicker
-                    value={endDate}
-                    mode="date"
-                    display="default"
-                    onChange={(event, date) => handleDateChange(event, date, 'end')}
-                    minimumDate={startDate}
-                    maximumDate={new Date()}
-                  />
-                )}
-              </View>
+  <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
+    Date Filter Mode
+  </MediumText>
+  
+  <View style={styles.dateModeOptions}>
+    <TouchableOpacity
+      style={[
+        styles.dateModeOption,
+        { 
+          backgroundColor: dateFilterMode === 'range' ? theme.primary + '20' : theme.input,
+          borderColor: theme.primary
+        }
+      ]}
+      onPress={() => setDateFilterMode('range')}
+    >
+      <MediumText style={{ color: dateFilterMode === 'range' ? theme.primary : theme.text }}>
+        Range
+      </MediumText>
+    </TouchableOpacity>
+    
+    <TouchableOpacity
+      style={[
+        styles.dateModeOption,
+        { 
+          backgroundColor: dateFilterMode === 'month' ? theme.primary + '20' : theme.input,
+          borderColor: theme.primary
+        }
+      ]}
+      onPress={() => setDateFilterMode('month')}
+    >
+      <MediumText style={{ color: dateFilterMode === 'month' ? theme.primary : theme.text }}>
+        Monthly
+      </MediumText>
+    </TouchableOpacity>
+    
+    <TouchableOpacity
+      style={[
+        styles.dateModeOption,
+        { 
+          backgroundColor: dateFilterMode === 'quarter' ? theme.primary + '20' : theme.input,
+          borderColor: theme.primary
+        }
+      ]}
+      onPress={() => setDateFilterMode('quarter')}
+    >
+      <MediumText style={{ color: dateFilterMode === 'quarter' ? theme.primary : theme.text }}>
+        Quarterly
+      </MediumText>
+    </TouchableOpacity>
+    
+    <TouchableOpacity
+      style={[
+        styles.dateModeOption,
+        { 
+          backgroundColor: dateFilterMode === 'year' ? theme.primary + '20' : theme.input,
+          borderColor: theme.primary,
+        }
+      ]}
+      onPress={() => setDateFilterMode('year')}
+    >
+      <MediumText style={{ color: dateFilterMode === 'year' ? theme.primary : theme.text }}>
+        Yearly
+      </MediumText>
+    </TouchableOpacity>
+  </View>
+
+  {dateFilterMode === 'range' && (
+    <View style={styles.datePickerContainer}>
+      <TouchableOpacity 
+        style={[styles.datePickerButton, { backgroundColor: theme.input }]}
+        onPress={() => setShowStartDatePicker(true)}
+      >
+        <Ionicons name="calendar-outline" size={20} color={theme.text} />
+        <RegularText style={{ marginLeft: 8, color: theme.text }}>
+          {startDate.toISOString().split('T')[0]}
+        </RegularText>
+      </TouchableOpacity>
+      
+      <RegularText style={{ marginHorizontal: 8, color: theme.text }}>to</RegularText>
+      
+      <TouchableOpacity 
+        style={[styles.datePickerButton, { backgroundColor: theme.input }]}
+        onPress={() => setShowEndDatePicker(true)}
+      >
+        <Ionicons name="calendar-outline" size={20} color={theme.text} />
+        <RegularText style={{ marginLeft: 8, color: theme.text }}>
+          {endDate.toISOString().split('T')[0]}
+        </RegularText>
+      </TouchableOpacity>
+    </View>
+  )}
+
+  {dateFilterMode === 'month' && (
+    <View>
+      <MediumText style={{ color: theme.text, marginTop: 8 }}>Select Month:</MediumText>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.monthScrollView}
+      >
+        {MONTHS.map((month, index) => (
+          <TouchableOpacity
+            key={month}
+            style={[
+              styles.monthOption,
+              { 
+                backgroundColor: selectedMonth === index ? theme.primary + '20' : theme.input,
+                borderColor: theme.primary
+              }
+            ]}
+            onPress={() => setSelectedMonth(index)}
+          >
+            <MediumText style={{ color: selectedMonth === index ? theme.primary : theme.text }}>
+              {month.substring(0, 3)}
+            </MediumText>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      
+      <MediumText style={{ color: theme.text, marginTop: 8 }}>Select Year:</MediumText>
+      <View style={styles.yearSelector}>
+        <TouchableOpacity onPress={() => setSelectedYear(prev => prev - 1)}>
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
+        </TouchableOpacity>
+        <MediumText style={{ color: theme.text, marginHorizontal: 16 }}>
+          {selectedYear}
+        </MediumText>
+        <TouchableOpacity 
+          onPress={() => setSelectedYear(prev => prev + 1)}
+          disabled={selectedYear >= new Date().getFullYear()}
+        >
+          <Ionicons 
+            name="chevron-forward" 
+            size={24} 
+            color={selectedYear >= new Date().getFullYear() ? theme.text + '80' : theme.text} 
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  )}
+
+  {dateFilterMode === 'quarter' && (
+    <View>
+      <MediumText style={{ color: theme.text, marginTop: 8 }}>Select Quarter:</MediumText>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.quarterScrollView}
+      >
+        {QUARTERS.map(quarter => (
+          <TouchableOpacity
+            key={quarter.id}
+            style={[
+              styles.quarterOption,
+              { 
+                backgroundColor: selectedQuarter === quarter.id ? theme.primary + '20' : theme.input,
+                borderColor: theme.primary
+              }
+            ]}
+            onPress={() => setSelectedQuarter(quarter.id)}
+          >
+            <MediumText style={{ color: selectedQuarter === quarter.id ? theme.primary : theme.text }}>
+              {quarter.name}
+            </MediumText>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      
+      <MediumText style={{ color: theme.text, marginTop: 8 }}>Select Year:</MediumText>
+      <View style={styles.yearSelector}>
+        <TouchableOpacity onPress={() => setSelectedYear(prev => prev - 1)}>
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
+        </TouchableOpacity>
+        <MediumText style={{ color: theme.text, marginHorizontal: 16 }}>
+          {selectedYear}
+        </MediumText>
+        <TouchableOpacity 
+          onPress={() => setSelectedYear(prev => prev + 1)}
+          disabled={selectedYear >= new Date().getFullYear()}
+        >
+          <Ionicons 
+            name="chevron-forward" 
+            size={24} 
+            color={selectedYear >= new Date().getFullYear() ? theme.text + '80' : theme.text} 
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  )}
+
+  {dateFilterMode === 'year' && (
+    <View>
+      <MediumText style={{ color: theme.text, marginTop: 8 }}>Select Year:</MediumText>
+      <View style={styles.yearSelector}>
+        <TouchableOpacity onPress={() => setSelectedYear(prev => prev - 1)}>
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
+        </TouchableOpacity>
+        <MediumText style={{ color: theme.text, marginHorizontal: 16 }}>
+          {selectedYear}
+        </MediumText>
+        <TouchableOpacity 
+          onPress={() => setSelectedYear(prev => prev + 1)}
+          disabled={selectedYear >= new Date().getFullYear()}
+        >
+          <Ionicons 
+            name="chevron-forward" 
+            size={24} 
+            color={selectedYear >= new Date().getFullYear() ? theme.text + '80' : theme.text} 
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  )}
+
+  {showStartDatePicker && (
+    <DateTimePicker
+      value={startDate}
+      mode="date"
+      display="default"
+      onChange={(event, date) => handleDateChange(event, date, 'start')}
+      maximumDate={endDate}
+    />
+  )}
+  
+  {showEndDatePicker && (
+    <DateTimePicker
+      value={endDate}
+      mode="date"
+      display="default"
+      onChange={(event, date) => handleDateChange(event, date, 'end')}
+      minimumDate={startDate}
+      maximumDate={new Date()}
+    />
+  )}
+</View>
               
               {/* Activity Type Section */}
               <View style={styles.filterSection}>
@@ -1353,6 +1604,53 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 8,
     marginTop: 16,
+  },
+  dateModeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4
+  },
+  dateModeOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  dateModeOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginHorizontal: 4,
+    
+  },
+  monthScrollView: {
+    marginTop: 8,
+    marginBottom: 8
+  },
+  monthOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8
+  },
+  quarterScrollView: {
+    marginTop: 8,
+    marginBottom: 8
+  },
+  quarterOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8
+  },
+  yearSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8
   },
 });
 
