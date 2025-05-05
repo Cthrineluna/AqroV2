@@ -568,7 +568,7 @@ console.log('Request URL with params:', urlWithParams);
         >
           {/* Table Header */}
           <View style={[styles.tableHeader, { backgroundColor: theme.cardBackground }]}>
-                    <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1.2, fontSize: 10 }]}>
+                    <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1.5, fontSize: 10 }]}>
                         Date
                     </MediumText>
                     <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1.5, fontSize: 10  }]}>
@@ -579,16 +579,16 @@ console.log('Request URL with params:', urlWithParams);
                         Restaurant
                         </MediumText>
                     )}
-                    <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1, fontSize: 10  }]}>
-                        Container
+                    <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1.5, fontSize: 10 }]}>
+                      Container
                     </MediumText>
-                    <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1, fontSize: 10  }]}>
+                    <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1., fontSize: 10 }]}>
                         Activity
                     </MediumText>
                     {(selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) && (
-                        <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 0.8 }]}>
-                        Amount
-                        </MediumText>
+                       <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1.2, fontSize: 10 }]}>
+                       Amount
+                     </MediumText>
                     )}
                     </View>
           
@@ -609,9 +609,9 @@ console.log('Request URL with params:', urlWithParams);
                   { backgroundColor: index % 2 === 0 ? theme.background : theme.cardBackground }
                 ]}
               >
-               <RegularText style={[styles.tableCell, { color: theme.text, flex: 1.2 }]}>
-                {new Date(activity.createdAt).toLocaleDateString()}
-                </RegularText>
+               <RegularText style={[styles.tableCell, { color: theme.text, flex: 1.5 }]}>
+                {new Date(activity.createdAt).toISOString().split('T')[0]}
+              </RegularText>
                 <RegularText style={[styles.tableCell, { color: theme.text, flex: 1.5 }]}>
                 {activity.userId?.firstName || ''} {activity.userId?.lastName || ''}
                 </RegularText>
@@ -620,24 +620,24 @@ console.log('Request URL with params:', urlWithParams);
                     {activity.restaurantId?.name || 'N/A'}
                 </RegularText>
                 )}
-                <RegularText style={[styles.tableCell, { color: theme.text, flex: 1 }]}>
+                <RegularText style={[styles.tableCell, { color: theme.text, flex: 1.2 }]}>
                 {activity.containerTypeId?.name || activity.containerId?.containerTypeId?.name || 'N/A'}
-                </RegularText>
-                <View style={[styles.tableCell, { flex: 1 }]}>
-                  <View style={[
+              </RegularText>
+              <View style={[styles.tableCell, { flex: 1.2 }]}> 
+                <View style={[
                     styles.activityTypeBadge, 
                     { 
-                      backgroundColor: getActivityTypeColor(activity.type, theme),
-                      borderRadius: 4,
-                      paddingVertical: 2,
-                      paddingHorizontal: 4
+                        backgroundColor: getActivityTypeColor(activity.type, theme),
+                        borderRadius: 4,
+                        paddingVertical: 2,
+                        paddingHorizontal: 4
                     }
-                  ]}>
-                    <RegularText style={{ color: '#FFFFFF', fontSize: 8 }}>
-                      {formatActivityType(activity.type)}
+                ]}>
+                    <RegularText style={{ color: '#FFFFFF', fontSize: 6 }}> 
+                        {formatActivityType(activity.type)}
                     </RegularText>
-                  </View>
                 </View>
+            </View>
                 {(selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) && (
                   <RegularText style={[styles.tableCell, { color: theme.text, flex: 0.8 }]}>
                     {activity.type === 'rebate' ? `₱${activity.amount?.toFixed(2) || '0.00'}` : '-'}
@@ -1131,7 +1131,7 @@ const getActivityTypeColor = (type, theme) => {
     case 'registration':
       return theme.primary;
     case 'return':
-      return '#4CAF50'; // Green
+      return '#2196F3'; // Changed to blue
     case 'rebate':
       return '#FF9800'; // Orange
     case 'status_change':
@@ -1198,25 +1198,27 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 8, 
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   tableHeaderCell: {
     fontWeight: '600',
-    fontSize: 12, // Smaller font for mobile
+    fontSize: 10, 
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: 8, // Reduced padding
+    paddingHorizontal: 8, // Reduced padding
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   tableCell: {
-    paddingRight: 4, // Reduced padding for mobile
-    fontSize: 11, // Smaller font for mobile
+    paddingRight: 4,
+    fontSize: 9,
+    marginHorizontal: 2,
+    paddingHorizontal: 2, // Added horizontal padding
   },
   activityTypeBadge: {
     alignSelf: 'flex-start',
