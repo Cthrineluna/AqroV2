@@ -11,7 +11,8 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  RefreshControl
+  RefreshControl,
+  PermissionsAndroid
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -29,6 +30,9 @@ import { getActivityReports } from '../../services/activityService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { getApiUrl } from '../../services/apiConfig';
+import * as Print from 'expo-print';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { Asset } from 'expo-asset';
 
 
 const GenerateReportScreen = ({ navigation }) => {
@@ -105,6 +109,528 @@ const [selectedQuarter, setSelectedQuarter] = useState(1);
     type.name.toLowerCase().includes(containerTypeSearchQuery.toLowerCase())
   );
 
+  const getLogoBase64 = async () => {
+    try {
+      // Import the logo directly in your component
+      const logoAsset = require('../../../assets/images/aqro-logo.png');
+      
+      // Load the asset
+      const asset = Asset.fromModule(logoAsset);
+      await asset.downloadAsync();
+      
+      // Read the file as base64
+      const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
+        encoding: FileSystem.EncodingType.Base64
+      });
+      
+      return `data:image/png;base64,${base64}`;
+    } catch (error) {
+      console.error('Error loading logo as base64:', error);
+      return null;
+    }
+  };
+
+const processRestaurantLogo = async (base64Logo) => {
+  if (!base64Logo) return null;
+  
+  try {
+    // Remove the prefix if it exists
+    const imageData = base64Logo.includes('data:image')
+      ? base64Logo
+      : `data:image/jpeg;base64,${base64Logo}`;
+      
+    // Resize the image to a reasonable size for the PDF
+    const manipResult = await manipulateAsync(
+      imageData,
+      [{ resize: { width: 100 } }],
+      { base64: true }
+    );
+    
+    return `data:image/jpeg;base64,${manipResult.base64}`;
+  } catch (error) {
+    console.error('Error processing restaurant logo:', error);
+    return null;
+  }
+};
+
+// Function to get restaurant initials (fallback if no logo)
+const getRestaurantInitials = (name) => {
+  if (!name) return "AR"; // Default for "All Restaurants"
+  
+  const words = name.split(' ');
+  if (words.length === 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  }
+  
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+};
+
+
+// Function to generate PDF report
+const generatePdfReport = async () => {
+  try {
+    setLoading(true);
+
+    const logoBase64 = await getLogoBase64();
+    
+    // Determine report type title based on filters
+    let reportType = "Activity";
+    if (selectedActivityType?.id !== 'all') {
+      reportType = selectedActivityType.name;
+    }
+    let reportTitle = `${reportType} Report`;
+    
+    // Determine restaurant information
+    let restaurantName = "All Restaurants";
+    let restaurantLogo = null;
+    
+    if (selectedRestaurants.length === 1) {
+      restaurantName = selectedRestaurants[0].name;
+      if (selectedRestaurants[0].logo) {
+        restaurantLogo = await processRestaurantLogo(selectedRestaurants[0].logo);
+      }
+    } else if (selectedRestaurants.length > 1 && selectedRestaurants.length <= 5) {
+      // Format names with commas and "and" before the last one
+      const restaurantFirstNames = selectedRestaurants.map(r => r.name.split(' ')[0]);
+      if (restaurantFirstNames.length === 2) {
+        restaurantName = `${restaurantFirstNames[0]} and ${restaurantFirstNames[1]}`;
+      } else {
+        const lastItem = restaurantFirstNames.pop();
+        restaurantName = `${restaurantFirstNames.join(', ')} and ${lastItem}`;
+      }
+    } else if (selectedRestaurants.length > 5) {
+      restaurantName = `${selectedRestaurants.length} Selected Restaurants`;
+    }
+    
+    // Format date period text
+    let datePeriodText = '';
+    if (dateFilterMode === 'range') {
+      datePeriodText = `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    } else if (dateFilterMode === 'month') {
+      datePeriodText = `${MONTHS[selectedMonth]} ${selectedYear}`;
+    } else if (dateFilterMode === 'quarter') {
+      datePeriodText = `${QUARTERS.find(q => q.id === selectedQuarter).name} ${selectedYear}`;
+    } else if (dateFilterMode === 'year') {
+      datePeriodText = `Year ${selectedYear}`;
+    }
+    
+    // Format current date for filename
+    const dateForFilename = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const currentDate = new Date().toLocaleString();
+    
+    // Format filename to include report type and restaurant
+    let restaurantForFilename = "";
+    if (selectedRestaurants.length === 1) {
+      // Use single restaurant name
+      restaurantForFilename = `_${selectedRestaurants[0].name.replace(/\s+/g, '_')}`;
+    } else if (selectedRestaurants.length > 1 && selectedRestaurants.length <= 3) {
+      // Use first names of up to 3 restaurants
+      restaurantForFilename = `_${selectedRestaurants.slice(0, 3).map(r => r.name.split(' ')[0]).join('_')}`;
+    } else if (selectedRestaurants.length > 3) {
+      // Use count for more than 3 restaurants
+      restaurantForFilename = `_${selectedRestaurants.length}Restaurants`;
+    }
+    
+    const fileName = `AQRO_${reportType}_Report${restaurantForFilename}_${dateForFilename}.pdf`;
+    
+    // Build the HTML for the PDF
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>AQRO ${reportType} Report</title>
+          <style>
+            body {
+              font-family: 'Helvetica', sans-serif;
+              color: #333;
+              margin: 0;
+              padding: 20px;
+              padding-bottom: 60px; /* Space for footer */
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 30px;
+              padding-bottom: 10px;
+              border-bottom: 2px solid #ddd;
+            }
+            .logo {
+              width: 70px;
+              height: auto;
+            }
+            .logo-placeholder {
+              width: 50px;
+              height: 50px;
+              background-color: #f0f0f0;
+              color: #666;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+              font-size: 18px;
+            }
+            .header-center {
+              text-align: center;
+            }
+            .report-title {
+              font-size: 24px;
+              font-weight: bold;
+              margin: 5px 0;
+            }
+            .restaurant-name {
+              font-size: 18px;
+              margin: 5px 0;
+            }
+            .report-period {
+              font-size: 14px;
+              color: #666;
+            }
+            .summary {
+              background-color: #f9f9f9;
+              padding: 15px;
+              border-radius: 8px;
+              margin-bottom: 20px;
+              display: flex;
+              justify-content: space-around;
+            }
+            .summary-item {
+              text-align: center;
+            }
+            .summary-label {
+              font-size: 12px;
+              color: #666;
+            }
+            .summary-value {
+              font-size: 22px;
+              font-weight: bold;
+              color: #333;
+            }
+            .rebate-value {
+              color: #FF9800;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+            }
+            th {
+              background-color: #f2f2f2;
+              padding: 10px;
+              text-align: left;
+              font-weight: bold;
+              font-size: 12px;
+              border-bottom: 2px solid #ddd;
+            }
+            td {
+              padding: 8px 10px;
+              border-bottom: 1px solid #eee;
+              font-size: 11px;
+            }
+            tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            .activity-badge {
+              display: inline-block;
+              padding: 3px 8px;
+              border-radius: 12px;
+              color: white;
+              font-size: 10px;
+              text-align: center;
+            }
+            .registration {
+              background-color: #4CAF50;
+            }
+            .return {
+              background-color: #2196F3;
+            }
+            .rebate {
+              background-color: #FF9800;
+            }
+            .status_change {
+              background-color: #9C27B0;
+            }
+            .footer {
+              position: running(footer);
+              display: flex;
+              justify-content: space-between;
+              font-size: 10px;
+              color: #666;
+              padding-top: 10px;
+              border-top: 1px solid #ddd;
+              background-color: white;
+              width: 100%;
+            }
+            
+            @page {
+              @bottom-center {
+                content: element(footer);
+              }
+              margin: 10mm;
+              margin-bottom: 20mm;
+            }
+            .empty-state {
+              text-align: center;
+              padding: 40px 0;
+              color: #666;
+            }
+            /* Make table headers repeat on each page */
+            thead {
+              display: table-header-group;
+            }
+            tfoot {
+              display: table-footer-group;
+            }
+            /* Add space for footer to prevent content overlap */
+            .footer-spacer {
+              height: 20px;
+              width: 100%;
+            }
+            
+            /* Control where page breaks happen */
+            .avoid-break {
+              page-break-inside: avoid;
+            }
+            
+            /* Use these to debug page breaks if needed */
+            .pagebreak { 
+              page-break-before: always; 
+            }
+            
+            /* Ensure tables flow continuously across pages */
+            tbody {
+              page-break-inside: auto;
+            }
+            tr {
+              page-break-inside: avoid;
+              page-break-after: auto;
+            }
+          </style>
+        </head>
+        <body>
+    `;
+
+    // Create header HTML
+    const headerHTML = `
+      <div class="header avoid-break">
+        <div>
+          ${logoBase64 ? 
+            `<img src="${logoBase64}" class="logo" alt="AQRO Logo" />` : 
+            `<div class="logo-placeholder">AQ</div>`
+          }
+        </div>
+        <div class="header-center">
+          <div class="report-title">${reportTitle}</div>
+          <div class="restaurant-name">${restaurantName}</div>
+          <div class="report-period">${datePeriodText}</div>
+        </div>
+        <div>
+          ${restaurantLogo ? 
+            `<img src="${restaurantLogo}" class="logo" alt="Restaurant Logo" />` : 
+            `<div class="logo-placeholder">${getRestaurantInitials(restaurantName)}</div>`
+          }
+        </div>
+      </div>
+    `;
+
+    // Create summary HTML
+    const summaryHTML = `
+      <div class="summary avoid-break">
+        <div class="summary-item">
+          <div class="summary-label">Total Transactions</div>
+          <div class="summary-value">${totalTransactions}</div>
+        </div>
+        
+        ${(selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) ? `
+          <div class="summary-item">
+            <div class="summary-label">Total Rebate</div>
+            <div class="summary-value rebate-value">₱${totalRebateAmount.toFixed(2)}</div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    // Create table headers
+    const tableHeadersHTML = `
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Customer</th>
+          ${isAdmin ? '<th>Restaurant</th>' : ''}
+          <th>Container</th>
+          <th>Activity</th>
+          ${(selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) ? 
+            '<th>Amount</th>' : ''}
+        </tr>
+      </thead>
+    `;
+    
+    // Create footer HTML with page numbers - will be dynamically inserted by CSS
+    const footerHTML = `
+      <div class="footer">
+        <div>AQRO &copy; 2025</div>
+        <div id="pageNumber"></div>
+        <div>Generated on: ${currentDate}</div>
+      </div>
+    `;
+
+    // If no activities found, show empty state
+    if (activities.length === 0) {
+      htmlContent += `
+        ${headerHTML}
+        ${summaryHTML}
+        
+        <div class="empty-state">
+          <p>No activities found for the selected filters</p>
+        </div>
+        
+        <div class="footer-spacer"></div>
+        ${footerHTML}
+      `;
+    } else {
+      // Add header and summary
+      htmlContent += headerHTML + summaryHTML;
+      
+      // Create continuous table - no need to paginate manually
+      htmlContent += `
+        <table>
+          ${tableHeadersHTML}
+          <tbody>
+      `;
+      
+      // Add all table rows
+      activities.forEach(activity => {
+        const customerName = `${activity.userId?.firstName || ''} ${activity.userId?.lastName || ''}`;
+        const containerTypeName = activity.containerTypeId?.name || activity.containerId?.containerTypeId?.name || 'N/A';
+        const date = new Date(activity.createdAt).toISOString().split('T')[0];
+        const restaurant = activity.restaurantId?.name || 'N/A';
+        
+        htmlContent += `
+          <tr>
+            <td>${date}</td>
+            <td>${customerName}</td>
+            ${isAdmin ? `<td>${restaurant}</td>` : ''}
+            <td>${containerTypeName}</td>
+            <td>
+              <div class="activity-badge ${activity.type}">
+                ${formatActivityType(activity.type)}
+              </div>
+            </td>
+            ${(selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) ? 
+              `<td>${activity.type === 'rebate' ? `₱${activity.amount?.toFixed(2) || '0.00'}` : '-'}</td>` : 
+              ''}
+          </tr>
+        `;
+      });
+      
+      // Close table
+      htmlContent += `
+          </tbody>
+        </table>
+        
+        <div class="footer-spacer"></div>
+        ${footerHTML}
+      `;
+    }
+    
+    htmlContent += `
+        </body>
+      </html>
+    `;
+    
+    // Generate PDF with custom filename that includes report type
+    const { uri } = await Print.printToFileAsync({
+      html: htmlContent,
+      fileName,
+      directory: 'Documents'
+    });
+    
+    // For Android, save to Downloads folder
+    if (Platform.OS === 'android') {
+      try {
+        // First check if we have permission
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        
+        if (permissions.granted) {
+          // Get the Downloads directory
+          const destinationUri = permissions.directoryUri;
+          
+          // Copy the file to Downloads
+          await FileSystem.StorageAccessFramework.createFileAsync(
+            destinationUri, 
+            fileName, 
+            'application/pdf'
+          ).then(async (fileUri) => {
+            const pdfData = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+            await FileSystem.writeAsStringAsync(fileUri, pdfData, { encoding: FileSystem.EncodingType.Base64 });
+            
+            Alert.alert(
+              'Export Complete',
+              `${reportType} Report saved to Downloads as ${fileName}`,
+              [{ text: 'OK' }]
+            );
+          });
+        } else {
+          // Fall back to sharing if permission denied
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(uri, {
+              mimeType: 'application/pdf',
+              dialogTitle: `Save or Share ${reportType} Report`,
+              UTI: 'com.adobe.pdf'
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error saving to downloads:', err);
+        
+        // Fall back to sharing if error occurs
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `Save or Share ${reportType} Report`,
+            UTI: 'com.adobe.pdf'
+          });
+        }
+      }
+    } else {
+      // For iOS and other platforms, use sharing
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `Save or Share ${reportType} Report`,
+          UTI: 'com.adobe.pdf'
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error generating PDF report:', error);
+    Alert.alert('Export Failed', 'Failed to generate PDF report. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const requestStoragePermissions = async () => {
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
+      ]);
+      
+      return (
+        granted['android.permission.WRITE_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted['android.permission.READ_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
+      );
+    } catch (err) {
+      console.error('Failed to request permissions:', err);
+      return false;
+    }
+  }
+  return true; // On iOS we don't need these permissions
+};
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -384,6 +910,8 @@ const [selectedQuarter, setSelectedQuarter] = useState(1);
 
   const exportToCSV = async () => {
     try {
+      setLoading(true);
+      
       // Create CSV header
       let csvContent = "\"TransactionID\",\"Date\",\"Customer\",";
       
@@ -413,8 +941,8 @@ const [selectedQuarter, setSelectedQuarter] = useState(1);
         
         row += `\"${containerTypeName}\",\"${activity.type}\"`;
         
-        if (selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) {
-          row += `,\"${activity.type === 'rebate' ? activity.amount.toFixed(2) : '0.00'}\"`;
+        if (selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) {
+          row += `,\"${activity.type === 'rebate' ? activity.amount?.toFixed(2) || '0.00' : '0.00'}\"`;
         }
         
         row += "\n";
@@ -430,33 +958,106 @@ const [selectedQuarter, setSelectedQuarter] = useState(1);
       
       totalsRow += `\"\",\"${totalTransactions} transactions\"`;
       
-      if (selectedActivityType?.id === 'rebate' ||  selectedActivityType?.id === 'all' || !selectedActivityType) {
+      if (selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) {
         totalsRow += `,\"${totalRebateAmount.toFixed(2)}\"`;
       }
       
       csvContent += totalsRow;
       
-      // Rest of the export function remains the same...
-      const dateString = new Date().toISOString().split('T')[0];
-      const fileName = `AQRO_Report_${dateString}.csv`;
+      // Determine report type title based on filters
+      let reportType = "Activity";
+      if (selectedActivityType?.id !== 'all') {
+        reportType = selectedActivityType.name;
+      }
       
-      const fileUri = FileSystem.documentDirectory + fileName;
-      await FileSystem.writeAsStringAsync(fileUri, csvContent);
+      // Determine restaurant information for filename
+      let restaurantForFilename = "";
+      if (selectedRestaurants.length === 1) {
+        restaurantForFilename = `_${selectedRestaurants[0].name.replace(/\s+/g, '_')}`;
+      } else if (selectedRestaurants.length > 1 && selectedRestaurants.length <= 3) {
+        const restaurantFirstNames = selectedRestaurants.slice(0, 3).map(r => r.name.split(' ')[0]);
+        restaurantForFilename = `_${restaurantFirstNames.join('_')}`;
+      } else if (selectedRestaurants.length > 3) {
+        restaurantForFilename = `_${selectedRestaurants.length}Restaurants`;
+      }
       
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
+      // Format date for filename
+      const dateForFilename = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const fileName = `AQRO_${reportType}_Report${restaurantForFilename}_${dateForFilename}.csv`;
+      
+      // For Android, save to Downloads folder
+      if (Platform.OS === 'android') {
+        try {
+          // First check if we have permission
+          const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+          
+          if (permissions.granted) {
+            // Get the Downloads directory
+            const destinationUri = permissions.directoryUri;
+            
+            // Create the file
+            const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+              destinationUri, 
+              fileName, 
+              'text/csv'
+            );
+            
+            // Write the content
+            await FileSystem.writeAsStringAsync(fileUri, csvContent);
+            
+            Alert.alert(
+              'Export Complete',
+              `${reportType} Report saved to Downloads as ${fileName}`,
+              [{ text: 'OK' }]
+            );
+          } else {
+            // Fall back to sharing if permission denied
+            const tempFileUri = FileSystem.documentDirectory + fileName;
+            await FileSystem.writeAsStringAsync(tempFileUri, csvContent);
+            
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(tempFileUri, {
+                mimeType: 'text/csv',
+                dialogTitle: `Save or Share ${reportType} Report`,
+                UTI: 'public.comma-separated-values-text'
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Error saving to downloads:', err);
+          
+          // Fall back to sharing if error occurs
+          const tempFileUri = FileSystem.documentDirectory + fileName;
+          await FileSystem.writeAsStringAsync(tempFileUri, csvContent);
+          
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(tempFileUri, {
+              mimeType: 'text/csv',
+              dialogTitle: `Save or Share ${reportType} Report`,
+              UTI: 'public.comma-separated-values-text'
+            });
+          }
+        }
       } else {
-        Alert.alert(
-          'Export Complete',
-          `Report saved to ${fileUri}`,
-          [{ text: 'OK' }]
-        );
+        // For iOS and other platforms, use sharing
+        const tempFileUri = FileSystem.documentDirectory + fileName;
+        await FileSystem.writeAsStringAsync(tempFileUri, csvContent);
+        
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(tempFileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: `Save or Share ${reportType} Report`,
+            UTI: 'public.comma-separated-values-text'
+          });
+        }
       }
       
       setExportModalVisible(false);
     } catch (error) {
       console.error('Error exporting CSV:', error);
       Alert.alert('Export Failed', 'Failed to export report. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -1308,79 +1909,91 @@ const [selectedQuarter, setSelectedQuarter] = useState(1);
         </View>
       </Modal>
       
-      {/* Export Modal */}
-      <Modal
-        transparent={true}
-        animationType="slide"
-        visible={exportModalVisible}
-        onRequestClose={() => setExportModalVisible(false)}
-      >
-        <View style={styles.filterModalOverlay}>
-          <View style={[styles.exportModalContainer, { backgroundColor: theme.background }]}>
-            <View style={styles.filterModalHeader}>
-              <BoldText style={{ fontSize: 20, color: theme.text }}>
-                Export Report
-              </BoldText>
-              <TouchableOpacity onPress={() => setExportModalVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.text} />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.exportContent}>
-              <View style={[styles.exportPreview, { backgroundColor: theme.cardBackground }]}>
-                <Ionicons name="document-text-outline" size={48} color={theme.primary} />
-                <MediumText style={{ color: theme.text, marginTop: 16 }}>
-                  Export Report to CSV
-                </MediumText>
-                <RegularText style={{ color: theme.text, marginTop: 8, textAlign: 'center' }}>
-                  This will generate a CSV file with all the data currently shown in the report.
-                </RegularText>
-              </View>
-              
-              <View style={styles.exportDetails}>
-                <View style={styles.exportDetailItem}>
-                  <RegularText style={{ color: theme.text }}>
-                    Date Range:
-                  </RegularText>
-                  <MediumText style={{ color: theme.text }}>
-                  {formatDate(startDate)} - {formatDate(endDate)}
-                </MediumText>
-                </View>
-                
-                <View style={styles.exportDetailItem}>
-                  <RegularText style={{ color: theme.text }}>
-                    Total Records:
-                  </RegularText>
-                  <MediumText style={{ color: theme.text }}>
-                    {totalTransactions}
-                  </MediumText>
-                </View>
-                
-                {selectedActivityType && (
-                  <View style={styles.exportDetailItem}>
-                    <RegularText style={{ color: theme.text }}>
-                      Activity Type:
-                    </RegularText>
-                    <MediumText style={{ color: theme.text }}>
-                      {selectedActivityType.name}
-                    </MediumText>
-                  </View>
-                )}
-              </View>
-            </View>
-            
-            <TouchableOpacity 
-              style={[styles.exportButton, { backgroundColor: theme.primary }]}
-              onPress={exportToCSV}
-            >
-              <Ionicons name="download-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <MediumText style={{ color: '#FFFFFF' }}>
-                Export to CSV
-              </MediumText>
-            </TouchableOpacity>
-          </View>
+    {/* Export Modal */}
+<Modal
+  transparent={true}
+  animationType="slide"
+  visible={exportModalVisible}
+  onRequestClose={() => setExportModalVisible(false)}
+>
+  <View style={styles.filterModalOverlay}>
+    <View style={[styles.exportModalContainer, { backgroundColor: theme.background }]}>
+      <View style={styles.filterModalHeader}>
+        <BoldText style={{ fontSize: 20, color: theme.text }}>
+          Export Report
+        </BoldText>
+        <TouchableOpacity onPress={() => setExportModalVisible(false)}>
+          <Ionicons name="close" size={24} color={theme.text} />
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.exportContent}>
+        <View style={[styles.exportPreview, { backgroundColor: theme.cardBackground }]}>
+          <Ionicons name="document-text-outline" size={48} color={theme.primary} />
+          <MediumText style={{ color: theme.text, marginTop: 16 }}>
+            Export Report
+          </MediumText>
+          <RegularText style={{ color: theme.text, marginTop: 8, textAlign: 'center' }}>
+            Choose a format to export your report data
+          </RegularText>
         </View>
-      </Modal>
+        
+        <View style={styles.exportDetails}>
+          <View style={styles.exportDetailItem}>
+            <RegularText style={{ color: theme.text }}>
+              Date Range:
+            </RegularText>
+            <MediumText style={{ color: theme.text }}>
+              {formatDate(startDate)} - {formatDate(endDate)}
+            </MediumText>
+          </View>
+          
+          <View style={styles.exportDetailItem}>
+            <RegularText style={{ color: theme.text }}>
+              Total Records:
+            </RegularText>
+            <MediumText style={{ color: theme.text }}>
+              {totalTransactions}
+            </MediumText>
+          </View>
+          
+          {selectedActivityType && (
+            <View style={styles.exportDetailItem}>
+              <RegularText style={{ color: theme.text }}>
+                Activity Type:
+              </RegularText>
+              <MediumText style={{ color: theme.text }}>
+                {selectedActivityType.name}
+              </MediumText>
+            </View>
+          )}
+        </View>
+      </View>
+      
+      <View style={styles.exportFormatButtons}>
+        <TouchableOpacity 
+          style={[styles.exportFormatButton, { backgroundColor: theme.primary }]}
+          onPress={exportToCSV}
+        >
+          <Ionicons name="document-text-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <MediumText style={{ color: '#FFFFFF' }}>
+            CSV
+          </MediumText>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.exportFormatButton, { backgroundColor: theme.primary }]}
+          onPress={generatePdfReport}
+        >
+          <Ionicons name="document-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <MediumText style={{ color: '#FFFFFF' }}>
+            PDF
+          </MediumText>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
     </SafeAreaView>
   );
 };
@@ -1676,6 +2289,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8
   },
+  // Add these to your styles object
+exportFormatButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  width: '100%',
+  marginTop: 16,
+},
+exportFormatButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 12,
+  borderRadius: 8,
+  width: '45%',
+},
 });
 
 export default GenerateReportScreen;
