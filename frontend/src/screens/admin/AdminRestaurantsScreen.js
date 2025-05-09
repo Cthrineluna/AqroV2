@@ -650,62 +650,73 @@ const handleSaveRestaurant = async (restaurantData) => {
                 {selectedRestaurant ? 'Edit Restaurant' : 'Add New Restaurant'}
               </SemiBoldText>
               
-              {/* Logo Image Picker */}
-              <TouchableOpacity 
-                style={styles.logoPickerContainer}
-                onPress={pickLogoImage}
-              >
-               {localRestaurant.logo ? (
-  <Image 
-    source={{ uri: localRestaurant.logo }} 
-    style={styles.logoPicker} 
-    resizeMode="cover"
-  />
-                ) : (
-                  <View style={[
-                    styles.logoInitialsLarge,
-                    { backgroundColor: theme?.primary || '#007BFF' }
-                  ]}>
-                    <RegularText style={styles.logoInitialsTextLarge}>
-                      {localRestaurant.name 
-                        ? localRestaurant.name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2)
-                        : 'RS'}
-                    </RegularText>
-                  </View>
-                )}
-                <RegularText style={[styles.logoHint, { color: theme?.textMuted || '#888888' }]}>
-                  Tap to change logo
-                </RegularText>
-              </TouchableOpacity>
-              <TouchableOpacity 
-  style={styles.bannerPickerContainer}
-  onPress={pickBannerImage}
->
-  {localRestaurant.banner ? (
-    <Image 
-      source={{ uri: localRestaurant.banner }} 
-      style={styles.bannerPicker} 
-      resizeMode="cover"
-    />
-  ) : (
-    <View style={[
-      styles.bannerPlaceholder,
-      { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
-    ]}>
-      <Ionicons 
-        name="image-outline" 
-        size={32} 
-        color={theme?.primary || '#007BFF'} 
+              <View style={styles.bannerContainer}>
+  {/* The Banner itself is wrapped in TouchableOpacity */}
+  <TouchableOpacity 
+    style={styles.bannerTouchable}
+    onPress={pickBannerImage}
+    activeOpacity={0.7}
+  >
+    {localRestaurant.banner ? (
+      <Image 
+        source={{ uri: localRestaurant.banner }} 
+        style={styles.bannerImage} 
+        resizeMode="cover"
       />
-      <RegularText style={[
-        styles.bannerHint, 
-        { color: theme?.primary || '#007BFF' }
+    ) : (
+      <View style={[
+        styles.bannerPlaceholder,
+        { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
       ]}>
-        Add Banner Image
-      </RegularText>
-    </View>
-  )}
-</TouchableOpacity>
+        <Ionicons 
+          name="image-outline" 
+          size={32} 
+          color={theme?.primary || '#007BFF'} 
+        />
+        <RegularText style={[
+          styles.bannerHint, 
+          { color: theme?.primary || '#007BFF' }
+        ]}>
+          Add Banner Image
+        </RegularText>
+      </View>
+    )}
+  </TouchableOpacity>
+  
+  {/* Overlapping Logo - Separate TouchableOpacity */}
+  <TouchableOpacity 
+    style={styles.overlappingLogoContainer}
+    onPress={pickLogoImage}
+    activeOpacity={0.7}
+  >
+    {localRestaurant.logo ? (
+      <Image 
+        source={{ uri: localRestaurant.logo }} 
+        style={styles.logoImage} 
+        resizeMode="cover"
+      />
+    ) : (
+      <View style={[
+        styles.logoInitialsContainer,
+        { backgroundColor: theme?.primary || '#007BFF' }
+      ]}>
+        <RegularText style={styles.logoInitialsText}>
+          {localRestaurant.name 
+            ? localRestaurant.name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2)
+            : 'RS'}
+        </RegularText>
+      </View>
+    )}
+  </TouchableOpacity>
+  
+  {/* Logo Hint Text - Positioned below the overlapping logo */}
+  <View style={styles.logoHintContainer}>
+    <RegularText style={[styles.logoHint, { color: theme?.textMuted || '#888888' }]}>
+      Tap images to change
+    </RegularText>
+  </View>
+</View>
+
 
               {/* Error Message */}
               {localError ? (
@@ -1738,6 +1749,78 @@ const styles = StyleSheet.create({
       marginBottom: 12,
       borderTopLeftRadius: 10,
       borderTopRightRadius: 10,
+    },
+    bannerContainer: {
+      position: 'relative',
+      marginBottom: 40, // Allow space for the overlapping logo
+      borderRadius: 10,
+      overflow: 'visible', // Important for the logo to overlap
+    },
+    bannerTouchable: {
+      width: '100%',
+      borderRadius: 10,
+    },
+    bannerImage: {
+      width: '100%',
+      height: 140,
+      borderRadius: 10,
+    },
+    bannerPlaceholder: {
+      width: '100%',
+      height: 140,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: 'rgba(0,123,255,0.3)',
+    },
+    bannerHint: {
+      marginTop: 8,
+      fontSize: 14,
+    },
+    overlappingLogoContainer: {
+      position: 'absolute',
+      bottom: -40, // Half of the logo height to create overlap
+      alignSelf: 'center',
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      borderWidth: 3,
+      borderColor: '#FFFFFF', // White border around the logo
+      elevation: 5, // Android shadow
+      shadowColor: '#000000', // iOS shadow
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      backgroundColor: '#FFFFFF', // Fallback background
+      overflow: 'hidden', // Clips the image to the circular shape
+    },
+    logoImage: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 40,
+    },
+    logoInitialsContainer: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    logoInitialsText: {
+      color: 'white',
+      fontSize: 24,
+      fontWeight: 'bold',
+    },
+    logoHintContainer: {
+      position: 'absolute',
+      bottom: -60, // Position below the logo
+      width: '100%',
+      alignItems: 'center',
+    },
+    logoHint: {
+      fontSize: 12,
     },
 });
 
