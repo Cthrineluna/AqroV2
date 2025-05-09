@@ -133,6 +133,14 @@ const StaffHomeScreen = ({ navigation }) => {
   const [fontsLoaded] = useFonts({
     Blanka: require('../../../assets/fonts/Blanka-Regular.otf'),
   });
+  const isStaffOrAdmin = user?.userType === 'staff' || user?.userType === 'admin';
+  const isAdmin = user?.userType === 'admin';
+
+  const navigateToReports = () => {
+    setTimeout(() => {
+      navigation.navigate('Reports', { userType: user?.userType });
+    }, 300);
+  };
 
   const fetchRebateStats = async () => {
     try {
@@ -419,10 +427,10 @@ const StaffHomeScreen = ({ navigation }) => {
         <View style={styles.quickActionsContainer}>
           <TouchableOpacity 
             style={[styles.actionButton, {backgroundColor: '#00df82'}]}
-            onPress={() => navigation.navigate('GenerateQR')}
+            onPress={navigateToReports}
           >
-            <Ionicons name="qr-code-outline" size={24} color="#FFFFFF" />
-            <BoldText style={styles.actionButtonText}>Generate QR</BoldText>
+            <Ionicons name="document-text-outline" size={24} color="#FFFFFF" />
+            <BoldText style={styles.actionButtonText}>View Reports</BoldText>
           </TouchableOpacity>
           
           <TouchableOpacity 

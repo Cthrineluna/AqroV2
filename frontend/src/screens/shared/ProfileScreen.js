@@ -26,6 +26,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getApiUrl } from '../../services/apiConfig';
+import RestaurantModal from '../../components/RestaurantModal';
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
@@ -40,6 +41,57 @@ const ProfileScreen = ({ navigation }) => {
     profilePicture: null
   });
 
+  const [restaurant, setRestaurant] = useState(null);
+  const [restaurantModalVisible, setRestaurantModalVisible] = useState(false);
+  const [isRestaurantLoading, setIsRestaurantLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.userType === 'staff' && user?.restaurantId) {
+      fetchRestaurantData();
+    }
+  }, [user]);
+  
+  // Add this function to fetch restaurant data
+  const fetchRestaurantData = async () => {
+    try {
+      setIsRestaurantLoading(true);
+      const token = await AsyncStorage.getItem('aqro_token');
+      const response = await axios.get(
+        `${getApiUrl()}/restaurants/${user.restaurantId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setRestaurant(response.data);
+    } catch (error) {
+      console.error('Error fetching restaurant data:', error);
+    } finally {
+      setIsRestaurantLoading(false);
+    }
+  };
+  
+  // Add this function to handle restaurant updates
+  const handleRestaurantUpdate = async (updatedRestaurant) => {
+    try {
+      setIsRestaurantLoading(true);
+      const token = await AsyncStorage.getItem('aqro_token');
+      const response = await axios.put(
+        `${getApiUrl()}/restaurants/${updatedRestaurant._id}`,
+        updatedRestaurant,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setRestaurant(response.data);
+      Alert.alert('Success', 'Restaurant updated successfully');
+      setRestaurantModalVisible(false);
+    } catch (error) {
+      console.error('Error updating restaurant:', error);
+      Alert.alert('Error', 'Failed to update restaurant');
+    } finally {
+      setIsRestaurantLoading(false);
+    }
+  };
   // Set theme loaded after initial render
   useEffect(() => {
     if (theme) {
@@ -371,7 +423,34 @@ const ProfileScreen = ({ navigation }) => {
             </View>
           </>
         )}
+              {user?.userType === 'staff' && restaurant && (
+  <>
+    <View style={styles.restaurantButtonContainer}>
+    <TouchableOpacity 
+      style={[styles.button, styles.editButton, { borderColor: theme.primary }]} 
+      onPress={() => setRestaurantModalVisible(true)}
+    >
+      <RegularText style={[styles.editButtonText, { color: theme.primary }]}>
+        Edit Restaurant
+      </RegularText>
+    </TouchableOpacity>
+  </View>
+    
+    <RestaurantModal
+      visible={restaurantModalVisible}
+      onClose={() => setRestaurantModalVisible(false)}
+      restaurant={restaurant}
+      onSave={handleRestaurantUpdate}
+      isLoading={isRestaurantLoading}
+      isStaff={true}
+      theme={theme}
+    />
+  </>
+)}
       </ScrollView>
+
+
+
     </SafeAreaView>
   );
 };
@@ -483,6 +562,53 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     color: '#FFF',
+  },
+  sectionHeader: {
+    borderBottomWidth: 1,
+    paddingBottom: 8,
+    marginBottom: 16,
+    marginTop: 24,
+  },
+  restaurantCard: {
+    borderWidth: 1,
+    borderRadius: 10,
+    marginBottom: 24,
+    padding: 12,
+  },
+  restaurantCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  restaurantLogoContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  restaurantLogoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 25,
+  },
+  restaurantLogoInitials: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  restaurantLogoInitialsText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  restaurantDetails: {
+    flex: 1,
+  },
+  restaurantButtonContainer: {
+    alignItems: 'center',
+    marginTop: 16,
   },
 });
 
