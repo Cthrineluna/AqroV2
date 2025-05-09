@@ -31,9 +31,6 @@ exports.sendVerificationEmail = async (user, verificationToken) => {
           <p>Your verification code is: <strong style="font-size: 18px;">${verificationToken}</strong></p>
           <p>This code will expire in 1 hour.</p>
           <p>Alternatively, you can click the button below to verify directly:</p>
-          <div style="margin: 25px 0;">
-            <a href="${verificationUrl}" style="background-color: #00df82; color: #030f0f; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">Verify Email</a>
-          </div>
           <p>If you didn't register for an AQRO account, please ignore this email.</p>
           <p>Best regards,<br>The AQRO Team</p>
         </div>
