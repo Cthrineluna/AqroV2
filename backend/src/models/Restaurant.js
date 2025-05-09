@@ -33,6 +33,10 @@ const restaurantSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  banner: {  // New field for banner images
+    type: String,
+    default: ''
+  },
   businessPermit: {  // Changed from businessLicense
     fileData: Buffer,
     fileName: String,

@@ -250,6 +250,21 @@ const handleSaveRestaurant = async (restaurantData) => {
         });
       }
     }
+    if (restaurantData.banner) {
+      if (restaurantData.banner.startsWith('data:image')) {
+        formData.append('banner', restaurantData.banner);
+      } else if (restaurantData.banner.startsWith('file:')) {
+        const filename = restaurantData.banner.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+        
+        formData.append('banner', {
+          uri: restaurantData.banner,
+          name: filename,
+          type: type
+        });
+      }
+    }
     
     // Make API request based on whether editing or creating
     if (selectedRestaurant) {
@@ -413,6 +428,13 @@ const handleSaveRestaurant = async (restaurantData) => {
         fadeIn();
       }}
     >
+       {item.banner && (
+      <Image 
+        source={{ uri: item.banner }} 
+        style={styles.restaurantBanner}
+        resizeMode="cover"
+      />
+    )}
       <View style={styles.restaurantCardContent}>
         {/* Logo Image or Initials */}
         <View style={styles.logoContainer}>
@@ -481,6 +503,7 @@ const handleSaveRestaurant = async (restaurantData) => {
         city: selectedRestaurant?.location?.city || '',
       },
       logo: selectedRestaurant?.logo || null,
+      banner: selectedRestaurant?.banner || null,
       isActive: selectedRestaurant?.isActive || true
     });
     const [localError, setLocalError] = useState('');
@@ -512,6 +535,31 @@ const handleSaveRestaurant = async (restaurantData) => {
     }
   };
 
+  const pickBannerImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+        return;
+      }
+  
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9], // Better aspect ratio for banners
+        quality: 0.7,
+        base64: true,
+      });
+  
+      if (!result.canceled) {
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setLocalRestaurant(prev => ({ ...prev, banner: base64Image }));
+      }
+    } catch (error) {
+      console.error('Error picking banner image:', error);
+      Alert.alert('Error', 'Failed to pick banner image');
+    }
+  };
 
     const validateForm = () => {
       if (!localRestaurant.name.trim()) {
@@ -629,6 +677,35 @@ const handleSaveRestaurant = async (restaurantData) => {
                   Tap to change logo
                 </RegularText>
               </TouchableOpacity>
+              <TouchableOpacity 
+  style={styles.bannerPickerContainer}
+  onPress={pickBannerImage}
+>
+  {localRestaurant.banner ? (
+    <Image 
+      source={{ uri: localRestaurant.banner }} 
+      style={styles.bannerPicker} 
+      resizeMode="cover"
+    />
+  ) : (
+    <View style={[
+      styles.bannerPlaceholder,
+      { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
+    ]}>
+      <Ionicons 
+        name="image-outline" 
+        size={32} 
+        color={theme?.primary || '#007BFF'} 
+      />
+      <RegularText style={[
+        styles.bannerHint, 
+        { color: theme?.primary || '#007BFF' }
+      ]}>
+        Add Banner Image
+      </RegularText>
+    </View>
+  )}
+</TouchableOpacity>
 
               {/* Error Message */}
               {localError ? (
@@ -1632,6 +1709,35 @@ const styles = StyleSheet.create({
       right: 0,
       bottom: 0,
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    },
+    bannerPickerContainer: {
+      marginBottom: 16,
+      borderRadius: 8,
+      overflow: 'hidden',
+    },
+    bannerPicker: {
+      width: '100%',
+      height: 150,
+    },
+    bannerPlaceholder: {
+      width: '100%',
+      height: 150,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+    },
+    bannerHint: {
+      marginTop: 8,
+      fontSize: 14,
+    },
+    restaurantBanner: {
+      width: '100%',
+      height: 100,
+      marginBottom: 12,
+      borderTopLeftRadius: 10,
+      borderTopRightRadius: 10,
     },
 });
 

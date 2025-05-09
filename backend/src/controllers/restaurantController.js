@@ -56,6 +56,10 @@ exports.createRestaurant = async (req, res) => {
         // Write the file to disk
         fs.writeFileSync(`./public${newRestaurant.logo}`, logoFile.buffer);
       }
+      if (req.files.banner && req.files.banner[0]) {
+        const bannerFile = req.files.banner[0];
+        newRestaurant.banner = `data:${bannerFile.mimetype};base64,${bannerFile.buffer.toString('base64')}`;
+      }
       
       // Handle business permit
       if (req.files.businessPermit && req.files.businessPermit[0]) {
@@ -118,6 +122,7 @@ exports.updateRestaurant = async (req, res) => {
         }
       }
       
+      
       // Handle business permit
       if (req.files.businessPermit && req.files.businessPermit[0]) {
         const permitFile = req.files.businessPermit[0];
@@ -127,6 +132,11 @@ exports.updateRestaurant = async (req, res) => {
           mimeType: permitFile.mimetype,
           uploadedAt: new Date()
         };
+      }
+      
+      if (req.files.banner && req.files.banner[0]) {
+        const bannerFile = req.files.banner[0];
+        updateData.banner = `data:${bannerFile.mimetype};base64,${bannerFile.buffer.toString('base64')}`;
       }
       
       // Handle BIR registration

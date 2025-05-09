@@ -20,6 +20,7 @@ router.get('/:restaurantId', protect, authorize('admin', 'staff'), restaurantCon
 // Create new restaurant
 router.post('/', protect, authorize('admin'), upload.fields([
     { name: 'logo', maxCount: 1 },
+    { name: 'banner', maxCount: 1 },
     { name: 'businessPermit', maxCount: 1 },
     { name: 'birRegistration', maxCount: 1 }
   ]), restaurantController.createRestaurant);
@@ -33,6 +34,7 @@ router.get('/:restaurantId/staff', protect, authorize('admin', 'staff'), restaur
 // Update restaurant
 router.put('/:restaurantId', protect, authorize('admin'), upload.fields([
     { name: 'logo', maxCount: 1 },
+    { name: 'banner', maxCount: 1 },
     { name: 'businessPermit', maxCount: 1 },
     { name: 'birRegistration', maxCount: 1 }
   ]), restaurantController.updateRestaurant);

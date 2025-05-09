@@ -102,11 +102,13 @@ const RestaurantCarousel = ({
             },
           ]}
         >
-          <ImageBackground 
-            source={require('../../assets/images/placeholder-bg.jpg')}
-            style={styles.imageBackground}
-            imageStyle={{ borderRadius: 16 }}
-          >
+            <ImageBackground 
+          source={item.banner 
+            ? { uri: item.banner } 
+            : require('../../assets/images/placeholder-bg.jpg')}
+          style={styles.imageBackground}
+          imageStyle={{ borderRadius: 16 }}
+        >
             {/* Dark overlay for text readability */}
             <View style={styles.gradientOverlay}>
               <View style={styles.textOverlay}>
