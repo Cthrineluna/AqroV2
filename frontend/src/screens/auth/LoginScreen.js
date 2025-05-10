@@ -43,7 +43,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
  // LoginScreen.js
- const handleLogin = async () => {
+const handleLogin = async () => {
   setError('');
   
   if (!email.trim() || !password) {
@@ -74,19 +74,62 @@ const LoginScreen = ({ navigation }) => {
   } catch (err) {
     console.error('Login error details:', err);
     
-    // Handle verification error specifically
+    // Handle account locked
+    if (err.accountLocked) {
+      setError(err.message || 'Your account is temporarily locked. Please reset your password.');
+      // Show reset password option
+      Alert.alert(
+        'Account Locked',
+        'Too many failed login attempts. Would you like to reset your password?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          },
+          {
+            text: 'Reset Password',
+            onPress: () => navigation.navigate('ForgotPassword', { email: err.email })
+          }
+        ]
+      );
+      return;
+    }
+    
+    // Handle verification error
     if (err.needsVerification) {
       // Navigate to verification screen with the email
       navigation.navigate('EmailVerification', { email: err.email });
       return;
     }
     
-    if (err.message) {
-      setError(err.message);
-    } else if (typeof err === 'string') {
-      setError(err);
+    // Format message with remaining attempts if available
+    let errorMessage = err.message || 'Login failed. Please check your credentials and try again.';
+    
+    // Show login attempts remaining if available
+    if (err.attemptsRemaining !== undefined) {
+      setError(errorMessage);
+      
+      // If getting low on attempts, suggest reset password
+      if (err.attemptsRemaining <= 2) {
+        setTimeout(() => {
+          Alert.alert(
+            'Warning',
+            `You have ${err.attemptsRemaining} login ${err.attemptsRemaining === 1 ? 'attempt' : 'attempts'} remaining. Would you like to reset your password?`,
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              },
+              {
+                text: 'Reset Password',
+                onPress: () => navigation.navigate('ForgotPassword', { email })
+              }
+            ]
+          );
+        }, 300);
+      }
     } else {
-      setError('Login failed. Please check your credentials and try again.');
+      setError(errorMessage);
     }
   } finally {
     setLoading(false);

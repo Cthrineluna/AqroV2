@@ -61,10 +61,12 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Invalid or expired password reset token' });
     }
     
-    // Update password
+    // Update password and reset account lock
     user.password = newPassword; // Will be hashed by the pre-save hook
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
+    user.loginAttempts = 0;
+    user.lockUntil = null;
     
     await user.save();
     
@@ -249,6 +251,16 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
+    // Check if account is locked
+    const isLocked = user.lockUntil && user.lockUntil > Date.now();
+    if (isLocked) {
+      return res.status(403).json({ 
+        message: 'Account is temporarily locked due to too many failed login attempts. Please try again later or reset your password.',
+        accountLocked: true,
+        email: user.email
+      });
+    }
+
     // Check if user is active
     if (!user.isActive) {
       return res.status(403).json({ message: 'Account is disabled. Please contact support.' });
@@ -266,8 +278,32 @@ exports.login = async (req, res) => {
     // Check if password matches
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+      // Increment login attempts
+      user.loginAttempts += 1;
+      
+      // Lock account if attempts exceed 5
+      if (user.loginAttempts >= 5) {
+        user.lockUntil = Date.now() + 30 * 60 * 1000; // Lock for 30 minutes
+        await user.save();
+        
+        return res.status(403).json({ 
+          message: 'Too many failed login attempts. Your account has been temporarily locked for 30 minutes. Please try resetting your password.',
+          accountLocked: true,
+          email: user.email
+        });
+      }
+      
+      await user.save();
+      return res.status(400).json({ 
+        message: `Invalid email or password. ${5 - user.loginAttempts} attempts remaining.`,
+        attemptsRemaining: 5 - user.loginAttempts
+      });
     }
+
+    // Reset login attempts on successful login
+    user.loginAttempts = 0;
+    user.lockUntil = null;
+    await user.save();
 
     // Generate token
     const token = generateToken(user);

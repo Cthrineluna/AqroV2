@@ -76,6 +76,15 @@ export const login = async (email, password) => {
   } catch (error) {
     console.error('Login error details:', error);
     if (error.response) {
+      // Handle account locked scenario
+      if (error.response.data && error.response.data.accountLocked) {
+        throw { 
+          message: error.response.data.message || 'Account is temporarily locked. Please try resetting your password.',
+          accountLocked: true,
+          email: error.response.data.email
+        };
+      }
+      
       // Special handling for verification error
       if (error.response.data && error.response.data.needsVerification) {
         throw { 
@@ -84,6 +93,15 @@ export const login = async (email, password) => {
           email: error.response.data.email
         };
       }
+      
+      // Handle remaining attempts info
+      if (error.response.data && error.response.data.attemptsRemaining !== undefined) {
+        throw {
+          message: error.response.data.message,
+          attemptsRemaining: error.response.data.attemptsRemaining
+        };
+      }
+      
       throw error.response.data || { message: `Server error: ${error.response.status}` };
     } else if (error.request) {
       throw { message: 'No response from server. Please check your connection.' };
