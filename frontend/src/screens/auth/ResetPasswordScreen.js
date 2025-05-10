@@ -21,15 +21,22 @@ import {
   MediumText, 
   ThemedView 
 } from '../../components/StyledComponents';
-import { requestPasswordReset } from '../../services/authService';
+import axios from 'axios';
+import { getApiUrl } from '../../services/apiConfig';
 
 const { width } = Dimensions.get('window');
 
-const ForgotPasswordScreen = ({ navigation }) => {
+const ResetPasswordScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
-  const [email, setEmail] = useState('');
+  const { email } = route.params || {};
+  
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // Listen for keyboard events to prevent layout thrashing
@@ -53,38 +60,59 @@ const ForgotPasswordScreen = ({ navigation }) => {
     };
   }, []);
 
-  const handlePasswordReset = async () => {
-    // Simple email validation
-    if (!email || !email.includes('@') || !email.includes('.')) {
-      setError('Please enter a valid email');
-      return;
+  const validateInputs = () => {
+    // Reset any previous errors
+    setError('');
+
+    // Check if all fields are filled
+    if (!resetToken.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+      setError('All fields are required');
+      return false;
     }
 
+    // Check if passwords match
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+
+    // Check password length (minimum 6 characters)
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleResetPassword = async () => {
+    if (!validateInputs()) return;
+    
     try {
-      setError('');
       setLoading(true);
-      const response = await requestPasswordReset(email);
       
-      // Navigate to reset password screen
-      navigation.navigate('ResetPassword', { email });
-      
-      // Show info alert
-      Alert.alert(
-        'Reset Email Sent',
-        'If an account with this email exists, you will receive a code to reset your password. Please check your email.',
-        [{ text: 'OK' }]
+      const response = await axios.post(
+        `${getApiUrl()}/auth/reset-password`,
+        { email, token: resetToken, newPassword }
       );
+      
+      Alert.alert(
+        'Success',
+        'Your password has been reset successfully. You can now log in with your new password.',
+        [{ text: 'Login', onPress: () => navigation.navigate('Login') }]
+      );
+      
     } catch (error) {
-      // Don't expose if email exists or not for security
-      console.error('Error requesting password reset:', error);
-      // Still show success message for security (don't reveal if email exists)
-      navigation.navigate('ResetPassword', { email });
+      console.error('Error resetting password:', error);
       
-      Alert.alert(
-        'Reset Email Sent',
-        'If an account with this email exists, you will receive a code to reset your password. Please check your email.',
-        [{ text: 'OK' }]
-      );
+      if (error.response?.data?.message) {
+        Alert.alert('Error', error.response.data.message);
+      } else if (error.request) {
+        Alert.alert('Error', 'Network error. Please check your connection and try again.');
+      } else {
+        Alert.alert('Error', 'Failed to reset password. Please try again.');
+      }
+      
     } finally {
       setLoading(false);
     }
@@ -111,35 +139,79 @@ const ForgotPasswordScreen = ({ navigation }) => {
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
             <SemiBoldText style={[styles.title, { color: theme.text }]}>
-              Forgot Password
+              Reset Password
             </SemiBoldText>
           </View>
 
           <ThemedView style={[styles.contentContainer, {height: keyboardVisible ? 'auto' : null}]}>
             <View style={styles.iconContainer}>
-              <Ionicons name="lock-open-outline" size={60} color={theme.primary} />
+              <Ionicons name="lock-closed-outline" size={60} color={theme.primary} />
             </View>
             
             <MediumText style={[styles.subtitle, { color: theme.text }]}>
-              Reset Your Password
+              Create New Password
             </MediumText>
             
             <RegularText style={[styles.description, { color: theme.text }]}>
-              Enter your email address and we'll send you instructions to reset your password.
+              Enter the code sent to your email and create a new password
             </RegularText>
 
+            {/* Reset Code Input */}
             <View style={[styles.inputContainer, { borderColor: theme.border }]}>
-              <Ionicons name="mail-outline" size={20} color={theme.text} />
+              <Ionicons name="key-outline" size={20} color={theme.text} />
               <TextInput
                 style={[styles.input, { color: theme.text }]}
-                placeholder="Email Address"
+                placeholder="Reset Code"
                 placeholderTextColor="#9e9e9e"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                value={resetToken}
+                onChangeText={setResetToken}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
+            </View>
+
+            {/* New Password Input */}
+            <View style={[styles.inputContainer, { borderColor: theme.border }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={theme.text} />
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="New Password"
+                placeholderTextColor="#9e9e9e"
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry={!showNewPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                <Ionicons 
+                  name={showNewPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color={theme.text} 
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Confirm Password Input */}
+            <View style={[styles.inputContainer, { borderColor: theme.border }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={theme.text} />
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="Confirm Password"
+                placeholderTextColor="#9e9e9e"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                <Ionicons 
+                  name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color={theme.text} 
+                />
+              </TouchableOpacity>
             </View>
 
             {error ? (
@@ -154,7 +226,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                 { backgroundColor: theme.primary },
                 loading && { opacity: 0.7 }
               ]}
-              onPress={handlePasswordReset}
+              onPress={handleResetPassword}
               disabled={loading}
             >
               {loading ? (
@@ -265,4 +337,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ForgotPasswordScreen;
+export default ResetPasswordScreen;

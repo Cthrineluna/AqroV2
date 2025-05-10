@@ -14,6 +14,9 @@ router.post('/verify-email', authController.verifyEmail);
 // Resend verification email
 router.post('/resend-verification', authController.resendVerification);
 
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
+
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,

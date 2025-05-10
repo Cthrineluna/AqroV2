@@ -105,6 +105,31 @@ export const logout = async () => {
   }
 };
 
+export const requestPasswordReset = async (email) => {
+  try {
+    const response = await axios.post(`${getApiUrl()}/forgot-password`, { email });
+    return response.data;
+  } catch (error) {
+    console.error('Error requesting password reset:', error);
+    throw error.response?.data || { message: 'Failed to request password reset' };
+  }
+};
+
+// Add this function to reset password
+export const resetPassword = async (email, token, newPassword) => {
+  try {
+    const response = await axios.post(`${getApiUrl()}/reset-password`, {
+      email,
+      token,
+      newPassword
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    throw error.response?.data || { message: 'Failed to reset password' };
+  }
+};
+
 // Get current user
 export const getCurrentUser = async () => {
   try {

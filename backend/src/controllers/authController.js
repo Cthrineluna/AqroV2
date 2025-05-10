@@ -16,6 +16,64 @@ const generateToken = (user) => {
     { expiresIn: '7d' }
   );
 };
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if email exists or not for security reasons
+      return res.status(200).json({ message: 'If your email is registered, you will receive reset instructions' });
+    }
+    
+    // Generate random 6-digit token
+    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Set token in user document with expiration
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+    
+    // Send email with reset token
+    await emailService.sendPasswordResetEmail(user, resetToken);
+    
+    res.status(200).json({ message: 'Password reset email sent' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Reset password with token
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+    
+    // Find user by email and check token validity
+    const user = await User.findOne({
+      email,
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired password reset token' });
+    }
+    
+    // Update password
+    user.password = newPassword; // Will be hashed by the pre-save hook
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    
+    await user.save();
+    
+    res.status(200).json({ message: 'Password has been reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Failed to reset password' });
+  }
+};
 
 exports.register = async (req, res) => {
   try {

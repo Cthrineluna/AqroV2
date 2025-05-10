@@ -46,7 +46,33 @@ exports.sendVerificationEmail = async (user, verificationToken) => {
     throw new Error('Failed to send verification email');
   }
 };
+exports.sendPasswordResetEmail = async (user, resetToken) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || '"AQRO App" <noreply@aqro.app>',
+      to: user.email,
+      subject: 'Reset Your AQRO Password',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #00df82;">Reset Your Password</h2>
+          <p>Hello ${user.firstName},</p>
+          <p>You recently requested to reset your password for your AQRO account. Use the code below to reset your password:</p>
+          <p>Your password reset code is: <strong style="font-size: 18px;">${resetToken}</strong></p>
+          <p>This code will expire in 1 hour.</p>
+          <p>If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>
+          <p>Best regards,<br>The AQRO Team</p>
+        </div>
+      `
+    };
 
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Password reset email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw new Error('Failed to send password reset email');
+  }
+};
 // Send a confirmation email after successful verification
 exports.sendConfirmationEmail = async (user) => {
   try {
