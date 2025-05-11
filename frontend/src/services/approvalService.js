@@ -38,20 +38,20 @@ export const getPendingStaff = async () => {
   };
 
 // Reject a staff member (for admin)
-export const rejectStaff = async (staffId, reason) => {
-  try {
-    const token = await AsyncStorage.getItem('aqro_token');
-    const response = await axios.post(
-      `${getApiUrl()}/admin/reject-staff/${staffId}`,
-      { reason },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
-  } catch (error) {
-    console.error('Error rejecting staff:', error);
-    throw error.response?.data || { message: 'Failed to reject staff' };
-  }
-};
+  export const rejectStaff = async (staffId, reason) => {
+    try {
+      const token = await AsyncStorage.getItem('aqro_token');
+      const response = await axios.post(
+        `${getApiUrl()}/admin/reject-staff/${staffId}`,
+        { reason },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error rejecting staff:', error);
+      throw error.response?.data || { message: 'Failed to reject staff' };
+    }
+  };
 
 // In approvalService.js
 // Add this to your approvalService.js

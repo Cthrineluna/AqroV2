@@ -4,6 +4,44 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
 
+const calculateLockoutDuration = (attempts) => {
+  // Progressive lockout durations in milliseconds
+  const durations = {
+    1: 1 * 60 * 1000,     // 1 minute
+    2: 3 * 60 * 1000,     // 3 minutes
+    3: 5 * 60 * 1000,     // 5 minutes
+    4: 10 * 60 * 1000,    // 10 minutes
+    5: 15 * 60 * 1000,    // 15 minutes
+    6: 30 * 60 * 1000,    // 30 minutes
+    7: 60 * 60 * 1000,    // 1 hour
+    8: 3 * 60 * 60 * 1000, // 3 hours
+    9: 12 * 60 * 60 * 1000, // 12 hours
+    10: 24 * 60 * 60 * 1000 // 24 hours
+  };
+
+  // Cap at 10 attempts, start at third attempt (index 1)
+  const attemptCount = Math.min(attempts, 10);
+  
+  // Return appropriate duration
+  return durations[attemptCount] || durations[10]; // Default to 24 hours if beyond defined thresholds
+};
+
+// Format lockout duration for user-friendly messages
+const formatLockoutTime = (lockDuration) => {
+  const lockoutMins = lockDuration / (60 * 1000);
+  
+  if (lockoutMins < 60) {
+    return `${lockoutMins} minute${lockoutMins > 1 ? 's' : ''}`;
+  } else {
+    const lockoutHours = lockoutMins / 60;
+    if (lockoutHours < 24) {
+      return `${lockoutHours} hour${lockoutHours > 1 ? 's' : ''}`;
+    } else {
+      return `${lockoutHours / 24} day${lockoutHours >= 48 ? 's' : ''}`;
+    }
+  }
+};
+
 // Helper function to generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
@@ -241,6 +279,8 @@ exports.resendVerification = async (req, res) => {
   }
 };
 
+
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -276,29 +316,45 @@ exports.login = async (req, res) => {
     }
 
     // Check if password matches
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      // Increment login attempts
-      user.loginAttempts += 1;
-      
-      // Lock account if attempts exceed 5
-      if (user.loginAttempts >= 5) {
-        user.lockUntil = Date.now() + 30 * 60 * 1000; // Lock for 30 minutes
-        await user.save();
-        
-        return res.status(403).json({ 
-          message: 'Too many failed login attempts. Your account has been temporarily locked for 30 minutes. Please try resetting your password.',
-          accountLocked: true,
-          email: user.email
-        });
-      }
-      
-      await user.save();
-      return res.status(400).json({ 
-        message: `Invalid email or password. ${5 - user.loginAttempts} attempts remaining.`,
-        attemptsRemaining: 5 - user.loginAttempts
-      });
-    }
+   const isMatch = await user.comparePassword(password);
+if (!isMatch) {
+  // Increment login attempts
+  user.loginAttempts += 1;
+  
+  // Start progressive lockout after 3 failed attempts
+  if (user.loginAttempts >= 5) {
+    const lockDuration = calculateLockoutDuration(user.loginAttempts - 4); // Adjust index because we start at attempt 3
+    user.lockUntil = Date.now() + lockDuration;
+    
+    // Format the lockout duration for the message
+    const lockoutTimeMessage = formatLockoutTime(lockDuration);
+    
+    await user.save();
+    
+    return res.status(403).json({ 
+      message: `Too many failed login attempts. Your account has been temporarily locked for ${lockoutTimeMessage}. Please try resetting your password.`,
+      accountLocked: true,
+      email: user.email,
+      lockDuration: lockDuration // Send duration to frontend
+    });
+  }
+  
+  await user.save();
+  // We'll show warning after 2 attempts
+  const warningThreshold = 4;
+  
+  if (user.loginAttempts >= warningThreshold) {
+    return res.status(400).json({ 
+      message: `Invalid email or password. ${5 - user.loginAttempts} attempt${5 - user.loginAttempts !== 1 ? 's' : ''} remaining before lockout.`,
+      attemptsRemaining: 5 - user.loginAttempts
+    });
+  } else {
+    return res.status(400).json({ 
+      message: 'Invalid email or password.',
+      attemptsRemaining: 5 - user.loginAttempts
+    });
+  }
+}
 
     // Reset login attempts on successful login
     user.loginAttempts = 0;

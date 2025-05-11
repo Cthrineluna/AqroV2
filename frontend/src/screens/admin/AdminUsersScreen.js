@@ -60,6 +60,8 @@ const handleSearch = (query) => {
     return;
   }
 
+
+
   const filtered = activeFilter === 'all' 
     ? users 
     : users.filter(item => item.userType === activeFilter);
@@ -287,19 +289,20 @@ const handleFilterChange = (filter) => {
 
   // Render user item
   const renderUserItem = ({ item }) => (
-    <TouchableOpacity 
-      style={[
-        styles.userCard, 
-        { 
-          backgroundColor: theme?.card || '#FFFFFF', 
-          borderColor: theme?.border || '#E0E0E0' 
-        }
-      ]}
-      onPress={() => {
-        setSelectedUser(item);
-        setActionModalVisible(true);
-      }}
-    >
+  <TouchableOpacity 
+    style={[
+      styles.userCard, 
+      { 
+        backgroundColor: theme?.card || '#FFFFFF',
+        borderColor: item.lockUntil && item.lockUntil > Date.now() ? '#FFA500' : (theme?.border || '#E0E0E0'),
+        borderWidth: item.lockUntil && item.lockUntil > Date.now() ? 2 : 1
+      }
+    ]}
+    onPress={() => {
+      setSelectedUser(item);
+      setActionModalVisible(true);
+    }}
+  >
       <View style={styles.userCardContent}>
         {/* Profile Image or Initials */}
         <View style={styles.profileImageContainer}>
@@ -325,7 +328,7 @@ const handleFilterChange = (filter) => {
           <SemiBoldText style={{ color: theme?.text || '#000000' }}>
             {item.firstName} {item.lastName}
           </SemiBoldText>
-          <RegularText style={{ color: theme?.textMuted || '#666666' }}>
+          <RegularText style={{ color: theme?.textMuted || '#666666', fontSize: 14 }}>
             {item.email}
           </RegularText>
         </View>
@@ -622,34 +625,75 @@ const handleFilterChange = (filter) => {
       </RNModal>
     );
   };
-
+const handleToggleLock = async (userId, isLocked) => {
+  try {
+    const storedToken = await AsyncStorage.getItem('aqro_token');
+    await axios.put(
+      `${getApiUrl()}/admin/users/${userId}/lock`,
+      { isLocked },
+      { 
+        headers: { 
+          Authorization: `Bearer ${storedToken}`,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
+    fetchUsers(); // Refresh the user list
+    setActionModalVisible(false);
+  } catch (error) {
+    console.error('Error toggling lock:', error);
+    Alert.alert('Error', 'Failed to update lock status');
+  }
+};
   // Action Modal
   const ActionModal = () => (
-    <RNModal
-      animationType="fade"
-      transparent={true}
-      visible={actionModalVisible}
-      onRequestClose={() => {
-        fadeOut(() => setActionModalVisible(false));
-      }}
+    
+     <RNModal
+    animationType="fade"
+    transparent={true}
+    visible={actionModalVisible}
+    onRequestClose={() => {
+      fadeOut(() => setActionModalVisible(false));
+    }}
+  >
+    <Animated.View 
+      style={[
+        styles.actionModalOverlay,
+        { opacity: fadeAnim }
+      ]} 
     >
-      <Animated.View 
-        style={[
-          styles.actionModalOverlay,
-          { opacity: fadeAnim }
-        ]} 
+      <TouchableOpacity 
+        style={styles.actionModalOverlayTouch} 
+        activeOpacity={1} 
+        onPressOut={() => {
+          fadeOut(() => setActionModalVisible(false));
+        }}
       >
-        <TouchableOpacity 
-          style={styles.actionModalOverlayTouch} 
-          activeOpacity={1} 
-          onPressOut={() => {
-            fadeOut(() => setActionModalVisible(false));
-          }}
-        >
-          <View style={[
-            styles.actionModalContent, 
-            { backgroundColor: theme?.card || '#FFFFFF' }
-          ]}>
+        <View style={[
+          styles.actionModalContent, 
+          { backgroundColor: theme?.card || '#FFFFFF' }
+        ]}>
+          {/* Add null check before accessing selectedUser properties */}
+          {selectedUser && (
+            <TouchableOpacity 
+              style={styles.actionModalButton}
+              onPress={() => {
+                const isCurrentlyLocked = selectedUser.lockUntil && new Date(selectedUser.lockUntil) > new Date();
+                handleToggleLock(selectedUser._id, !isCurrentlyLocked);
+              }}
+            >
+              <Ionicons 
+                name={selectedUser.lockUntil && new Date(selectedUser.lockUntil) > new Date() ? "lock-open-outline" : "lock-closed-outline"} 
+                size={24} 
+                color="#FFA500" 
+              />
+              <RegularText style={{ marginLeft: 10, color: "#FFA500" }}>
+                {selectedUser.lockUntil && new Date(selectedUser.lockUntil) > new Date() ? "Unlock Account" : "Lock Account"}
+              </RegularText>
+            </TouchableOpacity>
+          )}
+
+          {selectedUser && (
             <TouchableOpacity 
               style={styles.actionModalButton}
               onPress={() => {
@@ -665,6 +709,8 @@ const handleFilterChange = (filter) => {
                 View Containers
               </RegularText>
             </TouchableOpacity>
+          )}
+          
             <TouchableOpacity 
               style={styles.actionModalButton}
               onPress={() => {
@@ -994,6 +1040,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 50,
   },
+  lockBadge: {
+  position: 'absolute',
+  top: 8,
+  right: 8,
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#FFF8E1',
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 12,
+},
+lockBadgeText: {
+  marginLeft: 4,
+  color: '#FFA500',
+  fontSize: 12,
+}
 });
 
 export default AdminUsersScreen;

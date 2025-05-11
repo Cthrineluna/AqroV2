@@ -86,28 +86,45 @@ exports.getPendingStaff = async (req, res) => {
   };
 
 // Reject staff member
+// Modify in controllers/approvalController.js
 exports.rejectStaff = async (req, res) => {
   try {
     const { staffId } = req.params;
     const { reason } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      staffId,
-      { 
-        rejectionReason: reason,
-        rejectedBy: req.user.id,
-        rejectedAt: Date.now()
-      },
-      { new: true }
-    );
-
+    // First find the user to get their email and restaurant info
+    const user = await User.findById(staffId);
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    await emailService.sendRejectionEmail(user, reason);
+    // Get the restaurantId before deleting
+    const restaurantId = user.restaurantId;
+    
+    // Store user email for sending rejection email
+    const userEmail = user.email;
+    const firstName = user.firstName;
+    
+    // Delete the restaurant if it exists
+    if (restaurantId) {
+      await Restaurant.findByIdAndDelete(restaurantId);
+    }
+    
+    // Delete the user
+    await User.findByIdAndDelete(staffId);
 
-    res.json({ message: 'Staff registration rejected', user });
+    // Send rejection email
+    await emailService.sendRejectionEmail(
+      { email: userEmail, firstName: firstName }, 
+      reason
+    );
+
+    res.json({ 
+      message: 'Staff registration rejected and account deleted',
+      deletedUserId: staffId,
+      deletedRestaurantId: restaurantId
+    });
   } catch (error) {
     console.error('Error rejecting staff:', error);
     res.status(500).json({ message: 'Server error' });

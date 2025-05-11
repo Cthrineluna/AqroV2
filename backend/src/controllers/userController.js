@@ -94,10 +94,24 @@ exports.updateUserProfile = async (req, res) => {
   // Add these methods to your existing userController.js
 
 // Get all users (admin only)
+// In userController.js, modify the getAllUsers function:
+
+// Get all users (admin only)
 exports.getAllUsers = async (req, res) => {
   try {
-    // Exclude password field when fetching users and only get approved users
-    const users = await User.find({ isApproved: true }).select('-password');
+    // Get all users with verified emails
+    const users = await User.find({ 
+      isEmailVerified: true,
+      // For staff users, only show if they're approved
+      $or: [
+        { userType: { $ne: 'staff' } }, // Show all non-staff users
+        { 
+          userType: 'staff',
+          isApproved: true // Only show approved staff
+        }
+      ]
+    }).select('-password');
+    
     res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -256,6 +270,42 @@ exports.approveStaff = async (req, res) => {
   } catch (error) {
     console.error('Error approving staff:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.toggleUserLock = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { isLocked } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (isLocked) {
+      // Lock the account for 24 hours
+      user.lockUntil = Date.now() + 24 * 60 * 60 * 1000;
+      user.loginAttempts = 5; // Set to max attempts to prevent immediate relock
+    } else {
+      // Unlock the account and reset attempts
+      user.lockUntil = null;
+      user.loginAttempts = 0;
+    }
+
+    await user.save();
+    
+    res.status(200).json({ 
+      message: isLocked ? 'Account locked' : 'Account unlocked',
+      user: {
+        id: user._id,
+        isLocked: !!user.lockUntil && user.lockUntil > Date.now(),
+        lockUntil: user.lockUntil
+      }
+    });
+  } catch (error) {
+    console.error('Error toggling user lock:', error);
+    res.status(500).json({ message: 'Failed to toggle lock status' });
   }
 };
 

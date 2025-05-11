@@ -42,6 +42,8 @@ router.get('/available-staff', protect, authorize('admin'), userController.getAv
 router.put('/:userId/assign-restaurant', protect, authorize('admin'), userController.assignRestaurant);
 router.put('/:userId/remove-restaurant', protect, authorize('admin'), userController.removeRestaurant);
 
+adminRouter.put('/:userId/lock', userController.toggleUserLock);
+
 module.exports = {
   userRoutes: router,
   adminUserRoutes: adminRouter

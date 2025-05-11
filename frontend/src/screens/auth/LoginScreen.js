@@ -9,7 +9,8 @@ import {
   Platform,
   ScrollView,
   Image,
-  StatusBar
+  StatusBar,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { login } from '../../services/authService';
@@ -76,24 +77,42 @@ const handleLogin = async () => {
     
     // Handle account locked
     if (err.accountLocked) {
-      setError(err.message || 'Your account is temporarily locked. Please reset your password.');
-      // Show reset password option
-      Alert.alert(
-        'Account Locked',
-        'Too many failed login attempts. Would you like to reset your password?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel'
-          },
-          {
-            text: 'Reset Password',
-            onPress: () => navigation.navigate('ForgotPassword', { email: err.email })
-          }
-        ]
-      );
-      return;
+  setError(err.message || 'Your account is temporarily locked. Please reset your password.');
+  
+  // Show reset password option with more context about the lockout duration
+  Alert.alert(
+    'Account Locked',
+    `Your account is temporarily locked due to multiple failed login attempts. ${
+      err.lockDuration ? `The lockout will expire in ${formatLockDuration(err.lockDuration)}.` : ''
+    } Would you like to reset your password now?`,
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel'
+      },
+      {
+        text: 'Reset Password',
+        onPress: () => navigation.navigate('ForgotPassword', { email: err.email })
+      }
+    ]
+  );
+  return;
+}
+const formatLockDuration = (durationMs) => {
+  const minutes = Math.floor(durationMs / (60 * 1000));
+  
+  if (minutes < 60) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  } else {
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return `${hours} hour${hours !== 1 ? 's' : ''}`;
+    } else {
+      const days = Math.floor(hours / 24);
+      return `${days} day${days !== 1 ? 's' : ''}`;
     }
+  }
+};
     
     // Handle verification error
     if (err.needsVerification) {

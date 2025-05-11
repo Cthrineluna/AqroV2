@@ -129,19 +129,25 @@ exports.sendApprovalNotification = async (user) => {
 };
 
 // Send rejection email to staff
+// Update in services/emailService.js
 exports.sendRejectionEmail = async (user, reason) => {
   try {
+    // Support both full user objects and minimal objects with just email/firstName
+    const userEmail = user.email;
+    const userName = user.firstName || 'Applicant';
+    
     const mailOptions = {
       from: process.env.EMAIL_FROM || '"AQRO App" <noreply@aqro.app>',
-      to: user.email,
+      to: userEmail,
       subject: 'Update on Your AQRO Account Application',
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
           <h2 style="color: #00df82;">Account Application Status</h2>
-          <p>Hello ${user.firstName},</p>
+          <p>Hello ${userName},</p>
           <p>Thank you for your interest in AQRO. We have reviewed your application and are unable to approve your account at this time.</p>
           ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-          <p>If you have any questions or would like to provide additional information for reconsideration, please contact our support team.</p>
+          <p>Your application has been removed from our system. If you would like to apply again with updated information, please create a new account.</p>
+          <p>If you have any questions or would like to provide additional information, please contact our support team.</p>
           <p>Best regards,<br>The AQRO Team</p>
         </div>
       `

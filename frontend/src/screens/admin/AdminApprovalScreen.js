@@ -17,9 +17,10 @@ import {
   StatusBar,
   Text,
   Dimensions,
+  TextInput
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { approveStaff, getPendingStaff, getStaffDocuments } from '../../services/approvalService';
+import { approveStaff, getPendingStaff, getStaffDocuments, rejectStaff  } from '../../services/approvalService';
 import { Ionicons } from '@expo/vector-icons';
 import {
   RegularText,
@@ -52,6 +53,8 @@ const AdminApprovalScreen = ({ navigation }) => {
   const [documentProcessing, setDocumentProcessing] = useState(false);
   const helpButtonOpacity = new Animated.Value(1);
   const [debouncedHelpVisible, setDebouncedHelpVisible] = useState(true);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
 
 useEffect(() => {
   const timer = setTimeout(() => {
@@ -107,35 +110,74 @@ useEffect(() => {
     }
   };
 
-  const handleRejectSelected = async () => {
-    if (selectedStaffIds.length === 0) {
-      Alert.alert('Info', 'Please select at least one staff member to reject');
-      return;
-    }
+const handleRejectSelected = async () => {
+  if (selectedStaffIds.length === 0) {
+    Alert.alert('Info', 'Please select at least one staff member to reject');
+    return;
+  }
 
-    Alert.alert(
-      'Confirm Rejection',
-      `Are you sure you want to reject ${selectedStaffIds.length} staff member(s)?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: () => {
-            // Rejection logic would go here
+   setRejectionReason(''); // Clear previous reason
+  setRejectionModalVisible(true);
+
+  // Use Alert.prompt or a modal to get the rejection reason
+  Alert.prompt(
+    'Rejection Reason',
+    'Please provide a reason for rejection (will be included in email):',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Reject',
+        style: 'destructive',
+        onPress: async (reason) => {
+          try {
+            setButtonLoading(true);
+            // Process rejections sequentially
+            for (const staffId of selectedStaffIds) {
+              await rejectStaff(staffId, reason);
+            }
+            
             Alert.alert('Success', `${selectedStaffIds.length} staff member(s) rejected`);
             // Update the list after rejection
             setPendingStaff(pendingStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
             // Clear selection
             setSelectedStaffIds([]);
+          } catch (error) {
+            Alert.alert('Error', 'Failed to reject staff');
+            console.error(error);
+          } finally {
+            setButtonLoading(false);
           }
         }
-      ]
-    );
-  };
+      }
+    ],
+    'plain-text'
+  );
+};
+
+const confirmRejection = async () => {
+  try {
+    setButtonLoading(true);
+    // Process rejections sequentially
+    for (const staffId of selectedStaffIds) {
+      await rejectStaff(staffId, rejectionReason);
+    }
+    
+    Alert.alert('Success', `${selectedStaffIds.length} staff member(s) rejected`);
+    // Update the list after rejection
+    setPendingStaff(pendingStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
+    // Clear selection
+    setSelectedStaffIds([]);
+    setRejectionModalVisible(false);
+  } catch (error) {
+    Alert.alert('Error', 'Failed to reject staff');
+    console.error(error);
+  } finally {
+    setButtonLoading(false);
+  }
+};
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -276,6 +318,12 @@ useEffect(() => {
     }
   };
   
+
+  {/* Rejection Reason Modal */}
+
+  
+
+
   // Now let's update the renderDocumentModal function
   const renderDocumentModal = () => (
     <Modal
@@ -529,8 +577,91 @@ useEffect(() => {
           <Ionicons name="help" size={24} color="white" />
         </TouchableOpacity>
 )}
-
+{/* Rejection Reason Modal */}
+<Modal
+  visible={rejectionModalVisible}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setRejectionModalVisible(false)}
+>
+  <View style={{
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)'
+  }}>
+    <View style={{
+      width: '80%',
+      backgroundColor: isDark ? '#1e1e1e' : '#ffffff',
+      borderRadius: 10,
+      padding: 20,
+      elevation: 5
+    }}>
+      <Text style={{
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: isDark ? '#ffffff' : '#000000',
+        marginBottom: 15
+      }}>
+        Rejection Reason
+      </Text>
+      <TextInput
+        style={{
+          borderWidth: 1,
+          borderColor: isDark ? '#444444' : '#cccccc',
+          borderRadius: 5,
+          padding: 10,
+          color: isDark ? '#ffffff' : '#000000',
+          backgroundColor: isDark ? '#333333' : '#f5f5f5',
+          marginBottom: 20,
+          textAlignVertical: 'top'
+        }}
+        multiline
+        numberOfLines={4}
+        placeholder="Please provide a reason for rejection (will be included in email)"
+        placeholderTextColor={isDark ? '#aaaaaa' : '#777777'}
+        value={rejectionReason}
+        onChangeText={setRejectionReason}
+      />
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between'
+      }}>
+        <TouchableOpacity
+          style={{
+            padding: 10,
+            borderRadius: 5,
+            backgroundColor: isDark ? '#444444' : '#dddddd',
+            width: '45%',
+            alignItems: 'center'
+          }}
+          onPress={() => setRejectionModalVisible(false)}
+        >
+          <Text style={{ color: isDark ? '#ffffff' : '#000000' }}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            padding: 10,
+            borderRadius: 5,
+            backgroundColor: '#ff6b6b',
+            width: '45%',
+            alignItems: 'center'
+          }}
+          onPress={confirmRejection}
+          disabled={buttonLoading}
+        >
+          {buttonLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={{ color: '#fff' }}>Reject</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
         {/* Document Modal - No WebView */}
+        
         {renderDocumentModal()}
       </ThemedView>
     </SafeAreaView>
