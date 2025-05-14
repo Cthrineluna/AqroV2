@@ -107,4 +107,9 @@ router.delete(
   containerController.deleteContainer
 );
 
+router.post(
+  '/mark-status',
+  protect,
+  containerController.markContainerStatus
+);
 module.exports = router;

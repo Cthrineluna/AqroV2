@@ -27,6 +27,30 @@ const response = await axios.get(
   }
 };
 
+// Add to activityService.js
+export const markContainerStatus = async (containerId, status) => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    
+    if (!token) {
+      throw new Error('No auth token found');
+    }
+    
+    const response = await axios.post(
+      `${getApiUrl('/containers/mark-status')}`,
+      { containerId, status },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error marking container status:', error);
+    throw error;
+  }
+};
+
 export const getAllActivities = async (page = 1, limit = 20) => {
   try {
     const token = await AsyncStorage.getItem('aqro_token');

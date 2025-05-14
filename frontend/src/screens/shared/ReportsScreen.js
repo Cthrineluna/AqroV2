@@ -161,21 +161,22 @@ const getFilteredActivities = useCallback((activities) => {
       const now = new Date();
 
       let timeFrameFilteredActivities = filteredActivities.filter(activity => {
-  const activityDate = new Date(activity.createdAt);
+     const activityDate = new Date(activity.createdAt);
   
-  if (timeFrame === 'week') {
-    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-    return activityDate >= weekStart;
-  } else if (timeFrame === 'month') {
-    // For monthly view, include the last 12 months of data
-    const monthStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    return activityDate >= monthStart;
-  } else if (timeFrame === 'year') {
-    const yearStart = new Date(now.getFullYear(), 0, 1);
-    return activityDate >= yearStart;
-  }
-  return true;
-});
+      if (timeFrame === 'week') {
+        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+        return activityDate >= weekStart;
+      } else if (timeFrame === 'month') {
+        // CHANGE THIS PART - Instead of showing last 12 months, show just current month
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        return activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear;
+      } else if (timeFrame === 'year') {
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        return activityDate >= yearStart;
+      }
+      return true;
+    });
 
       
       if (activeReport === 'activity') {
@@ -341,9 +342,19 @@ const groupRebatesByTimeFrame = (activities, timeFrame) => {
     return grouped;
   };
 
+  
 const formatChartData = (groupedData, legend, timeFrame) => {
   let labels = [];
   let data = [];
+
+ if (!groupedData || typeof groupedData !== 'object') {
+    console.warn('Invalid groupedData:', groupedData);
+    return {
+      labels: [],
+      datasets: [{ data: [] }],
+      legend: [legend]
+    };
+  }
   
   if (timeFrame === 'week') {
     // Weekly logic stays the same
@@ -353,15 +364,15 @@ const formatChartData = (groupedData, legend, timeFrame) => {
       data.push(groupedData[day] || 0);
     });
   } else if (timeFrame === 'month') {
-    // Show all months of current year
-    const currentYear = new Date().getFullYear();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    months.forEach(month => {
-      const monthYearKey = `${month} ${currentYear}`;
-      labels.push(month);
-      data.push(groupedData[monthYearKey] || 0);
-    });
+  // We still want to show all 12 months for the chart view
+  const currentYear = new Date().getFullYear();
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  months.forEach(month => {
+    const monthYearKey = `${month} ${currentYear}`;
+    labels.push(month);
+    data.push(groupedData[monthYearKey] || 0);
+  });
   } else if (timeFrame === 'year') {
     // Year logic stays the same
     const years = Object.keys(groupedData)
@@ -387,6 +398,15 @@ const formatChartData = (groupedData, legend, timeFrame) => {
   const formatBarChartData = (groupedData, legend) => {
     const labels = Object.keys(groupedData);
     const data = labels.map(label => groupedData[label]);
+
+     if (!groupedData || typeof groupedData !== 'object') {
+    console.warn('Invalid groupedData in bar chart:', groupedData);
+    return {
+      labels: [],
+      datasets: [{ data: [] }],
+      legend: [legend]
+    };
+  }
     
     return {
       labels,
@@ -419,6 +439,11 @@ const resetFilters = () => {
     fetchReportData();
     setShowFilters(false);
   };
+
+  const handleReportChange = (reportType) => {
+  setLoading(true);
+  setActiveReport(reportType);
+};
 
 const renderFilterBadges = () => {
   const badges = [];
@@ -502,35 +527,55 @@ const renderFilterBadges = () => {
     },
   };
 
-  const renderChart = () => {
-    if (!reportData) return null;
-    const chartWidth = screenWidth - 32;
-    if (activeReport === 'container') {
-      return (
-        <BarChart
-          data={reportData}
-          width={chartWidth}
-          height={220}
-          chartConfig={chartConfig}
-          style={styles.chart}
-          verticalLabelRotation={0}
-          fromZero
-          showValuesOnTopOfBars
-        />
-      );
-    }
-    
+const renderChart = () => {
+  const chartWidth = screenWidth - 32;
+
+  // Check for missing or empty data
+  if (
+    !reportData ||
+    !Array.isArray(reportData.labels) ||
+    reportData.labels.length === 0 ||
+    !reportData.datasets ||
+    !Array.isArray(reportData.datasets[0]?.data) ||
+    reportData.datasets[0].data.length === 0
+  ) {
     return (
-      <LineChart
+      <View style={styles.loadingContainer}>
+        <RegularText style={{ color: theme.text }}>
+          No data available for the selected filters
+        </RegularText>
+      </View>
+    );
+  }
+
+  // Render appropriate chart
+  if (activeReport === 'container') {
+    return (
+      <BarChart
         data={reportData}
         width={chartWidth}
         height={220}
         chartConfig={chartConfig}
-        bezier
         style={styles.chart}
+        verticalLabelRotation={0}
+        fromZero
+        showValuesOnTopOfBars
       />
     );
-  };
+  }
+
+  return (
+    <LineChart
+      data={reportData}
+      width={chartWidth}
+      height={220}
+      chartConfig={chartConfig}
+      bezier
+      style={styles.chart}
+    />
+  );
+};
+
 
   const ReportFilter = ({ title, active, onPress }) => (
     <TouchableOpacity
@@ -703,17 +748,17 @@ const renderFilterBadges = () => {
           <ReportFilter
             title="Activity"
             active={activeReport === 'activity'}
-            onPress={() => setActiveReport('activity')}
+            onPress={() => handleReportChange('activity')}
           />
           <ReportFilter
             title="Rebates"
             active={activeReport === 'rebate'}
-            onPress={() => setActiveReport('rebate')}
+            onPress={() => handleReportChange('rebate')}
           />
           <ReportFilter
             title="Containers"
             active={activeReport === 'container'}
-            onPress={() => setActiveReport('container')}
+            onPress={() => handleReportChange('container')}
           />
         </View>
         

@@ -10,11 +10,14 @@ import {
   Platform,
   Animated,
   Dimensions,
-  ScrollView as RNScrollView
+  ScrollView as RNScrollView,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { markContainerStatus } from '../../services/activityService';
+
 import { 
   RegularText, 
   MediumText, 
@@ -278,7 +281,7 @@ const RebateSection = ({ container, theme }) => {
 };
 
 
-const ContainerDetailModal = ({ container, animation, closeModal }) => {
+const ContainerDetailModal = ({ container, animation, closeModal, fetchContainers  }) => {
   const { theme } = useTheme();
   const estimatedUsesLeft = container?.containerTypeId?.maxUses - (container?.usesCount || 0);
   
@@ -307,6 +310,37 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
     }
   })();
   
+  // Add to ContainersList.js
+// Add to ContainersList.js
+const handleMarkStatus = async (containerId, status) => {
+  // Show confirmation alert first
+  Alert.alert(
+    `Mark as ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+    `Are you sure you want to mark this container as ${status}?`,
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Confirm',
+        style: 'destructive',
+        onPress: async () => {
+          closeModal(); // Close immediately
+          try {
+            await markContainerStatus(containerId, status);
+            await fetchContainers();
+            Alert.alert('Success', `Container marked as ${status} successfully`);
+          } catch (error) {
+            console.error('Error marking container status:', error);
+            Alert.alert('Error', error.message || 'Failed to mark container status');
+          }
+        },
+      },
+    ]
+  );
+};
+
   const getContainerIcon = (status) => {
     switch (status) {
       case 'active':
@@ -411,15 +445,6 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
           </View>
 
           <RebateSection container={container} theme={theme} />
-
-          {container.containerTypeId && container.containerTypeId.rebateValue !== undefined && (
-            <View style={styles.detailRow}>
-              <RegularText style={styles.detailLabel}>Rebate Value:</RegularText>
-              <RegularText style={{ color: theme.text }}>
-                ₱{container.containerTypeId.rebateValue.toFixed(2)}
-              </RegularText>
-            </View>
-          )}
           
           {container.restaurantId && (
             <View style={styles.detailRow}>
@@ -456,6 +481,25 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
               <RegularText style={{ color: theme.text }}>{estimatedUsesLeft}</RegularText>
             </View>
           )}
+          {container.status === 'active' && (
+  <View style={styles.statusButtonsContainer}>
+    <TouchableOpacity 
+      style={[styles.statusButton, { backgroundColor: '#ffebee' }]}
+      onPress={() => handleMarkStatus(container._id, 'damaged')}
+    >
+      <Ionicons name="alert-circle-outline" size={20} color="#d32f2f" />
+      <RegularText style={{ color: '#d32f2f', marginLeft: 8, fontSize: 10 }}>Mark as Damaged</RegularText>
+    </TouchableOpacity>
+    
+    <TouchableOpacity 
+      style={[styles.statusButton, { backgroundColor: '#fff3e0' }]}
+      onPress={() => handleMarkStatus(container._id, 'lost')}
+    >
+      <Ionicons name="help-circle-outline" size={20} color="#ff9800" />
+      <RegularText style={{ color: '#ff9800', marginLeft: 8, fontSize: 10 }}>Mark as Lost</RegularText>
+    </TouchableOpacity>
+  </View>
+)}
         </View>
       </RNScrollView>
     </Animated.View>
@@ -505,6 +549,7 @@ const ContainersList = ({ navigation }) => {
     }
   };
 
+  
   const fetchContainers = async () => {
     try {
       const token = await AsyncStorage.getItem('aqro_token');
@@ -794,10 +839,11 @@ const ContainersList = ({ navigation }) => {
       {/* Container Detail Modal */}
       {modalVisible && (
         <ContainerDetailModal 
-          container={selectedContainer} 
-          animation={modalAnimation} 
-          closeModal={closeContainerDetail}
-        />
+  container={selectedContainer} 
+  animation={modalAnimation} 
+  closeModal={closeContainerDetail}
+  fetchContainers={fetchContainers}
+/>
       )}
     </SafeAreaView>
   );
@@ -1030,6 +1076,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+statusButtonsContainer: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  width: '100%',
+  marginTop: 16,
+},
+statusButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: 12,
+  borderRadius: 8,
+  width: '48%',
+  justifyContent: 'center',
+},
 });
 
 export default ContainersList;

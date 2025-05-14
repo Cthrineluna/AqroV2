@@ -33,6 +33,77 @@ exports.deleteContainer = async (req, res) => {
   }
 };
 
+// Add to containerController.js
+exports.markContainerStatus = async (req, res) => {
+  try {
+    const { containerId, status } = req.body;
+    const userId = req.user._id;
+
+    // Validate status
+    if (!['damaged', 'lost'].includes(status)) {
+      return res.status(400).json({ 
+        message: 'Invalid status. Can only mark as damaged or lost' 
+      });
+    }
+
+    // Find the container
+    const container = await Container.findById(containerId)
+      .populate('containerTypeId')
+      .populate('restaurantId');
+
+    if (!container) {
+      return res.status(404).json({ message: 'Container not found' });
+    }
+
+    // Check if container is active
+    if (container.status !== 'active') {
+      return res.status(400).json({ 
+        message: 'Container must be active to mark as damaged or lost' 
+      });
+    }
+
+    // Check if user owns the container (for customers)
+    if (req.user.userType === 'customer' && 
+        (!container.customerId || container.customerId.toString() !== userId.toString())) {
+      return res.status(403).json({ 
+        message: 'You can only mark your own containers' 
+      });
+    }
+
+    // Save old status for activity record
+    const oldStatus = container.status;
+
+    // Update container status
+    container.status = status;
+    container.lastUsed = new Date();
+    await container.save();
+
+    // Record activity
+    const newActivity = new Activity({
+      userId,
+      containerId: container._id,
+      containerTypeId: container.containerTypeId._id,
+      restaurantId: container.restaurantId?._id,
+      type: 'status_change',
+      status: 'completed',
+      notes: `From ${oldStatus} to ${status}`
+    });
+
+    await newActivity.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Container marked as ${status} successfully`,
+      container
+    });
+  } catch (error) {
+    console.error('Error marking container status:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      details: error.message 
+    });
+  }
+};
 // Create a new container (admin only)
 exports.createContainer = async (req, res) => {
   try {
