@@ -829,7 +829,7 @@ const handleSaveRestaurant = async (restaurantData) => {
                 placeholderTextColor={theme?.textMuted || '#888888'}
               />
 
-              {/* Active Status Toggle */}
+              {/* Active Status Toggle 
               <TouchableOpacity
                 style={styles.activeToggleContainer}
                 onPress={() => {
@@ -860,6 +860,7 @@ const handleSaveRestaurant = async (restaurantData) => {
                   Restaurant is active
                 </RegularText>
               </TouchableOpacity>
+              */}
 
               {/* Action Buttons */}
               <View style={styles.modalButtonContainer}>
@@ -918,7 +919,6 @@ const handleSaveRestaurant = async (restaurantData) => {
     );
   };
 
-  // Action Modal
   const ActionModal = () => {
     return (
       <RNModal
@@ -956,6 +956,7 @@ const handleSaveRestaurant = async (restaurantData) => {
                 borderBottomRightRadius: 0 
               }
             ]}>
+              {/*  
               <TouchableOpacity 
                 style={styles.actionModalButton}
                 onPress={() => {
@@ -971,6 +972,7 @@ const handleSaveRestaurant = async (restaurantData) => {
                   View Containers
                 </RegularText>
               </TouchableOpacity>
+              */}
               
               {/* New Staff Management Option */}
           

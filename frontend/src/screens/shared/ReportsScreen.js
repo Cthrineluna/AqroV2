@@ -52,26 +52,29 @@ const ReportsScreen = ({ navigation, route }) => {
   const [showFilters, setShowFilters] = useState(false);
   
   // Filter states
-  const [selectedActivityType, setSelectedActivityType] = useState(null);
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-  const [selectedContainerType, setSelectedContainerType] = useState(null);
+const [selectedActivityTypes, setSelectedActivityTypes] = useState([]);
+const [selectedRestaurants, setSelectedRestaurants] = useState([]);
+const [selectedContainerTypes, setSelectedContainerTypes] = useState([]);
+
   
   // Data for filters
-  const [restaurants, setRestaurants] = useState([]);
-  const [containerTypes, setContainerTypes] = useState([]);
+const [restaurants, setRestaurants] = useState([]);
+const [containerTypes, setContainerTypes] = useState([]);
   
   // Search queries
-  const [restaurantSearchQuery, setRestaurantSearchQuery] = useState('');
-  const [containerTypeSearchQuery, setContainerTypeSearchQuery] = useState('');
+const [restaurantSearchQuery, setRestaurantSearchQuery] = useState('');
+const [containerTypeSearchQuery, setContainerTypeSearchQuery] = useState('');
 
   // Filtered data
-  const filteredRestaurants = restaurants.filter(restaurant => 
+const filteredRestaurants = restaurants.filter(restaurant => 
     restaurant.name.toLowerCase().includes(restaurantSearchQuery.toLowerCase())
   );
   
-  const filteredContainerTypes = containerTypes.filter(type => 
+const filteredContainerTypes = containerTypes.filter(type => 
     type.name.toLowerCase().includes(containerTypeSearchQuery.toLowerCase())
   );
+
+
 
   // Activity types
   const activityTypes = [
@@ -84,27 +87,36 @@ const ReportsScreen = ({ navigation, route }) => {
 
   const screenWidth = Dimensions.get('window').width - 32;
 
+  
   useEffect(() => {
     if (Platform.OS === 'android') {
       NavigationBar.setBackgroundColorAsync(theme.background);
       NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
+      StatusBar.setBackgroundColor(theme.background);
     }
   }, [theme, isDark]);
 
-  const getFilteredActivities = useCallback((activities) => {
-    if (!activities) return [];
+const getFilteredActivities = useCallback((activities) => {
+  if (!activities) return [];
+  
+  return activities.filter(activity => {    
+    if (selectedActivityTypes.length > 0 && !selectedActivityTypes.includes(activity.type)) {
+      return false;
+    }
     
-    return activities.filter(activity => {    
-      if (selectedActivityType && activity.type !== selectedActivityType) return false;
-      
-      if (selectedContainerType && 
-          activity.containerId?.containerTypeId?._id !== selectedContainerType._id) return false;
-      
-      if (selectedRestaurant && activity.restaurantId?._id !== selectedRestaurant._id) return false;
-      
-      return true;
-    });
-  }, [selectedActivityType, selectedContainerType, selectedRestaurant]);
+    if (selectedContainerTypes.length > 0 && 
+        !selectedContainerTypes.some(type => type._id === activity.containerId?.containerTypeId?._id)) {
+      return false;
+    }
+    
+    if (selectedRestaurants.length > 0 && 
+        !selectedRestaurants.some(rest => rest._id === activity.restaurantId?._id)) {
+      return false;
+    }
+    
+    return true;
+  });
+}, [selectedActivityTypes, selectedContainerTypes, selectedRestaurants]);
 
   const fetchReportData = useCallback(async () => {
     try {
@@ -147,21 +159,24 @@ const ReportsScreen = ({ navigation, route }) => {
       
       // Filter activities by time frame
       const now = new Date();
+
       let timeFrameFilteredActivities = filteredActivities.filter(activity => {
-        const activityDate = new Date(activity.createdAt);
-        
-        if (timeFrame === 'week') {
-          const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-          return activityDate >= weekStart;
-        } else if (timeFrame === 'month') {
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          return activityDate >= monthStart;
-        } else if (timeFrame === 'year') {
-          const yearStart = new Date(now.getFullYear(), 0, 1);
-          return activityDate >= yearStart;
-        }
-        return true;
-      });
+  const activityDate = new Date(activity.createdAt);
+  
+  if (timeFrame === 'week') {
+    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+    return activityDate >= weekStart;
+  } else if (timeFrame === 'month') {
+    // For monthly view, include the last 12 months of data
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    return activityDate >= monthStart;
+  } else if (timeFrame === 'year') {
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    return activityDate >= yearStart;
+  }
+  return true;
+});
+
       
       if (activeReport === 'activity') {
         const groupedByDay = groupActivitiesByTimeFrame(timeFrameFilteredActivities, timeFrame);
@@ -197,8 +212,8 @@ const ReportsScreen = ({ navigation, route }) => {
       setError('Failed to load report data. Please try again.');
       setLoading(false);
     }
-  }, [activeReport, timeFrame, user, selectedActivityType, 
-      selectedContainerType, selectedRestaurant, restaurants.length, containerTypes.length]);
+  }, [activeReport, timeFrame, user, selectedActivityTypes, 
+      selectedContainerTypes, selectedRestaurants, restaurants.length, containerTypes.length]);
 
   const fetchRestaurants = async () => {
     try {
@@ -247,55 +262,61 @@ const ReportsScreen = ({ navigation, route }) => {
     }
   };
 
-  const groupActivitiesByTimeFrame = (activities, timeFrame) => {
-    const grouped = {};
-    
-    activities.forEach(activity => {
-      const date = new Date(activity.createdAt);
-      let key;
-      
-      if (timeFrame === 'week') {
-        key = date.toLocaleDateString('en-US', { weekday: 'short' });
-      } else if (timeFrame === 'month') {
-        key = date.toLocaleDateString('en-US', { month: 'short' });
-      } else if (timeFrame === 'year') {
-        key = date.getFullYear().toString();
-      }
-      
-      if (!grouped[key]) {
-        grouped[key] = 0;
-      }
-      
-      grouped[key] += 1;
-    });
-    
-    return grouped;
-  };
+ const groupActivitiesByTimeFrame = (activities, timeFrame) => {
+  const grouped = {};
   
-  const groupRebatesByTimeFrame = (activities, timeFrame) => {
-    const grouped = {};
+  activities.forEach(activity => {
+    const date = new Date(activity.createdAt);
+    let key;
     
-    activities.forEach(activity => {
-      const date = new Date(activity.createdAt);
-      let key;
-      
-      if (timeFrame === 'week') {
-        key = date.toLocaleDateString('en-US', { weekday: 'short' });
-      } else if (timeFrame === 'month') {
-        key = date.toLocaleDateString('en-US', { month: 'short' });
-      } else if (timeFrame === 'year') {
-        key = date.getFullYear().toString();
-      }
-      
-      if (!grouped[key]) {
-        grouped[key] = 0;
-      }
-      
-      grouped[key] += (activity.amount || 0);
-    });
+    if (timeFrame === 'week') {
+      key = date.toLocaleDateString('en-US', { weekday: 'short' });
+    } else if (timeFrame === 'month') {
+      // For monthly view, use YYYY-MM format to distinguish between same month in different years
+      const year = date.getFullYear();
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      key = `${month} ${year}`;
+    } else if (timeFrame === 'year') {
+      key = date.getFullYear().toString();
+    }
     
-    return grouped;
-  };
+    if (!grouped[key]) {
+      grouped[key] = 0;
+    }
+    
+    grouped[key] += 1;
+  });
+  
+  return grouped;
+};
+  
+const groupRebatesByTimeFrame = (activities, timeFrame) => {
+  const grouped = {};
+  
+  activities.forEach(activity => {
+    const date = new Date(activity.createdAt);
+    let key;
+    
+    if (timeFrame === 'week') {
+      key = date.toLocaleDateString('en-US', { weekday: 'short' });
+    } else if (timeFrame === 'month') {
+      // For monthly view, use YYYY-MM format to distinguish between same month in different years
+      const year = date.getFullYear();
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      key = `${month} ${year}`;
+    } else if (timeFrame === 'year') {
+      key = date.getFullYear().toString();
+    }
+    
+    if (!grouped[key]) {
+      grouped[key] = 0;
+    }
+    
+    grouped[key] += (activity.amount || 0);
+  });
+  
+  return grouped;
+};
   
   const groupByContainerType = (activities) => {
     const grouped = {};
@@ -320,43 +341,48 @@ const ReportsScreen = ({ navigation, route }) => {
     return grouped;
   };
 
-  const formatChartData = (groupedData, legend, timeFrame) => {
-    let labels = [];
-    let data = [];
+const formatChartData = (groupedData, legend, timeFrame) => {
+  let labels = [];
+  let data = [];
+  
+  if (timeFrame === 'week') {
+    // Weekly logic stays the same
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    days.forEach(day => {
+      labels.push(day);
+      data.push(groupedData[day] || 0);
+    });
+  } else if (timeFrame === 'month') {
+    // Show all months of current year
+    const currentYear = new Date().getFullYear();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
-    if (timeFrame === 'week') {
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      days.forEach(day => {
-        labels.push(day);
-        data.push(groupedData[day] || 0);
-      });
-    } else if (timeFrame === 'month') {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      months.forEach(month => {
-        labels.push(month);
-        data.push(groupedData[month] || 0);
-      });
-    } else if (timeFrame === 'year') {
-      const years = Object.keys(groupedData)
-        .map(year => parseInt(year))
-        .sort((a, b) => a - b);
-      
-      years.forEach(year => {
-        labels.push(year.toString());
-        data.push(groupedData[year.toString()]);
-      });
-    }
+    months.forEach(month => {
+      const monthYearKey = `${month} ${currentYear}`;
+      labels.push(month);
+      data.push(groupedData[monthYearKey] || 0);
+    });
+  } else if (timeFrame === 'year') {
+    // Year logic stays the same
+    const years = Object.keys(groupedData)
+      .map(year => parseInt(year))
+      .sort((a, b) => a - b);
     
-    return {
-      labels,
-      datasets: [{
-        data,
-        color: () => theme.primary,
-      }],
-      legend: [legend]
-    };
+    years.forEach(year => {
+      labels.push(year.toString());
+      data.push(groupedData[year.toString()]);
+    });
+  }
+  
+  return {
+    labels,
+    datasets: [{
+      data,
+      color: () => theme.primary,
+    }],
+    legend: [legend]
   };
+};
   
   const formatBarChartData = (groupedData, legend) => {
     const labels = Object.keys(groupedData);
@@ -383,31 +409,33 @@ const ReportsScreen = ({ navigation, route }) => {
     fetchReportData().then(() => setRefreshing(false));
   }, [fetchReportData]);
 
-  const resetFilters = () => {
-    setSelectedActivityType(null);
-    setSelectedRestaurant(null);
-    setSelectedContainerType(null);
-  };
+const resetFilters = () => {
+  setSelectedActivityTypes([]);
+  setSelectedRestaurants([]);
+  setSelectedContainerTypes([]);
+};
 
   const applyFilters = () => {
     fetchReportData();
     setShowFilters(false);
   };
 
-  const renderFilterBadges = () => {
-    const badges = [];
-    
-    if (selectedActivityType) {
+const renderFilterBadges = () => {
+  const badges = [];
+  
+  selectedActivityTypes.forEach(typeId => {
+    const type = activityTypes.find(t => t.id === typeId);
+    if (type) {
       badges.push(
         <TouchableOpacity 
-          key="type" 
+          key={`type-${typeId}`} 
           style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
         >
           <MediumText style={{ color: theme.primary, fontSize: 12 }}>
-            {activityTypes.find(t => t.id === selectedActivityType)?.name}
+            {type.name}
           </MediumText>
           <TouchableOpacity 
-            onPress={() => setSelectedActivityType(null)}
+            onPress={() => setSelectedActivityTypes(prev => prev.filter(id => id !== typeId))}
             style={{ marginLeft: 4 }}
           >
             <Ionicons name="close-circle" size={14} color={theme.primary} />
@@ -415,47 +443,48 @@ const ReportsScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       );
     }
-    
-    if (selectedRestaurant) {
-      badges.push(
+  });
+  
+  selectedRestaurants.forEach(restaurant => {
+    badges.push(
+      <TouchableOpacity 
+        key={`rest-${restaurant._id}`} 
+        style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+      >
+        <MediumText style={{ color: theme.primary, fontSize: 12 }}>
+          {restaurant.name}
+        </MediumText>
         <TouchableOpacity 
-          key="restaurant" 
-          style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+          onPress={() => setSelectedRestaurants(prev => prev.filter(r => r._id !== restaurant._id))}
+          style={{ marginLeft: 4 }}
         >
-          <MediumText style={{ color: theme.primary, fontSize: 12 }}>
-            {selectedRestaurant.name}
-          </MediumText>
-          <TouchableOpacity 
-            onPress={() => setSelectedRestaurant(null)}
-            style={{ marginLeft: 4 }}
-          >
-            <Ionicons name="close-circle" size={14} color={theme.primary} />
-          </TouchableOpacity>
+          <Ionicons name="close-circle" size={14} color={theme.primary} />
         </TouchableOpacity>
-      );
-    }
-    
-    if (selectedContainerType) {
-      badges.push(
+      </TouchableOpacity>
+    );
+  });
+  
+  selectedContainerTypes.forEach(containerType => {
+    badges.push(
+      <TouchableOpacity 
+        key={`cont-${containerType._id}`} 
+        style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+      >
+        <MediumText style={{ color: theme.primary, fontSize: 12 }}>
+          {containerType.name}
+        </MediumText>
         <TouchableOpacity 
-          key="containerType" 
-          style={[styles.filterBadge, { backgroundColor: theme.primary + '20' }]}
+          onPress={() => setSelectedContainerTypes(prev => prev.filter(c => c._id !== containerType._id))}
+          style={{ marginLeft: 4 }}
         >
-          <MediumText style={{ color: theme.primary, fontSize: 12 }}>
-            {selectedContainerType.name}
-          </MediumText>
-          <TouchableOpacity 
-            onPress={() => setSelectedContainerType(null)}
-            style={{ marginLeft: 4 }}
-          >
-            <Ionicons name="close-circle" size={14} color={theme.primary} />
-          </TouchableOpacity>
+          <Ionicons name="close-circle" size={14} color={theme.primary} />
         </TouchableOpacity>
-      );
-    }
-    
-    return badges;
-  };
+      </TouchableOpacity>
+    );
+  });
+  
+  return badges;
+};
 
   const chartConfig = {
     backgroundGradientFrom: theme.background,
@@ -791,31 +820,44 @@ const ReportsScreen = ({ navigation, route }) => {
                   nestedScrollEnabled={true}
                   contentContainerStyle={styles.optionsContentContainer}
                 >
-                  {activityTypes.map(type => (
-                    <TouchableOpacity 
-                      key={type.id || 'all'}
-                      style={[
-                        styles.optionItem, 
-                        { 
-                          backgroundColor: selectedActivityType === type.id 
-                            ? theme.primary + '20' 
-                            : 'transparent' 
-                        }
-                      ]}
-                      onPress={() => setSelectedActivityType(type.id)}
-                    >
-                      <MediumText style={{ 
-                        color: selectedActivityType === type.id 
-                          ? theme.primary 
-                          : theme.text 
-                      }}>
-                        {type.name}
-                      </MediumText>
-                      {selectedActivityType === type.id && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                 {activityTypes.map(type => (
+<TouchableOpacity 
+  key={type.id || 'all'}
+  style={[
+    styles.optionItem, 
+    { 
+      backgroundColor: (type.id === null && selectedActivityTypes.length === 0) || 
+        selectedActivityTypes.includes(type.id) 
+        ? theme.primary + '20' 
+        : 'transparent' 
+    }
+  ]}
+  onPress={() => {
+    if (type.id === null) {
+      setSelectedActivityTypes([]);
+    } else {
+      setSelectedActivityTypes(prev => 
+        prev.includes(type.id) 
+          ? prev.filter(id => id !== type.id)
+          : [...prev, type.id]
+      );
+    }
+  }}
+>
+  <MediumText style={{ 
+    color: (type.id === null && selectedActivityTypes.length === 0) || 
+      selectedActivityTypes.includes(type.id) 
+      ? theme.primary 
+      : theme.text 
+  }}>
+    {type.name}
+  </MediumText>
+  {((type.id === null && selectedActivityTypes.length === 0) || 
+    selectedActivityTypes.includes(type.id)) && (
+    <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+  )}
+</TouchableOpacity>
+))}
                 </ScrollView>
               </View>
               
@@ -843,46 +885,56 @@ const ReportsScreen = ({ navigation, route }) => {
                   </View>
                   
                   <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
-                    <TouchableOpacity 
-                      style={[
-                        styles.optionItem, 
-                        { backgroundColor: !selectedRestaurant ? theme.primary + '20' : 'transparent' }
-                      ]}
-                      onPress={() => setSelectedRestaurant(null)}
-                    >
-                      <MediumText style={{ color: !selectedRestaurant ? theme.primary : theme.text }}>
-                        All Restaurants
-                      </MediumText>
-                      {!selectedRestaurant && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                      )}
-                    </TouchableOpacity>
-                    
-                    {filteredRestaurants.map(restaurant => (
-                      <TouchableOpacity 
-                        key={restaurant._id}
-                        style={[
-                          styles.optionItem, 
-                          { 
-                            backgroundColor: selectedRestaurant?._id === restaurant._id 
-                              ? theme.primary + '20' 
-                              : 'transparent' 
-                          }
-                        ]}
-                        onPress={() => setSelectedRestaurant(restaurant)}
-                      >
-                        <MediumText style={{ 
-                          color: selectedRestaurant?._id === restaurant._id 
-                            ? theme.primary 
-                            : theme.text 
-                        }}>
-                          {restaurant.name}
-                        </MediumText>
-                        {selectedRestaurant?._id === restaurant._id && (
-                          <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                        )}
-                      </TouchableOpacity>
-                    ))}
+ <TouchableOpacity 
+  style={[
+    styles.optionItem, 
+    { backgroundColor: selectedRestaurants.length === 0 ? theme.primary + '20' : 'transparent' }
+  ]} 
+  onPress={() => setSelectedRestaurants([])}
+>
+  <MediumText style={{ color: selectedRestaurants.length === 0 ? theme.primary : theme.text }}>
+    All Restaurants
+  </MediumText>
+  {selectedRestaurants.length === 0 && (
+    <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+  )}
+</TouchableOpacity>
+  
+  {filteredRestaurants.map(restaurant => (
+    <TouchableOpacity 
+      key={restaurant._id} 
+      style={[
+        styles.optionItem, 
+        { 
+          backgroundColor: selectedRestaurants && selectedRestaurants.some(r => r._id === restaurant._id) 
+            ? theme.primary + '20' 
+            : 'transparent' 
+        }
+      ]} 
+      onPress={() => {
+        if (!selectedRestaurants) {
+          setSelectedRestaurants([restaurant]);
+        } else {
+          setSelectedRestaurants(prev => 
+            prev.some(r => r._id === restaurant._id) 
+              ? prev.filter(r => r._id !== restaurant._id) 
+              : [...prev, restaurant]
+          );
+        }
+      }}
+    >
+    <MediumText style={{ 
+      color: selectedRestaurants.some(r => r._id === restaurant._id)
+        ? theme.primary 
+        : theme.text 
+    }}>
+      {restaurant.name}
+    </MediumText>
+    {selectedRestaurants.some(r => r._id === restaurant._id) && (
+      <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+    )}
+  </TouchableOpacity>
+))}
                   </ScrollView>
                 </View>
               )}
@@ -910,47 +962,57 @@ const ReportsScreen = ({ navigation, route }) => {
                 </View>
                 
                 <ScrollView style={styles.optionsList} nestedScrollEnabled={true}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.optionItem, 
-                      { backgroundColor: !selectedContainerType ? theme.primary + '20' : 'transparent' }
-                    ]}
-                    onPress={() => setSelectedContainerType(null)}
-                  >
-                    <MediumText style={{ color: !selectedContainerType ? theme.primary : theme.text }}>
-                      All Container Types
-                    </MediumText>
-                    {!selectedContainerType && (
-                      <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                    )}
-                  </TouchableOpacity>
-                  
-                  {filteredContainerTypes.map(type => (
-                    <TouchableOpacity 
-                      key={type._id}
-                      style={[
-                        styles.optionItem, 
-                        { 
-                          backgroundColor: selectedContainerType?._id === type._id 
-                            ? theme.primary + '20' 
-                            : 'transparent' 
-                        }
-                      ]}
-                      onPress={() => setSelectedContainerType(type)}
-                    >
-                      <MediumText style={{ 
-                        color: selectedContainerType?._id === type._id 
-                          ? theme.primary 
-                          : theme.text 
-                      }}>
-                        {type.name}
-                      </MediumText>
-                      {selectedContainerType?._id === type._id && (
-                        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+<TouchableOpacity 
+  style={[
+    styles.optionItem, 
+    { backgroundColor: selectedContainerTypes.length === 0 ? theme.primary + '20' : 'transparent' }
+  ]}
+  onPress={() => setSelectedContainerTypes([])}
+>
+  <MediumText style={{ color: selectedContainerTypes.length === 0 ? theme.primary : theme.text }}>
+    All Container Types
+  </MediumText>
+  {selectedContainerTypes.length === 0 && (
+    <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+  )}
+</TouchableOpacity>
+  
+  {filteredContainerTypes.map(type => (
+    <TouchableOpacity 
+      key={type._id}
+      style={[
+        styles.optionItem, 
+        { 
+          backgroundColor: selectedContainerTypes && selectedContainerTypes.some(c => c._id === type._id)
+            ? theme.primary + '20' 
+            : 'transparent' 
+        }
+      ]}
+      onPress={() => {
+        if (!selectedContainerTypes) {
+          setSelectedContainerTypes([type]);
+        } else {
+          setSelectedContainerTypes(prev => 
+            prev.some(c => c._id === type._id)
+              ? prev.filter(c => c._id !== type._id)
+              : [...prev, type]
+          );
+        }
+      }}
+    >
+      <MediumText style={{ 
+        color: selectedContainerTypes && selectedContainerTypes.some(c => c._id === type._id)
+          ? theme.primary 
+          : theme.text 
+      }}>
+        {type.name}
+      </MediumText>
+      {selectedContainerTypes && selectedContainerTypes.some(c => c._id === type._id) && (
+        <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+      )}
+    </TouchableOpacity>
+  ))}
+</ScrollView>
               </View>
             </ScrollView>
             

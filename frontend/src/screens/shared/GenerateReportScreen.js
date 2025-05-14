@@ -39,6 +39,8 @@ const GenerateReportScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const isAdmin = user?.userType === 'admin';
+  const isStaff = user?.userType === 'staff';
+  const staffRestaurantId = user?.restaurantId;
   
   // State variables
   const [loading, setLoading] = useState(false);
@@ -184,7 +186,14 @@ const generatePdfReport = async () => {
     let restaurantName = "All Restaurants";
     let restaurantLogo = null;
     
-    if (selectedRestaurants.length === 1) {
+ if (isStaff && restaurants.length === 1) {
+      restaurantName = restaurants[0].name;
+      if (restaurants[0].logo) {
+        restaurantLogo = await processRestaurantLogo(restaurants[0].logo);
+      }
+    }
+    // For admins, use the selected restaurants
+    else if (selectedRestaurants.length === 1) {
       restaurantName = selectedRestaurants[0].name;
       if (selectedRestaurants[0].logo) {
         restaurantLogo = await processRestaurantLogo(selectedRestaurants[0].logo);
@@ -201,6 +210,7 @@ const generatePdfReport = async () => {
     } else if (selectedRestaurants.length > 5) {
       restaurantName = `${selectedRestaurants.length} Selected Restaurants`;
     }
+    
     
     // Format date period text
     let datePeriodText = '';
@@ -647,31 +657,55 @@ const requestStoragePermissions = async () => {
     loadInitialData();
   }, []);
 
-  const loadInitialData = async () => {
-    setLoading(true);
-    try {
-      // Load filter data
-      if (isAdmin) {
-        await fetchRestaurants();
-        await fetchUsers();
-      }
-      
-      await fetchContainerTypes();
-      
-      // Set default filters before loading data
-      setSelectedActivityType(activityTypes[0]); // "All Types"
-      setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
-      setEndDate(new Date());
-      
-      // Load report data with default filters
-      await fetchReportData();
-    } catch (error) {
-      console.error('Error loading initial data:', error);
-      Alert.alert('Error', 'Failed to load initial data. Please try again.');
-    } finally {
-      setLoading(false);
+const loadInitialData = async () => {
+  setLoading(true);
+  try {
+    // Load filter data
+    if (isAdmin) {
+      await fetchRestaurants();
+      await fetchUsers();
+    } else if (isStaff && staffRestaurantId) {
+      // For staff, fetch only their restaurant
+      await fetchStaffRestaurant();
     }
-  };
+    
+    await fetchContainerTypes();
+    
+    // Set default filters before loading data
+    setSelectedActivityType(activityTypes[0]); // "All Types"
+    setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
+    setEndDate(new Date());
+    
+    // Load report data with default filters
+    await fetchReportData();
+  } catch (error) {
+    console.error('Error loading initial data:', error);
+    Alert.alert('Error', 'Failed to load initial data. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const fetchStaffRestaurant = async () => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    
+    // Fetch the specific restaurant for this staff member
+    const response = await axios.get(getApiUrl(`/restaurants/${staffRestaurantId}`), {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data) {
+      // Set the restaurant in the restaurants state
+      setRestaurants([response.data]);
+      // Also automatically select it
+      setSelectedRestaurants([response.data]);
+    }
+  } catch (error) {
+    console.error('Error fetching staff restaurant:', error);
+  }
+};
+
   useEffect(() => {
     // Don't fetch on initial render (loadInitialData handles that)
     if (startDate && endDate) {
@@ -749,87 +783,92 @@ const requestStoragePermissions = async () => {
     }
   };
   
-  const fetchReportData = async () => {
-    setLoading(true);
-    try {
-      // Create UTC date objects to match MongoDB storage format
-      const startUTC = new Date(Date.UTC(
-        startDate.getFullYear(),
-        startDate.getMonth(),
-        startDate.getDate(),
-        0, 0, 0, 0
-      ));
-      
-      const endUTC = new Date(Date.UTC(
-        endDate.getFullYear(),
-        endDate.getMonth(),
-        endDate.getDate(),
-        23, 59, 59, 999
-      ));
-  
-      const params = new URLSearchParams();
-      params.append('startDate', startUTC.toISOString());
-      params.append('endDate', endUTC.toISOString());
-      
-      console.log('Date range in UTC:', {
-        start: startUTC.toISOString(),
-        end: endUTC.toISOString(),
-        startOriginal: startDate.toISOString(),
-        endOriginal: endDate.toISOString()
-      });
-      
-      // Rest of your parameters...
-      if (selectedActivityType && selectedActivityType.id !== 'all') {
-        params.append('type', selectedActivityType.id);
-      }
-      
-      if (selectedRestaurants.length > 0) {
-        selectedRestaurants.forEach(restaurant => {
-          params.append('restaurantIds[]', restaurant._id);
-        });
-      }
-      
-      if (selectedCustomers.length > 0) {
-        selectedCustomers.forEach(customer => {
-          params.append('userIds[]', customer._id);
-        });
-      }
-      
-      if (selectedContainerTypes.length > 0) {
-        selectedContainerTypes.forEach(type => {
-          params.append('containerTypeIds[]', type._id);
-        });
-      }
-      
-      // API call
-      const token = await AsyncStorage.getItem('aqro_token');
-      const response = await axios.get(
-        getApiUrl('/activities/reports/filtered') + '?' + params.toString(),
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          } 
-        }
-      );
-      
-      setActivities(response.data.activities);
-      setTotalTransactions(response.data.totalActivities);
-      
-      if (selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) {
-        const rebateTotal = response.data.activities
-          .filter(activity => activity.type === 'rebate')
-          .reduce((sum, activity) => sum + (activity.amount || 0), 0);
-        setTotalRebateAmount(rebateTotal);
-      } else {
-        setTotalRebateAmount(0);
-      }
-    } catch (error) {
-      console.error('Error fetching report data:', error);
-      Alert.alert('Error', 'Failed to load report data. Please try again.');
-    } finally {
-      setLoading(false);
+const fetchReportData = async () => {
+  setLoading(true);
+  try {
+    // Create UTC date objects to match MongoDB storage format
+    const startUTC = new Date(Date.UTC(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate(),
+      0, 0, 0, 0
+    ));
+    
+    const endUTC = new Date(Date.UTC(
+      endDate.getFullYear(),
+      endDate.getMonth(),
+      endDate.getDate(),
+      23, 59, 59, 999
+    ));
+
+    const params = new URLSearchParams();
+    params.append('startDate', startUTC.toISOString());
+    params.append('endDate', endUTC.toISOString());
+    
+    console.log('Date range in UTC:', {
+      start: startUTC.toISOString(),
+      end: endUTC.toISOString(),
+      startOriginal: startDate.toISOString(),
+      endOriginal: endDate.toISOString()
+    });
+    
+    // Rest of your parameters...
+    if (selectedActivityType && selectedActivityType.id !== 'all') {
+      params.append('type', selectedActivityType.id);
     }
-  };
+    
+    // For staff users, always use their restaurant ID regardless of selections
+    if (isStaff && staffRestaurantId) {
+      params.append('restaurantIds[]', staffRestaurantId);
+    } 
+    // For admins, use selected restaurants
+    else if (selectedRestaurants.length > 0) {
+      selectedRestaurants.forEach(restaurant => {
+        params.append('restaurantIds[]', restaurant._id);
+      });
+    }
+    
+    if (selectedCustomers.length > 0) {
+      selectedCustomers.forEach(customer => {
+        params.append('userIds[]', customer._id);
+      });
+    }
+    
+    if (selectedContainerTypes.length > 0) {
+      selectedContainerTypes.forEach(type => {
+        params.append('containerTypeIds[]', type._id);
+      });
+    }
+    
+    // API call
+    const token = await AsyncStorage.getItem('aqro_token');
+    const response = await axios.get(
+      getApiUrl('/activities/reports/filtered') + '?' + params.toString(),
+      { 
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        } 
+      }
+    );
+    
+    setActivities(response.data.activities);
+    setTotalTransactions(response.data.totalActivities);
+    
+    if (selectedActivityType?.id === 'rebate' || selectedActivityType?.id === 'all' || !selectedActivityType) {
+      const rebateTotal = response.data.activities
+        .filter(activity => activity.type === 'rebate')
+        .reduce((sum, activity) => sum + (activity.amount || 0), 0);
+      setTotalRebateAmount(rebateTotal);
+    } else {
+      setTotalRebateAmount(0);
+    }
+  } catch (error) {
+    console.error('Error fetching report data:', error);
+    Alert.alert('Error', 'Failed to load report data. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDateChange = (event, selectedDate, dateType) => {
     if (Platform.OS === 'android') {
@@ -1062,7 +1101,7 @@ const requestStoragePermissions = async () => {
   };
   
 
-  const renderFilterBadges = () => {
+const renderFilterBadges = () => {
     const badges = [];
     
     if (selectedActivityType && selectedActivityType.id !== 'all') {
@@ -1082,7 +1121,8 @@ const requestStoragePermissions = async () => {
       );
     }
     
-    if (selectedRestaurants.length > 0) {
+    // Only show restaurant badges for admin users
+    if (!isStaff && selectedRestaurants.length > 0) {
       selectedRestaurants.forEach((restaurant, index) => {
         badges.push(
           <TouchableOpacity 

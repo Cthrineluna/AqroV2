@@ -30,7 +30,6 @@ exports.sendVerificationEmail = async (user, verificationToken) => {
           <p>Thank you for registering with AQRO! To complete your registration, please verify your email address.</p>
           <p>Your verification code is: <strong style="font-size: 18px;">${verificationToken}</strong></p>
           <p>This code will expire in 1 hour.</p>
-          <p>Alternatively, you can click the button below to verify directly:</p>
           <p>If you didn't register for an AQRO account, please ignore this email.</p>
           <p>Best regards,<br>The AQRO Team</p>
         </div>
