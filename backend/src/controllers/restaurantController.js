@@ -1,4 +1,6 @@
 const Restaurant = require('../models/Restaurant');
+const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
+const ContainerType = require('../models/ContainerType');
 const User = require('../models/Users');
 
 // Get all restaurants
@@ -85,6 +87,19 @@ exports.createRestaurant = async (req, res) => {
     }
 
     const restaurant = await newRestaurant.save();
+
+    const containerTypes = await ContainerType.find({ isActive: true });
+
+    const rebatePromises = containerTypes.map(containerType => {
+      return RestaurantContainerRebate.create({
+        restaurantId: restaurant._id,
+        containerTypeId: containerType._id,
+        rebateValue: 1 // Default rebate value
+      });
+    });
+
+    await Promise.all(rebatePromises);
+
     res.status(201).json(restaurant);
   } catch (error) {
     console.error('Error creating restaurant:', error);

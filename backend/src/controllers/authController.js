@@ -3,6 +3,8 @@ const Restaurant = require('../models/Restaurant');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
+const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
+const ContainerType = require('../models/ContainerType');
 
 const calculateLockoutDuration = (attempts) => {
   // Progressive lockout durations in milliseconds
@@ -447,6 +449,17 @@ exports.registerStaff = async (req, res, next) => {
 
     await restaurant.save();
 
+    // Create rebate records for all container types
+    const containerTypes = await ContainerType.find({ isActive: true });
+    const rebatePromises = containerTypes.map(containerType => {
+      return RestaurantContainerRebate.create({
+        restaurantId: restaurant._id,
+        containerTypeId: containerType._id,
+        rebateValue: 1 // Default rebate value
+      });
+    });
+    await Promise.all(rebatePromises);
+
     // Create staff user (initially inactive)
     const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     user = new User({
@@ -486,7 +499,12 @@ exports.registerStaff = async (req, res, next) => {
 
     // Cleanup any created documents if error occurred
     try {
-      if (restaurant) await Restaurant.deleteOne({ _id: restaurant._id });
+      if (restaurant) {
+        // Delete any created rebate records
+        await RestaurantContainerRebate.deleteMany({ restaurantId: restaurant._id });
+        // Delete the restaurant
+        await Restaurant.deleteOne({ _id: restaurant._id });
+      }
       if (user) await User.deleteOne({ _id: user._id });
     } catch (cleanupError) {
       console.error('Cleanup error:', cleanupError);
