@@ -55,26 +55,23 @@ const ReportsScreen = ({ navigation, route }) => {
 const [selectedActivityTypes, setSelectedActivityTypes] = useState([]);
 const [selectedRestaurants, setSelectedRestaurants] = useState([]);
 const [selectedContainerTypes, setSelectedContainerTypes] = useState([]);
-
   
   // Data for filters
-const [restaurants, setRestaurants] = useState([]);
-const [containerTypes, setContainerTypes] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
+  const [containerTypes, setContainerTypes] = useState([]);
   
   // Search queries
-const [restaurantSearchQuery, setRestaurantSearchQuery] = useState('');
-const [containerTypeSearchQuery, setContainerTypeSearchQuery] = useState('');
+  const [restaurantSearchQuery, setRestaurantSearchQuery] = useState('');
+  const [containerTypeSearchQuery, setContainerTypeSearchQuery] = useState('');
 
   // Filtered data
-const filteredRestaurants = restaurants.filter(restaurant => 
+  const filteredRestaurants = restaurants.filter(restaurant => 
     restaurant.name.toLowerCase().includes(restaurantSearchQuery.toLowerCase())
   );
   
-const filteredContainerTypes = containerTypes.filter(type => 
+  const filteredContainerTypes = containerTypes.filter(type => 
     type.name.toLowerCase().includes(containerTypeSearchQuery.toLowerCase())
   );
-
-
 
   // Activity types
   const activityTypes = [
@@ -87,12 +84,10 @@ const filteredContainerTypes = containerTypes.filter(type =>
 
   const screenWidth = Dimensions.get('window').width - 32;
 
-  
   useEffect(() => {
     if (Platform.OS === 'android') {
       NavigationBar.setBackgroundColorAsync(theme.background);
       NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark');
-      StatusBar.setBackgroundColor(theme.background);
     }
   }, [theme, isDark]);
 
@@ -118,103 +113,126 @@ const getFilteredActivities = useCallback((activities) => {
   });
 }, [selectedActivityTypes, selectedContainerTypes, selectedRestaurants]);
 
-  const fetchReportData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+ const fetchReportData = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-      if (!user) {
-        console.log('No user found, skipping report loading');
-        setLoading(false);
-        return; 
-      }
+    if (!user) {
+      console.log('No user found, skipping report loading');
+      setLoading(false);
+      return; 
+    }
 
-      const token = await AsyncStorage.getItem('aqro_token');
-      if (!token) {
-        console.log('No authentication token found, user may have logged out');
-        setLoading(false);
-        return;
-      }
-      
-      // Load filter data if admin
-      if (user?.userType === 'admin' && restaurants.length === 0) {
-        await fetchRestaurants();
-      }
-      
-      if (containerTypes.length === 0) {
-        await fetchContainerTypes();
-      }
-      
-      let activitiesResponse;
-      if (user?.userType === 'admin') {
-        activitiesResponse = await getAllActivitiesAdmin(1, 1000);
-      } else if (user?.userType === 'staff') {
-        activitiesResponse = await getRestaurantActivities(1, 1000);
-      } else {
-        activitiesResponse = await getAllActivities(1, 1000);
-      }
-      
-      const activities = activitiesResponse?.activities || [];
-      const filteredActivities = getFilteredActivities(activities);
-      
-      // Filter activities by time frame
-      const now = new Date();
+    const token = await AsyncStorage.getItem('aqro_token');
+    if (!token) {
+      console.log('No authentication token found, user may have logged out');
+      setLoading(false);
+      return;
+    }
+    
+    // Load filter data if admin
+    if (user?.userType === 'admin' && restaurants.length === 0) {
+      await fetchRestaurants();
+    }
+    
+    if (containerTypes.length === 0) {
+      await fetchContainerTypes();
+    }
+    
+    let activitiesResponse;
+    if (user?.userType === 'admin') {
+      activitiesResponse = await getAllActivitiesAdmin(1, 1000);
+    } else if (user?.userType === 'staff') {
+      activitiesResponse = await getRestaurantActivities(1, 1000);
+    } else {
+      activitiesResponse = await getAllActivities(1, 1000);
+    }
+    
+    const activities = activitiesResponse?.activities || [];
+    const filteredActivities = getFilteredActivities(activities);
+    
+    // Filter activities by time frame
+    const now = new Date();
 
-      let timeFrameFilteredActivities = filteredActivities.filter(activity => {
-     const activityDate = new Date(activity.createdAt);
-  
-      if (timeFrame === 'week') {
-        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+    // This will store two sets of filtered activities - one for the chart and one for the summary cards
+    let timeFrameFilteredActivities; // For summary cards
+    let chartFilteredActivities; // For the chart display
+
+    // Filter for different time frames
+    if (timeFrame === 'week') {
+      const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+      timeFrameFilteredActivities = filteredActivities.filter(activity => {
+        const activityDate = new Date(activity.createdAt);
         return activityDate >= weekStart;
-      } else if (timeFrame === 'month') {
-        // CHANGE THIS PART - Instead of showing last 12 months, show just current month
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
+      });
+      chartFilteredActivities = timeFrameFilteredActivities; // Same for week view
+    } else if (timeFrame === 'month') {
+      // For summary cards - only current month
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      timeFrameFilteredActivities = filteredActivities.filter(activity => {
+        const activityDate = new Date(activity.createdAt);
         return activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear;
-      } else if (timeFrame === 'year') {
-        const yearStart = new Date(now.getFullYear(), 0, 1);
-        return activityDate >= yearStart;
-      }
-      return true;
-    });
-
-      
-      if (activeReport === 'activity') {
-        const groupedByDay = groupActivitiesByTimeFrame(timeFrameFilteredActivities, timeFrame);
-        setReportData(formatChartData(groupedByDay, 'Activity Count', timeFrame));
-      } else if (activeReport === 'rebate') {
-        const rebateActivities = timeFrameFilteredActivities.filter(a => a.type === 'rebate');
-        const groupedRebates = groupRebatesByTimeFrame(rebateActivities, timeFrame);
-        setReportData(formatChartData(groupedRebates, 'Rebate Amount (₱)', timeFrame));
-      } else if (activeReport === 'container') {
-        const groupedByType = groupByContainerType(timeFrameFilteredActivities);
-        setReportData(formatBarChartData(groupedByType, 'Container Usage'));
-      }
-      
-      const totalActivities = timeFrameFilteredActivities.length;
-      const rebateActivities = timeFrameFilteredActivities.filter(a => a.type === 'rebate');
-      const totalRebates = rebateActivities ? rebateActivities.reduce((sum, activity) => sum + (activity.amount || 0), 0) : 0;
-      const distinctContainers = new Set(timeFrameFilteredActivities.map(a => a.containerId?._id.toString()));
-      const activeContainers = distinctContainers.size;
-      const registrations = timeFrameFilteredActivities.filter(a => a.type === 'registration').length;
-      const returns = timeFrameFilteredActivities.filter(a => a.type === 'return').length;
-      const returnRate = registrations > 0 ? Math.round((returns / registrations) * 100) : 0;
-      
-      setSummaryData({
-        totalActivities,
-        totalRebates: totalRebates.toFixed(2),
-        activeContainers,
-        returnRate
       });
       
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching report data:', err);
-      setError('Failed to load report data. Please try again.');
-      setLoading(false);
+      // For chart - include the last 12 months of data
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+      chartFilteredActivities = filteredActivities.filter(activity => {
+        const activityDate = new Date(activity.createdAt);
+        return activityDate >= monthStart;
+      });
+    } else if (timeFrame === 'year') {
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+      timeFrameFilteredActivities = filteredActivities.filter(activity => {
+        const activityDate = new Date(activity.createdAt);
+        return activityDate >= yearStart;
+      });
+      chartFilteredActivities = timeFrameFilteredActivities; // Same for year view
+    } else {
+      // Default fallback
+      timeFrameFilteredActivities = filteredActivities;
+      chartFilteredActivities = filteredActivities;
     }
-  }, [activeReport, timeFrame, user, selectedActivityTypes, 
-      selectedContainerTypes, selectedRestaurants, restaurants.length, containerTypes.length]);
+    
+    // Use chartFilteredActivities for chart data
+    if (activeReport === 'activity') {
+      const groupedByDay = groupActivitiesByTimeFrame(chartFilteredActivities, timeFrame);
+      setReportData(formatChartData(groupedByDay, 'Activity Count', timeFrame));
+    } else if (activeReport === 'rebate') {
+      const rebateActivities = chartFilteredActivities.filter(a => a.type === 'rebate');
+      const groupedRebates = groupRebatesByTimeFrame(rebateActivities, timeFrame);
+      setReportData(formatChartData(groupedRebates, 'Rebate Amount (₱)', timeFrame));
+    } else if (activeReport === 'container') {
+      const groupedByType = groupByContainerType(chartFilteredActivities);
+      setReportData(formatBarChartData(groupedByType, 'Container Usage'));
+    }
+    
+    // Use timeFrameFilteredActivities for summary data
+    const totalActivities = timeFrameFilteredActivities.length;
+    const rebateActivities = timeFrameFilteredActivities.filter(a => a.type === 'rebate');
+    const totalRebates = rebateActivities ? rebateActivities.reduce((sum, activity) => sum + (activity.amount || 0), 0) : 0;
+    const distinctContainers = new Set(timeFrameFilteredActivities.map(a => a.containerId?._id.toString()));
+    const activeContainers = distinctContainers.size;
+    const registrations = timeFrameFilteredActivities.filter(a => a.type === 'registration').length;
+    const returns = timeFrameFilteredActivities.filter(a => a.type === 'return').length;
+    const returnRate = registrations > 0 ? Math.round((returns / registrations) * 100) : 0;
+    
+    setSummaryData({
+      totalActivities,
+      totalRebates: totalRebates.toFixed(2),
+      activeContainers,
+      returnRate
+    });
+    
+    setLoading(false);
+  } catch (err) {
+    console.error('Error fetching report data:', err);
+    setError('Failed to load report data. Please try again.');
+    setLoading(false);
+  }
+}, [activeReport, timeFrame, user, selectedActivityTypes, 
+    selectedContainerTypes, selectedRestaurants, restaurants.length, containerTypes.length]);
 
   const fetchRestaurants = async () => {
     try {
@@ -342,19 +360,9 @@ const groupRebatesByTimeFrame = (activities, timeFrame) => {
     return grouped;
   };
 
-  
 const formatChartData = (groupedData, legend, timeFrame) => {
   let labels = [];
   let data = [];
-
- if (!groupedData || typeof groupedData !== 'object') {
-    console.warn('Invalid groupedData:', groupedData);
-    return {
-      labels: [],
-      datasets: [{ data: [] }],
-      legend: [legend]
-    };
-  }
   
   if (timeFrame === 'week') {
     // Weekly logic stays the same
@@ -364,15 +372,15 @@ const formatChartData = (groupedData, legend, timeFrame) => {
       data.push(groupedData[day] || 0);
     });
   } else if (timeFrame === 'month') {
-  // We still want to show all 12 months for the chart view
-  const currentYear = new Date().getFullYear();
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  months.forEach(month => {
-    const monthYearKey = `${month} ${currentYear}`;
-    labels.push(month);
-    data.push(groupedData[monthYearKey] || 0);
-  });
+    // Show all months of current year
+    const currentYear = new Date().getFullYear();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    months.forEach(month => {
+      const monthYearKey = `${month} ${currentYear}`;
+      labels.push(month);
+      data.push(groupedData[monthYearKey] || 0);
+    });
   } else if (timeFrame === 'year') {
     // Year logic stays the same
     const years = Object.keys(groupedData)
@@ -398,15 +406,6 @@ const formatChartData = (groupedData, legend, timeFrame) => {
   const formatBarChartData = (groupedData, legend) => {
     const labels = Object.keys(groupedData);
     const data = labels.map(label => groupedData[label]);
-
-     if (!groupedData || typeof groupedData !== 'object') {
-    console.warn('Invalid groupedData in bar chart:', groupedData);
-    return {
-      labels: [],
-      datasets: [{ data: [] }],
-      legend: [legend]
-    };
-  }
     
     return {
       labels,
@@ -439,11 +438,6 @@ const resetFilters = () => {
     fetchReportData();
     setShowFilters(false);
   };
-
-  const handleReportChange = (reportType) => {
-  setLoading(true);
-  setActiveReport(reportType);
-};
 
 const renderFilterBadges = () => {
   const badges = [];
@@ -527,55 +521,35 @@ const renderFilterBadges = () => {
     },
   };
 
-const renderChart = () => {
-  const chartWidth = screenWidth - 32;
-
-  // Check for missing or empty data
-  if (
-    !reportData ||
-    !Array.isArray(reportData.labels) ||
-    reportData.labels.length === 0 ||
-    !reportData.datasets ||
-    !Array.isArray(reportData.datasets[0]?.data) ||
-    reportData.datasets[0].data.length === 0
-  ) {
+  const renderChart = () => {
+    if (!reportData) return null;
+    const chartWidth = screenWidth - 32;
+    if (activeReport === 'container') {
+      return (
+        <BarChart
+          data={reportData}
+          width={chartWidth}
+          height={220}
+          chartConfig={chartConfig}
+          style={styles.chart}
+          verticalLabelRotation={0}
+          fromZero
+          showValuesOnTopOfBars
+        />
+      );
+    }
+    
     return (
-      <View style={styles.loadingContainer}>
-        <RegularText style={{ color: theme.text }}>
-          No data available for the selected filters
-        </RegularText>
-      </View>
-    );
-  }
-
-  // Render appropriate chart
-  if (activeReport === 'container') {
-    return (
-      <BarChart
+      <LineChart
         data={reportData}
         width={chartWidth}
         height={220}
         chartConfig={chartConfig}
+        bezier
         style={styles.chart}
-        verticalLabelRotation={0}
-        fromZero
-        showValuesOnTopOfBars
       />
     );
-  }
-
-  return (
-    <LineChart
-      data={reportData}
-      width={chartWidth}
-      height={220}
-      chartConfig={chartConfig}
-      bezier
-      style={styles.chart}
-    />
-  );
-};
-
+  };
 
   const ReportFilter = ({ title, active, onPress }) => (
     <TouchableOpacity
@@ -748,17 +722,17 @@ const renderChart = () => {
           <ReportFilter
             title="Activity"
             active={activeReport === 'activity'}
-            onPress={() => handleReportChange('activity')}
+            onPress={() => setActiveReport('activity')}
           />
           <ReportFilter
             title="Rebates"
             active={activeReport === 'rebate'}
-            onPress={() => handleReportChange('rebate')}
+            onPress={() => setActiveReport('rebate')}
           />
           <ReportFilter
             title="Containers"
             active={activeReport === 'container'}
-            onPress={() => handleReportChange('container')}
+            onPress={() => setActiveReport('container')}
           />
         </View>
         
