@@ -60,7 +60,7 @@ const RebateSection = ({ container, theme }) => {
   
   const animatedHeight = React.useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
+useEffect(() => {
     const fetchRestaurantRebates = async () => {
       if (!container || !container.containerTypeId) {
         console.error('Container or Container Type is missing');
@@ -86,10 +86,12 @@ const RebateSection = ({ container, theme }) => {
         );
     
         if (response.data && response.data.length > 0) {
-          const rebatesWithNames = response.data.map(mapping => ({
-            restaurantName: mapping.restaurantId.name,
-            rebateValue: mapping.rebateValue
-          }));
+          const rebatesWithNames = response.data
+            .filter(mapping => mapping.restaurantId) // Filter out null restaurantIds
+            .map(mapping => ({
+              restaurantName: mapping.restaurantId?.name || 'Unknown Restaurant',
+              rebateValue: mapping.rebateValue
+            }));
     
           setRestaurantRebates(rebatesWithNames);
         }
