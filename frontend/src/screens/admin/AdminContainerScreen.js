@@ -801,12 +801,13 @@ const FilterModal = ({ visible, onClose, restaurants, containerTypes, selectedRe
   );
 };
 
-const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, containerTypes, theme }) => {
+const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, containerTypes, theme  }) => {
     const [status, setStatus] = useState(container?.status || 'available');
     const [selectedRestaurant, setSelectedRestaurant] = useState(container?.restaurantId || null);
     const [selectedContainerType, setSelectedContainerType] = useState(container?.containerTypeId || null);
     const [selectedUser, setSelectedUser] = useState(container?.customerId || null);
     const [usesCount, setUsesCount] = useState(container?.usesCount || 0);
+    const [quantity, setQuantity] = useState(1);
     const [showStatusDropdown, setShowStatusDropdown] = useState(false);
     const [showRestaurantSearch, setShowRestaurantSearch] = useState(false);
     const [showContainerTypeSearch, setShowContainerTypeSearch] = useState(false);
@@ -818,6 +819,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedQRCode, setGeneratedQRCode] = useState(null);
     const [showQRModal, setShowQRModal] = useState(false);
+    
   
   useEffect(() => {
     const fetchUsers = async () => {
@@ -860,6 +862,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
       setSelectedUser(null);
       setUsesCount(0);
     }
+    setQuantity(1);
   }, [container, visible]);
   
   const statusOptions = [
@@ -882,14 +885,14 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
     user.email.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
   
-  const handleSave = async () => {
+ const handleSave = async () => {
     if (!selectedContainerType) {
       Alert.alert('Error', 'Container Type is required');
       return;
     }
-  
+
     setIsGenerating(true);
-  
+
     try {
       const token = await AsyncStorage.getItem('aqro_token');
       const containerData = {
@@ -899,51 +902,52 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
         customerId: selectedUser?._id || null,
         usesCount: parseInt(usesCount) || 0
       };
-  
-      let savedContainer;
+
+      let savedContainers = [];
       
       if (container?._id) {
-        // Update existing container
+        // Update existing container (single container)
         const response = await axios.put(
           getApiUrl(`/containers/${container._id}`),
           containerData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        savedContainer = response.data;
+        savedContainers.push(response.data);
       } else {
-        // Create new container
-        // 1. Generate QR code first
-        const generateResponse = await axios.post(
-          getApiUrl('/containers/generate'),
-          {
-            containerTypeId: containerData.containerTypeId,
-            restaurantId: containerData.restaurantId
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-  
-        // 2. Create container with the generated QR code
-        const createResponse = await axios.post(
-          getApiUrl('/containers'),
-          {
-            ...containerData,
-            qrCode: generateResponse.data.qrCode
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-  
-        savedContainer = createResponse.data;
-        
-        // Show QR code
-        // const baseUrl = getApiUrl('').replace('/api', '');
-        // setGeneratedQRCode(`${baseUrl}/qr-codes/${generateResponse.data.qrCode}.png`);
-        // setShowQRModal(true);
+        // Create multiple containers
+        for (let i = 0; i < quantity; i++) {
+          // Generate QR code first
+          const generateResponse = await axios.post(
+            getApiUrl('/containers/generate'),
+            {
+              containerTypeId: containerData.containerTypeId,
+              restaurantId: containerData.restaurantId
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          // Create container with the generated QR code
+          const createResponse = await axios.post(
+            getApiUrl('/containers'),
+            {
+              ...containerData,
+              qrCode: generateResponse.data.qrCode
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          savedContainers.push(createResponse.data);
+        }
       }
-  
-      Alert.alert('Success', container?._id ? 'Container updated' : 'Container created');
+
+      Alert.alert('Success', container?._id 
+        ? 'Container updated' 
+        : `${quantity} containers created successfully`);
+
+      
       onClose();
-      if (onSave) onSave(savedContainer);
-  
+      if (onSave) onSave(savedContainers[0]); // For now, just pass the first one
+
     } catch (error) {
       console.error('Save error:', error.response?.data || error.message);
       Alert.alert('Error', error.response?.data?.message || 'Failed to save container');
@@ -1365,6 +1369,41 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                 </View>
               )}
             </View>
+           {!container?._id && (
+            <View style={styles.formGroup}>
+              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Quantity</MediumText>
+              <View style={styles.quantityContainer}>
+                <TouchableOpacity 
+                  style={[styles.quantityButton, { backgroundColor: theme.primary }]}
+                  onPress={() => setQuantity(prev => Math.max(1, prev - 1))}
+                  disabled={quantity <= 1}
+                >
+                  <Ionicons name="remove" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+                
+                <TextInput
+                  style={[styles.quantityDisplay, { 
+                    backgroundColor: theme.input, 
+                    color: theme.text,
+                    textAlign: 'center'
+                  }]}
+                  value={quantity.toString()}
+                  onChangeText={(text) => {
+                    const num = parseInt(text.replace(/[^0-9]/g, ''));
+                    setQuantity(isNaN(num) ? 1 : Math.max(1, num));
+                  }}
+                  keyboardType="numeric"
+                />
+                
+                <TouchableOpacity 
+                  style={[styles.quantityButton, { backgroundColor: theme.primary }]}
+                  onPress={() => setQuantity(prev => prev + 1)}
+                >
+                  <Ionicons name="add" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           </ScrollView>
           
           <View style={styles.editModalFooter}>
@@ -1757,8 +1796,9 @@ const AdminContainersScreen = ({ navigation, route }) => {
         setGeneratedQRCode(`${baseUrl}${generateResponse.data.qrCodeUrl}`);
         setShowQRModal(true);
       }
-      
+      fetchAllContainers();
       return response.data;
+      
     } catch (error) {
       console.error('Save error:', {
         url: error.config?.url,
@@ -2373,6 +2413,29 @@ dropdownItem: {
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  quantityButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityDisplay: {
+    width: 80,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 8,
+    padding: 0,
+    fontSize: 16,
   },
 });
 
