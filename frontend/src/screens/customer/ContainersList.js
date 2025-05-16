@@ -506,7 +506,7 @@ const handleMarkStatus = async (containerId, status) => {
   );
 };
 
-const ContainersList = ({ navigation }) => {
+const ContainersList = ({ navigation, route }) => {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -520,10 +520,18 @@ const ContainersList = ({ navigation }) => {
   const [modalAnimation] = useState(new Animated.Value(0));
   const [modalVisible, setModalVisible] = useState(false);
   const [modalBackdrop] = useState(new Animated.Value(0));
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState(route.params?.filter || 'all');
   const [filteredContainers, setFilteredContainers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+
+  // Update activeFilter when route.params.filter changes
+  useEffect(() => {
+    if (route.params?.filter) {
+      setActiveFilter(route.params.filter);
+      applyFilter(route.params.filter);
+    }
+  }, [route.params?.filter]);
 
   const fetchContainerStats = async () => {
     try {
@@ -640,7 +648,7 @@ const ContainersList = ({ navigation }) => {
 
   useEffect(() => {
     applyFilter(activeFilter);
-  }, [containers, activeFilter]);
+  }, [containers]);
   
 
   useEffect(() => {

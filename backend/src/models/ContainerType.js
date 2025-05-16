@@ -19,6 +19,7 @@ const containerTypeSchema = new mongoose.Schema({
   },
   rebateValue: {
     type: Number,
+    default: 1
   },
   maxUses: {
     type: Number,

@@ -28,11 +28,14 @@ import { getApiUrl } from '../../services/apiConfig';
 import { getRecentActivities } from '../../services/activityService';
 import RestaurantCarousel from '../../components/RestaurantCarousel';
 
-const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
+const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress }) => {
   const { theme } = useTheme();
   
   return (
-    <View style={[styles.card, { backgroundColor }]}>
+    <TouchableOpacity 
+      style={[styles.card, { backgroundColor }]}
+      onPress={onPress}
+    >
       <View style={styles.cardContent}>
         <Ionicons name={icon} size={24} color={textColor} style={styles.cardIcon} />
         <View style={styles.cardTextContainer}>
@@ -40,7 +43,7 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
           <BoldText style={[styles.cardValue, { color: textColor }]}>{value}</BoldText>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -299,12 +302,13 @@ const CustomerHomeScreen = ({ navigation }) => {
           </TouchableOpacity>
           
           <View style={styles.cardsContainer}>
-          <ContainerCard 
+            <ContainerCard 
               title="Active" 
               value={containerStats.activeContainers}
               icon="cube-outline"
               backgroundColor="#e8f5e9"
               textColor="#2e7d32"
+              onPress={() => navigation.navigate('Containers', { filter: 'active' })}
             />
             
             <ContainerCard 
@@ -313,6 +317,7 @@ const CustomerHomeScreen = ({ navigation }) => {
               icon="refresh-outline"
               backgroundColor="#e3f2fd"
               textColor="#0277bd"
+              onPress={() => navigation.navigate('Containers', { filter: 'returned' })}
             />
             
             <ContainerCard 
@@ -321,6 +326,7 @@ const CustomerHomeScreen = ({ navigation }) => {
               icon="cash-outline"
               backgroundColor="#fffde7"
               textColor="#f57f17"
+              onPress={() => navigation.navigate('Containers')}
             />
           </View>
         </View>

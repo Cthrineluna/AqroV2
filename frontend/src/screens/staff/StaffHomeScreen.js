@@ -31,11 +31,14 @@ import { PieChart } from 'react-native-chart-kit';
 
 const windowWidth = Dimensions.get('window').width;
 
-const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
+const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress }) => {
   const { theme } = useTheme();
   
   return (
-    <View style={[styles.card, { backgroundColor }]}>
+    <TouchableOpacity 
+      style={[styles.card, { backgroundColor }]}
+      onPress={onPress}
+    >
       <View style={styles.cardContent}>
         <Ionicons name={icon} size={24} color={textColor} style={styles.cardIcon} />
         <View style={styles.cardTextContainer}>
@@ -43,7 +46,7 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
           <BoldText style={[styles.cardValue, { color: textColor }]}>{value}</BoldText>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -387,6 +390,7 @@ const StaffHomeScreen = ({ navigation }) => {
               icon="cafe-outline"
               backgroundColor="#f3e5f5"
               textColor="#9c27b0"
+              onPress={() => navigation.navigate('Containers', { filter: 'available' })}
             />
             
             <ContainerCard 
@@ -395,6 +399,7 @@ const StaffHomeScreen = ({ navigation }) => {
               icon="cube-outline"
               backgroundColor="#e8f5e9"
               textColor="#2e7d32"
+              onPress={() => navigation.navigate('Containers', { filter: 'active' })}
             />
             
             <ContainerCard 
@@ -403,25 +408,28 @@ const StaffHomeScreen = ({ navigation }) => {
               icon="refresh-outline"
               backgroundColor="#e3f2fd"
               textColor="#0277bd"
+              onPress={() => navigation.navigate('Containers', { filter: 'returned' })}
             />
           </View>
           <View style={[styles.cardsContainer, {marginTop: 10}]}>
-          <ContainerCard 
-            title="Total Rebated" 
-            value={`₱${rebateStats.totalRebateAmount.toFixed(2)}`}
-            icon="cash-outline"
-            backgroundColor="#fff3e0"
-            textColor="#fb8c00"
-          />
-          
-          <ContainerCard 
-            title="Rebate Count" 
-            value={rebateStats.rebateCount}
-            icon="receipt-outline"
-            backgroundColor="#e8eaf6"
-            textColor="#3f51b5"
-          />
-        </View>
+            <ContainerCard 
+              title="Total Rebated" 
+              value={`₱${rebateStats.totalRebateAmount.toFixed(2)}`}
+              icon="cash-outline"
+              backgroundColor="#fff3e0"
+              textColor="#fb8c00"
+              onPress={() => navigation.navigate('Containers')}
+            />
+            
+            <ContainerCard 
+              title="Rebate Count" 
+              value={rebateStats.rebateCount}
+              icon="receipt-outline"
+              backgroundColor="#e8eaf6"
+              textColor="#3f51b5"
+              onPress={() => navigation.navigate('Containers')}
+            />
+          </View>
          
         {/* Quick Actions Menu */}
         <View style={styles.quickActionsContainer}>

@@ -334,7 +334,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
   );
 };
 
-const StaffContainersList = ({ navigation }) => {
+const StaffContainersList = ({ navigation, route }) => {
   const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
@@ -348,11 +348,19 @@ const StaffContainersList = ({ navigation }) => {
   const [modalAnimation] = useState(new Animated.Value(0));
   const [modalVisible, setModalVisible] = useState(false);
   const [modalBackdrop] = useState(new Animated.Value(0));
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState(route.params?.filter || 'all');
   const [filteredContainers, setFilteredContainers] = useState([]);
   const [restaurantName, setRestaurantName] = useState("Restaurant");
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+
+  // Update activeFilter when route.params.filter changes
+  useEffect(() => {
+    if (route.params?.filter) {
+      setActiveFilter(route.params.filter);
+      applyFilter(route.params.filter);
+    }
+  }, [route.params?.filter]);
 
   const fetchContainerStats = async () => {
     try {
@@ -514,7 +522,7 @@ const StaffContainersList = ({ navigation }) => {
   
   useEffect(() => {
     applyFilter(activeFilter);
-  }, [containers, activeFilter]);
+  }, [containers]);
   
 
   useEffect(() => {
