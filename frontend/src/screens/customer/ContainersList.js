@@ -524,6 +524,8 @@ const ContainersList = ({ navigation, route }) => {
   const [filteredContainers, setFilteredContainers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [sortBy, setSortBy] = useState('type'); // Changed from 'name' to 'type'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
 
   // Update activeFilter when route.params.filter changes
   useEffect(() => {
@@ -625,18 +627,111 @@ const ContainersList = ({ navigation, route }) => {
     setFilteredContainers(results);
   };
 
+  const handleSort = (criteria) => {
+    if (sortBy === criteria) {
+      // If clicking the same criteria, toggle order
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If clicking new criteria, set it and default to ascending
+      setSortBy(criteria);
+      setSortOrder('asc');
+    }
+    
+    const sorted = [...filteredContainers].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (criteria) {
+        case 'type':
+          comparison = a.containerTypeId.name.localeCompare(b.containerTypeId.name);
+          break;
+        case 'date':
+          comparison = new Date(a.registrationDate) - new Date(b.registrationDate);
+          break;
+        case 'usesLeft':
+          const aUsesLeft = a.containerTypeId.maxUses - a.usesCount;
+          const bUsesLeft = b.containerTypeId.maxUses - b.usesCount;
+          comparison = aUsesLeft - bUsesLeft;
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    
+    setFilteredContainers(sorted);
+  };
+
+  const renderSortButtons = () => (
+    <View style={[styles.sortContainer, { backgroundColor: theme.card }]}>
+      <TouchableOpacity 
+        style={[
+          styles.sortButton, 
+          sortBy === 'type' && { backgroundColor: theme.primary + '20' }
+        ]} 
+        onPress={() => handleSort('type')}
+      >
+        <RegularText style={{ color: sortBy === 'type' ? theme.primary : theme.text }}>
+          Type {sortBy === 'type' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </RegularText>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={[
+          styles.sortButton, 
+          sortBy === 'date' && { backgroundColor: theme.primary + '20' }
+        ]} 
+        onPress={() => handleSort('date')}
+      >
+        <RegularText style={{ color: sortBy === 'date' ? theme.primary : theme.text }}>
+          Registration {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </RegularText>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={[
+          styles.sortButton, 
+          sortBy === 'usesLeft' && { backgroundColor: theme.primary + '20' }
+        ]} 
+        onPress={() => handleSort('usesLeft')}
+      >
+        <RegularText style={{ color: sortBy === 'usesLeft' ? theme.primary : theme.text }}>
+          Uses Left {sortBy === 'usesLeft' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </RegularText>
+      </TouchableOpacity>
+    </View>
+  );
+
   const applyFilter = (filter, containerList = containers) => {
     if (searchQuery.trim()) {
       handleSearch(searchQuery);
       return;
     }
     
-    if (filter === 'all') {
-      setFilteredContainers(containerList);
-    } else {
-      const filtered = containerList.filter(item => item.status === filter);
-      setFilteredContainers(filtered);
-    }
+    let filtered = filter === 'all' 
+      ? containerList 
+      : containerList.filter(item => item.status === filter);
+      
+    // Apply current sort to filtered results
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'type':
+          comparison = a.containerTypeId.name.localeCompare(b.containerTypeId.name);
+          break;
+        case 'date':
+          comparison = new Date(a.registrationDate) - new Date(b.registrationDate);
+          break;
+        case 'usesLeft':
+          const aUsesLeft = a.containerTypeId.maxUses - a.usesCount;
+          const bUsesLeft = b.containerTypeId.maxUses - b.usesCount;
+          comparison = aUsesLeft - bUsesLeft;
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    
+    setFilteredContainers(filtered);
   };
   
 
@@ -795,6 +890,9 @@ const ContainersList = ({ navigation, route }) => {
           theme={theme}
           placeholder="Search by type, QR code, or restaurant..."
         />
+          
+          {renderSortButtons()}
+          
           {filteredContainers.length === 0 ? (
             <View style={[styles.emptyState, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
               <Ionicons name="cube-outline" size={48} color={theme.text} style={{ opacity: 0.4 }} />
@@ -1097,6 +1195,21 @@ statusButton: {
   borderRadius: 8,
   width: '48%',
   justifyContent: 'center',
+},
+sortContainer: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  padding: 8,
+  borderRadius: 8,
+  marginTop: 8,
+  marginBottom: 12,
+},
+sortButton: {
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  borderRadius: 6,
+  flexDirection: 'row',
+  alignItems: 'center',
 },
 });
 

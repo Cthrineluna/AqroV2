@@ -421,7 +421,11 @@ const StaffHomeScreen = ({ navigation }) => {
               icon="cash-outline"
               backgroundColor="#fff3e0"
               textColor="#fb8c00"
-              onPress={() => navigation.navigate('Containers')}
+              onPress={() => navigation.navigate('Reports', { 
+                userType: user?.userType,
+                initialFilter: 'rebate',
+                initialTimeframe: 'yearly'
+              })}
             />
             
             <ContainerCard 
@@ -430,7 +434,11 @@ const StaffHomeScreen = ({ navigation }) => {
               icon="receipt-outline"
               backgroundColor="#e8eaf6"
               textColor="#3f51b5"
-              onPress={() => navigation.navigate('Containers')}
+              onPress={() => navigation.navigate('Reports', { 
+                userType: user?.userType,
+                initialFilter: 'rebate',
+                initialTimeframe: 'yearly'
+              })}
             />
           </View>
          
@@ -467,7 +475,7 @@ const StaffHomeScreen = ({ navigation }) => {
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
               Recent Activity
             </SemiBoldText>
-            <TouchableOpacity onPress={() => navigation.navigate('Activities')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Activities', { filter: 'all' })}>
               <RegularText style={styles.viewAllText}>View All</RegularText>
             </TouchableOpacity>
           </View>

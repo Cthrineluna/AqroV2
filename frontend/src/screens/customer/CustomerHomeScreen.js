@@ -358,7 +358,7 @@ const CustomerHomeScreen = ({ navigation }) => {
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
               Recent Activity
             </SemiBoldText>
-            <TouchableOpacity onPress={() => navigation.navigate('Activities')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Activities', { filter: 'all' })}>
               <RegularText style={styles.viewAllText}>View All</RegularText>
             </TouchableOpacity>
           </View>
