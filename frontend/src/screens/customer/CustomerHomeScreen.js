@@ -9,7 +9,9 @@ import {
   StatusBar,
   Platform,
   Text,
-  Image
+  Image,
+  Animated,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -27,6 +29,8 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
 import { getRecentActivities } from '../../services/activityService';
 import RestaurantCarousel from '../../components/RestaurantCarousel';
+
+const { width, height } = Dimensions.get('window');
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress }) => {
   const { theme } = useTheme();
@@ -47,9 +51,7 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress
   );
 };
 
-
-
-const ActivityItem = ({ activity }) => {
+const ActivityItem = ({ activity, onPress }) => {
   const { theme } = useTheme();
 
   const getActivityInfo = () => {
@@ -102,7 +104,10 @@ const ActivityItem = ({ activity }) => {
   });
   
   return (
-    <View style={[styles.activityItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <TouchableOpacity 
+      style={[styles.activityItem, { backgroundColor: theme.card, borderColor: theme.border }]}
+      onPress={() => onPress(activity)}
+    >
       <View style={[styles.activityIconContainer, { backgroundColor: info.color + '20' }]}>
         <Ionicons name={info.icon} size={24} color={info.color} />
       </View>
@@ -111,7 +116,7 @@ const ActivityItem = ({ activity }) => {
         <RegularText style={{ color: theme.text, opacity: 0.7, fontSize: 12 }}>{info.description}</RegularText>
       </View>
       <RegularText style={{ color: theme.text, opacity: 0.5, fontSize: 12 }}>{formattedDate}</RegularText>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -241,8 +246,6 @@ const CustomerHomeScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
-
-  
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar 
@@ -363,7 +366,14 @@ const CustomerHomeScreen = ({ navigation }) => {
           {recentActivities.length > 0 ? (
             <View style={styles.activitiesContainer}>
               {recentActivities.map((activity, index) => (
-                <ActivityItem key={activity._id || index} activity={activity} />
+                <ActivityItem 
+                  key={activity._id || index} 
+                  activity={activity} 
+                  onPress={(activity) => navigation.navigate('Activities', { 
+                    filter: activity.type,
+                    selectedActivity: activity 
+                  })}
+                />
               ))}
             </View>
           ) : (

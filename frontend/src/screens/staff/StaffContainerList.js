@@ -523,7 +523,6 @@ const StaffContainersList = ({ navigation, route }) => {
   useEffect(() => {
     applyFilter(activeFilter);
   }, [containers]);
-  
 
   useEffect(() => {
     const setNavBarColor = async () => {

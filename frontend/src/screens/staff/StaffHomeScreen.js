@@ -10,7 +10,8 @@ import {
   Platform,
   Text,
   Image,
-  Dimensions
+  Dimensions,
+  Animated
 } from 'react-native';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +30,7 @@ import { getApiUrl } from '../../services/apiConfig';
 import { getRecentActivities, getRestaurantActivities } from '../../services/activityService';
 import { PieChart } from 'react-native-chart-kit';
 
-const windowWidth = Dimensions.get('window').width;
+const { width, height } = Dimensions.get('window');
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress }) => {
   const { theme } = useTheme();
@@ -50,14 +51,13 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress
   );
 };
 
-const ActivityItem = ({ activity }) => {
+const ActivityItem = ({ activity, onPress }) => {
   const { theme } = useTheme();
 
   const getActivityInfo = () => {
-    // Get customer name if available
-    const customerName = activity.userId?.firstName && activity.userId?.lastName 
-      ? `${activity.userId.firstName} ${activity.userId.lastName}` 
-      : 'Unknown customer';
+    const customerName = activity.userId 
+      ? `${activity.userId.firstName} ${activity.userId.lastName}`
+      : 'Unknown Customer';
     
     switch (activity.type) {
       case 'registration':
@@ -79,7 +79,7 @@ const ActivityItem = ({ activity }) => {
           icon: 'cash-outline',
           color: '#FF9800',
           title: 'Rebate Issued',
-          description: `₱${activity.amount?.toFixed(2) || '0.00'} rebate to ${customerName}`
+          description: `₱${activity.amount.toFixed(2)} rebate to ${customerName}`
         };
       case 'status_change':
         return {
@@ -106,7 +106,10 @@ const ActivityItem = ({ activity }) => {
   });
   
   return (
-    <View style={[styles.activityItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <TouchableOpacity 
+      style={[styles.activityItem, { backgroundColor: theme.card, borderColor: theme.border }]}
+      onPress={() => onPress(activity)}
+    >
       <View style={[styles.activityIconContainer, { backgroundColor: info.color + '20' }]}>
         <Ionicons name={info.icon} size={24} color={info.color} />
       </View>
@@ -115,7 +118,7 @@ const ActivityItem = ({ activity }) => {
         <RegularText style={{ color: theme.text, opacity: 0.7, fontSize: 12 }}>{info.description}</RegularText>
       </View>
       <RegularText style={{ color: theme.text, opacity: 0.5, fontSize: 12 }}>{formattedDate}</RegularText>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -359,8 +362,8 @@ const StaffHomeScreen = ({ navigation }) => {
                 <>
                 <PieChart
                   data={containerChartData}
-                  width={windowWidth - 40}
-                  height={180}
+                  width={width - 40}
+                  height={height * 0.18}
                   chartConfig={chartConfig}
                   accessor="population"
                   backgroundColor="transparent"
@@ -472,7 +475,14 @@ const StaffHomeScreen = ({ navigation }) => {
           {recentActivities.length > 0 ? (
             <View style={styles.activitiesContainer}>
               {recentActivities.map((activity, index) => (
-                <ActivityItem key={activity._id || index} activity={activity} />
+                <ActivityItem 
+                  key={activity._id || index} 
+                  activity={activity} 
+                  onPress={(activity) => navigation.navigate('Activities', { 
+                    filter: activity.type,
+                    selectedActivity: activity 
+                  })}
+                />
               ))}
             </View>
           ) : (

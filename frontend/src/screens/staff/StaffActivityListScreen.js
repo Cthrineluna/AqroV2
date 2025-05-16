@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
@@ -28,7 +27,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 
 const { width, height } = Dimensions.get('window');
 
-const StaffActivityListScreen = ({ navigation }) => {
+const StaffActivityListScreen = ({ navigation, route }) => {
   const { theme, isDark } = useTheme();
   const [activities, setActivities] = useState([]);
   const [filteredActivities, setFilteredActivities] = useState([]);
@@ -36,7 +35,7 @@ const StaffActivityListScreen = ({ navigation }) => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState(route.params?.filter || 'all');
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const modalAnimation = useRef(new Animated.Value(0)).current;
@@ -133,6 +132,19 @@ const processSections = () => {
   useEffect(() => {
     applyFilter(activeFilter);
   }, [activities, activeFilter]);
+
+  useEffect(() => {
+    if (route.params?.selectedActivity) {
+      openActivityDetail(route.params.selectedActivity);
+    }
+  }, [route.params?.selectedActivity]);
+
+  useEffect(() => {
+    if (route.params?.filter) {
+      setActiveFilter(route.params.filter);
+    }
+  }, [route.params?.filter]);
+
   useEffect(() => {
       const setNavBarColor = async () => {
         if (Platform.OS === 'android') {
