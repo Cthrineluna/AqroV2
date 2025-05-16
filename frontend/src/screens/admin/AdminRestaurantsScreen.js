@@ -47,6 +47,7 @@ const AdminRestaurantsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [staffModalVisible, setStaffModalVisible] = useState(false);
+  const [viewOnly, setViewOnly] = useState(false);
   const [staffList, setStaffList] = useState([]);
   const [availableStaff, setAvailableStaff] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -346,11 +347,12 @@ const handleSaveRestaurant = async (restaurantData) => {
     navigation.navigate('AdminContainerScreen', { restaurantId });
   };
 
-  const openRestaurantModal = (restaurant = null) => {
-    setSelectedRestaurant(restaurant);
-    setModalVisible(true);
-    fadeIn();
-  };
+    const openRestaurantModal = (restaurant = null, viewOnly = false) => {
+      setSelectedRestaurant(restaurant);
+      setModalVisible(true);
+      setViewOnly(viewOnly);
+      fadeIn();
+    };
   const handleViewStaff = async (restaurantId) => {
     console.log('Closing action modal');
     setActionModalVisible(false);
@@ -508,58 +510,69 @@ const handleSaveRestaurant = async (restaurantData) => {
     });
     const [localError, setLocalError] = useState('');
 
-      // Pick Logo Image
-  const pickLogoImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'We need camera roll permissions to upload images');
-        return;
+    // Modify input fields to match theme in view-only mode
+    const inputStyle = [
+      styles.input,
+      { 
+        backgroundColor: theme?.input || '#F5F5F5',
+        color: theme?.text || '#000000',
+        borderColor: viewOnly ? 'transparent' : (theme?.border || '#E0E0E0'),
+        opacity: viewOnly ? 0.9 : 1
       }
-  
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-        base64: true,
-      });
-  
-      if (!result.canceled) {
-        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
-        setLocalRestaurant(prev => ({ ...prev, logo: base64Image }));
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
-    }
-  };
+    ];
 
-  const pickBannerImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'We need camera roll permissions to upload images');
-        return;
+    // Pick Logo Image
+    const pickLogoImage = async () => {
+      try {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+          return;
+        }
+    
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.7,
+          base64: true,
+        });
+    
+        if (!result.canceled) {
+          const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+          setLocalRestaurant(prev => ({ ...prev, logo: base64Image }));
+        }
+      } catch (error) {
+        console.error('Error picking image:', error);
+        Alert.alert('Error', 'Failed to pick image');
       }
-  
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9], // Better aspect ratio for banners
-        quality: 0.7,
-        base64: true,
-      });
-  
-      if (!result.canceled) {
-        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
-        setLocalRestaurant(prev => ({ ...prev, banner: base64Image }));
+    };
+
+    const pickBannerImage = async () => {
+      try {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+          return;
+        }
+    
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [16, 9], // Better aspect ratio for banners
+          quality: 0.7,
+          base64: true,
+        });
+    
+        if (!result.canceled) {
+          const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+          setLocalRestaurant(prev => ({ ...prev, banner: base64Image }));
+        }
+      } catch (error) {
+        console.error('Error picking banner image:', error);
+        Alert.alert('Error', 'Failed to pick banner image');
       }
-    } catch (error) {
-      console.error('Error picking banner image:', error);
-      Alert.alert('Error', 'Failed to pick banner image');
-    }
-  };
+    };
 
     const validateForm = () => {
       if (!localRestaurant.name.trim()) {
@@ -623,7 +636,7 @@ const handleSaveRestaurant = async (restaurantData) => {
           fadeOut(() => setModalVisible(false));
         }}
       >
-         <View style={styles.modalBackdrop} />
+        <View style={styles.modalBackdrop} />
         <Animated.View 
           style={[
             styles.modalOverlay,
@@ -647,220 +660,148 @@ const handleSaveRestaurant = async (restaurantData) => {
                 styles.modalTitle, 
                 { color: theme?.text || '#000000' }
               ]}>
-                {selectedRestaurant ? 'Edit Restaurant' : 'Add New Restaurant'}
+                {viewOnly ? 'Restaurant Details' : (selectedRestaurant ? 'Edit Restaurant' : 'Add New Restaurant')}
               </SemiBoldText>
-              
+
+              {/* Banner and Logo Section - Make them non-touchable in view mode */}
               <View style={styles.bannerContainer}>
-  {/* The Banner itself is wrapped in TouchableOpacity */}
-  <TouchableOpacity 
-    style={styles.bannerTouchable}
-    onPress={pickBannerImage}
-    activeOpacity={0.7}
-  >
-    {localRestaurant.banner ? (
-      <Image 
-        source={{ uri: localRestaurant.banner }} 
-        style={styles.bannerImage} 
-        resizeMode="cover"
-      />
-    ) : (
-      <View style={[
-        styles.bannerPlaceholder,
-        { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
-      ]}>
-        <Ionicons 
-          name="image-outline" 
-          size={32} 
-          color={theme?.primary || '#007BFF'} 
-        />
-        <RegularText style={[
-          styles.bannerHint, 
-          { color: theme?.primary || '#007BFF' }
-        ]}>
-          Add Banner Image
-        </RegularText>
-      </View>
-    )}
-  </TouchableOpacity>
-  
-  {/* Overlapping Logo - Separate TouchableOpacity */}
-  <TouchableOpacity 
-    style={styles.overlappingLogoContainer}
-    onPress={pickLogoImage}
-    activeOpacity={0.7}
-  >
-    {localRestaurant.logo ? (
-      <Image 
-        source={{ uri: localRestaurant.logo }} 
-        style={styles.logoImage} 
-        resizeMode="cover"
-      />
-    ) : (
-      <View style={[
-        styles.logoInitialsContainer,
-        { backgroundColor: theme?.primary || '#007BFF' }
-      ]}>
-        <RegularText style={styles.logoInitialsText}>
-          {localRestaurant.name 
-            ? localRestaurant.name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2)
-            : 'RS'}
-        </RegularText>
-      </View>
-    )}
-  </TouchableOpacity>
-  
-  {/* Logo Hint Text - Positioned below the overlapping logo */}
-  <View style={styles.logoHintContainer}>
-    <RegularText style={[styles.logoHint, { color: theme?.textMuted || '#888888' }]}>
-      Tap images to change
-    </RegularText>
-  </View>
-</View>
-
-
-              {/* Error Message */}
-              {localError ? (
-                <View style={styles.errorContainer}>
-                  <RegularText style={styles.errorText}>
-                    {localError}
-                  </RegularText>
+                <View style={styles.bannerTouchable}>
+                  {localRestaurant.banner ? (
+                    <Image 
+                      source={{ uri: localRestaurant.banner }} 
+                      style={styles.bannerImage} 
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[
+                      styles.bannerPlaceholder,
+                      { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
+                    ]}>
+                      <Ionicons 
+                        name="image-outline" 
+                        size={32} 
+                        color={theme?.primary || '#007BFF'} 
+                      />
+                      <RegularText style={[
+                        styles.bannerHint, 
+                        { color: theme?.primary || '#007BFF' }
+                      ]}>
+                        {viewOnly ? 'No Banner Image' : 'Add Banner Image'}
+                      </RegularText>
+                    </View>
+                  )}
                 </View>
-              ) : null}
+
+                <View style={styles.overlappingLogoContainer}>
+                  {localRestaurant.logo ? (
+                    <Image 
+                      source={{ uri: localRestaurant.logo }} 
+                      style={styles.logoImage} 
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[
+                      styles.logoInitialsContainer,
+                      { backgroundColor: theme?.primary || '#007BFF' }
+                    ]}>
+                      <RegularText style={styles.logoInitialsText}>
+                        {localRestaurant.name 
+                          ? localRestaurant.name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2)
+                          : 'RS'}
+                      </RegularText>
+                    </View>
+                  )}
+                </View>
+
+                {!viewOnly && (
+                  <View style={styles.logoHintContainer}>
+                    <RegularText style={[styles.logoHint, { color: theme?.textMuted || '#888888' }]}>
+                      Tap images to change
+                    </RegularText>
+                  </View>
+                )}
+              </View>
 
               {/* Input Fields */}
               <TextInput
-                style={[
-                  styles.input, 
-                  { 
-                    backgroundColor: theme?.input || '#F5F5F5', 
-                    color: theme?.text || '#000000',
-                    borderColor: theme?.border || '#E0E0E0'
-                  }
-                ]}
+                style={inputStyle}
                 placeholder="Restaurant Name"
                 value={localRestaurant.name}
                 onChangeText={(text) => {
-                  setLocalRestaurant(prev => ({ ...prev, name: text }));
-                  setLocalError('');
+                  if (!viewOnly) {
+                    setLocalRestaurant(prev => ({ ...prev, name: text }));
+                    setLocalError('');
+                  }
                 }}
+                editable={!viewOnly}
                 placeholderTextColor={theme?.textMuted || '#888888'}
               />
 
               <TextInput
-                style={[
-                  styles.input, 
-                  { 
-                    backgroundColor: theme?.input || '#F5F5F5', 
-                    color: theme?.text || '#000000',
-                    borderColor: theme?.border || '#E0E0E0'
-                  }
-                ]}
+                style={inputStyle}
                 placeholder="Description (optional)"
                 value={localRestaurant.description}
                 onChangeText={(text) => {
-                  setLocalRestaurant(prev => ({ ...prev, description: text }));
+                  if (!viewOnly) {
+                    setLocalRestaurant(prev => ({ ...prev, description: text }));
+                  }
                 }}
                 multiline={true}
                 numberOfLines={3}
                 textAlignVertical="top"
+                editable={!viewOnly}
                 placeholderTextColor={theme?.textMuted || '#888888'}
               />
 
-<TextInput
-  style={[
-    styles.input, 
-    { 
-      backgroundColor: theme?.input || '#F5F5F5', 
-      color: theme?.text || '#000000',
-      borderColor: theme?.border || '#E0E0E0'
-    }
-  ]}
-  placeholder="Contact Number (PH)"
-  value={localRestaurant.contactNumber}
-  onChangeText={(text) => {
-    const formatted = formatPHPhoneNumber(text);
-    setLocalRestaurant(prev => ({ ...prev, contactNumber: formatted }));
-    setLocalError('');
-  }}
-  keyboardType="phone-pad"
-  placeholderTextColor={theme?.textMuted || '#888888'}
-/>
-
+              <TextInput
+                style={inputStyle}
+                placeholder="Contact Number (PH)"
+                value={localRestaurant.contactNumber}
+                onChangeText={(text) => {
+                  if (!viewOnly) {
+                    const formatted = formatPHPhoneNumber(text);
+                    setLocalRestaurant(prev => ({ ...prev, contactNumber: formatted }));
+                    setLocalError('');
+                  }
+                }}
+                editable={!viewOnly}
+                keyboardType="phone-pad"
+                placeholderTextColor={theme?.textMuted || '#888888'}
+              />
 
               <TextInput
-                style={[
-                  styles.input, 
-                  { 
-                    backgroundColor: theme?.input || '#F5F5F5', 
-                    color: theme?.text || '#000000',
-                    borderColor: theme?.border || '#E0E0E0'
-                  }
-                ]}
+                style={inputStyle}
                 placeholder="Address"
                 value={localRestaurant.location.address}
                 onChangeText={(text) => {
-                  setLocalRestaurant(prev => ({ 
-                    ...prev, 
-                    location: { ...prev.location, address: text } 
-                  }));
-                  setLocalError('');
+                  if (!viewOnly) {
+                    setLocalRestaurant(prev => ({ 
+                      ...prev, 
+                      location: { ...prev.location, address: text } 
+                    }));
+                    setLocalError('');
+                  }
                 }}
+                editable={!viewOnly}
                 placeholderTextColor={theme?.textMuted || '#888888'}
               />
 
               <TextInput
-                style={[
-                  styles.input, 
-                  { 
-                    backgroundColor: theme?.input || '#F5F5F5', 
-                    color: theme?.text || '#000000',
-                    borderColor: theme?.border || '#E0E0E0'
-                  }
-                ]}
+                style={inputStyle}
                 placeholder="City"
                 value={localRestaurant.location.city}
                 onChangeText={(text) => {
-                  setLocalRestaurant(prev => ({ 
-                    ...prev, 
-                    location: { ...prev.location, city: text } 
-                  }));
-                  setLocalError('');
+                  if (!viewOnly) {
+                    setLocalRestaurant(prev => ({ 
+                      ...prev, 
+                      location: { ...prev.location, city: text } 
+                    }));
+                    setLocalError('');
+                  }
                 }}
+                editable={!viewOnly}
                 placeholderTextColor={theme?.textMuted || '#888888'}
               />
-
-              {/* Active Status Toggle 
-              <TouchableOpacity
-                style={styles.activeToggleContainer}
-                onPress={() => {
-                  setLocalRestaurant(prev => ({ 
-                    ...prev, 
-                    isActive: !prev.isActive 
-                  }));
-                }}
-              >
-                <View style={[
-                  styles.radioOuterCircle,
-                  { 
-                    borderColor: localRestaurant.isActive 
-                      ? (theme?.success || '#28A745')
-                      : (theme?.border || '#E0E0E0')
-                  }
-                ]}>
-                  {localRestaurant.isActive && (
-                    <View 
-                      style={[
-                        styles.radioInnerCircle,
-                        { backgroundColor: theme?.success || '#28A745' }
-                      ]} 
-                    />
-                  )}
-                </View>
-                <RegularText style={{ color: theme?.text || '#000000', marginLeft: 8 }}>
-                  Restaurant is active
-                </RegularText>
-              </TouchableOpacity>
-              */}
 
               {/* Action Buttons */}
               <View style={styles.modalButtonContainer}>
@@ -868,53 +809,59 @@ const handleSaveRestaurant = async (restaurantData) => {
                   style={[
                     styles.modalButton, 
                     styles.cancelButton,
-                    { borderColor: theme?.border || '#E0E0E0' }
+                    { 
+                      borderColor: viewOnly ? (theme?.primary || '#007BFF') : (theme?.border || '#E0E0E0')
+                    }
                   ]}
                   onPress={() => {
                     fadeOut(() => setModalVisible(false));
                   }}
                 >
-                  <RegularText style={{ color: theme?.text || '#000000' }}>
-                    Cancel
+                  <RegularText style={{ 
+                    color: viewOnly ? (theme?.primary || '#007BFF') : (theme?.text || '#000000')
+                  }}>
+                    {viewOnly ? 'Close' : 'Cancel'}
                   </RegularText>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[
-                    styles.modalButton, 
-                    styles.saveButton,
-                    { backgroundColor: theme?.primary || '#007BFF' }
-                  ]}
-                  onPress={() => {
-                    if (validateForm()) {
-                      handleSaveRestaurant(localRestaurant);
-                    }
-                  }}
-                >
-                  <RegularText style={{ color: 'white' }}>
-                    {selectedRestaurant ? 'Update' : 'Create'}
-                  </RegularText>
-                </TouchableOpacity>
+                {!viewOnly && (
+                  <TouchableOpacity 
+                    style={[
+                      styles.modalButton, 
+                      styles.saveButton,
+                      { backgroundColor: theme?.primary || '#007BFF' }
+                    ]}
+                    onPress={() => {
+                      if (validateForm()) {
+                        handleSaveRestaurant(localRestaurant);
+                      }
+                    }}
+                  >
+                    <RegularText style={{ color: 'white' }}>
+                      {selectedRestaurant ? 'Update' : 'Create'}
+                    </RegularText>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </ScrollView>
         </Animated.View>
         {loading && (
-  <View style={[
-    styles.loadingOverlay,
-    { backgroundColor: theme?.modalOverlay || 'rgba(0,0,0,0.5)' }
-  ]}
-  pointerEvents={loading ? "auto" : "none"}>
-    <View style={[
-      styles.loadingContainer,
-      { backgroundColor: theme?.card || '#FFFFFF' }
-    ]}>
-      <ActivityIndicator size="large" color={theme?.primary || '#007BFF'} />
-      <RegularText style={{marginTop: 10, color: theme?.text || '#000000'}}>
-        {selectedRestaurant ? 'Updating restaurant...' : 'Creating restaurant...'}
-      </RegularText>
-    </View>
-  </View>
-)}
+          <View style={[
+            styles.loadingOverlay,
+            { backgroundColor: theme?.modalOverlay || 'rgba(0,0,0,0.5)' }
+          ]}
+          pointerEvents={loading ? "auto" : "none"}>
+            <View style={[
+              styles.loadingContainer,
+              { backgroundColor: theme?.card || '#FFFFFF' }
+            ]}>
+              <ActivityIndicator size="large" color={theme?.primary || '#007BFF'} />
+              <RegularText style={{marginTop: 10, color: theme?.text || '#000000'}}>
+                {selectedRestaurant ? 'Updating restaurant...' : 'Creating restaurant...'}
+              </RegularText>
+            </View>
+          </View>
+        )}
       </RNModal>
     );
   };
@@ -929,19 +876,12 @@ const handleSaveRestaurant = async (restaurantData) => {
           fadeOut(() => setActionModalVisible(false));
         }}
       >
-        <Animated.View 
-          style={[
-            styles.actionModalOverlay,
-            { opacity: fadeAnim }
-          ]} 
+        <TouchableWithoutFeedback 
+          onPress={() => {
+            fadeOut(() => setActionModalVisible(false));
+          }}
         >
-          <TouchableOpacity 
-            style={styles.actionModalOverlayTouch} 
-            activeOpacity={1} 
-            onPressOut={() => {
-              fadeOut(() => setActionModalVisible(false));
-            }}
-          >
+          <View style={styles.actionModalOverlay}>
             <View style={[
               styles.actionModalContent, 
               { 
@@ -956,39 +896,25 @@ const handleSaveRestaurant = async (restaurantData) => {
                 borderBottomRightRadius: 0 
               }
             ]}>
-              {/*  
-              <TouchableOpacity 
-                style={styles.actionModalButton}
-                onPress={() => {
-                  handleViewContainers(selectedRestaurant._id);
-                }}
-              >
-                <Ionicons 
-                  name="cube-outline" 
-                  size={24} 
-                  color={theme?.primary || '#007BFF'} 
-                />
-                <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
-                  View Containers
-                </RegularText>
-              </TouchableOpacity>
-              */}
-              
-              {/* New Staff Management Option */}
-          
+              {/* View Restaurant Button */}
               <TouchableOpacity 
                 style={styles.actionModalButton}
                 onPress={() => {
                   setActionModalVisible(false);
-                  setTimeout(() => handleViewStaff(selectedRestaurant._id), 100); 
+                  openRestaurantModal(selectedRestaurant, true); // true for view-only mode
                 }}
               >
-                <Ionicons name="people-outline" size={24} color={theme?.primary || '#007BFF'} />
-                <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
-                  Manage Staff
+                <Ionicons 
+                  name="eye-outline" 
+                  size={24} 
+                  color={theme?.text || '#000000'} 
+                />
+                <RegularText style={{ marginLeft: 10, color: theme?.text || '#000000' }}>
+                  View Restaurant
                 </RegularText>
               </TouchableOpacity>
-                            
+
+              {/* Edit Restaurant Button - Temporarily Disabled 
               <TouchableOpacity 
                 style={styles.actionModalButton}
                 onPress={() => {
@@ -1005,7 +931,25 @@ const handleSaveRestaurant = async (restaurantData) => {
                   Edit Restaurant
                 </RegularText>
               </TouchableOpacity>
-  
+              */}
+              
+              <TouchableOpacity 
+                style={styles.actionModalButton}
+                onPress={() => {
+                  setActionModalVisible(false);
+                  handleViewStaff(selectedRestaurant._id);
+                }}
+              >
+                <Ionicons 
+                  name="people-outline" 
+                  size={24} 
+                  color={theme?.primary || '#007BFF'} 
+                />
+                <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
+                  Manage Staff
+                </RegularText>
+              </TouchableOpacity>
+
               <TouchableOpacity 
                 style={styles.actionModalButton}
                 onPress={() => {
@@ -1023,8 +967,8 @@ const handleSaveRestaurant = async (restaurantData) => {
                 </RegularText>
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </Animated.View>
+          </View>
+        </TouchableWithoutFeedback>
       </RNModal>
     );
   };
