@@ -143,14 +143,8 @@ const handleFilterChange = (filter) => {
           firstName: userData.firstName,
           lastName: userData.lastName,
           email: userData.email,
-          userType: userData.userType,
           profileImage: userData.profileImage
         };
-        
-        // Only include password if it's provided (not empty)
-        if (userData.password && userData.password.trim() !== '') {
-          updateData.password = userData.password;
-        }
         
         await axios.put(
           `${getApiUrl()}/admin/users/${selectedUser._id}`, 
@@ -166,7 +160,14 @@ const handleFilterChange = (filter) => {
         // Create new user
         await axios.post(
           `${getApiUrl()}/admin/users`, 
-          userData, 
+          {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            password: userData.password,
+            userType: userData.userType,
+            profileImage: userData.profileImage
+          }, 
           { 
             headers: { 
               Authorization: `Bearer ${storedToken}`,
@@ -355,7 +356,7 @@ const handleFilterChange = (filter) => {
       firstName: selectedUser?.firstName || '',
       lastName: selectedUser?.lastName || '',
       email: selectedUser?.email || '',
-      password: '',
+      password: selectedUser ? '' : '',
       userType: selectedUser?.userType || 'customer',
       profileImage: selectedUser?.profilePicture || null
     });
@@ -380,17 +381,16 @@ const handleFilterChange = (filter) => {
         return false;
       }
       
-      // Password validation
-      // For new user, password is required
-      if (!selectedUser && (!localUser.password || localUser.password.trim() === '')) {
-        setLocalError('Password is required for new users');
-        return false;
-      }
-      
-      // If password is provided (either for new user or during edit), check length
-      if (localUser.password && localUser.password.trim() !== '' && localUser.password.length < 6) {
-        setLocalError('Password must be at least 6 characters');
-        return false;
+      // Password validation only for new user
+      if (!selectedUser) {
+        if (!localUser.password || localUser.password.trim() === '') {
+          setLocalError('Password is required for new users');
+          return false;
+        }
+        if (localUser.password.length < 6) {
+          setLocalError('Password must be at least 6 characters');
+          return false;
+        }
       }
       
       return true;
@@ -513,79 +513,80 @@ const handleFilterChange = (filter) => {
               placeholderTextColor={theme?.textMuted || '#888888'}
             />
 
-            {/* Password field for both new and edit user */}
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[
-                  styles.passwordInput, 
-                  { 
-                    backgroundColor: theme?.input || '#F5F5F5', 
-                    color: theme?.text || '#000000',
-                    borderColor: theme?.border || '#E0E0E0',
-                    fontSize:12
-                  }
-                ]}
-                placeholder={selectedUser ? "New Password (leave empty to keep current)" : "Password"}
-                value={localUser.password}
-                onChangeText={(text) => {
-                  setLocalUser(prev => ({ ...prev, password: text }));
-                  setLocalError('');
-                }}
-                secureTextEntry={!showPassword}
-                placeholderTextColor={theme?.textMuted || '#888888'}
-              />
-              <TouchableOpacity 
-                style={styles.passwordVisibilityButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Ionicons 
-                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={24} 
-                  color={theme?.textMuted || '#888888'} 
-                />
-              </TouchableOpacity>
-            </View>
-            
-            {/* Password hint */}
-            <RegularText style={[styles.passwordHint, { color: theme?.textMuted || '#888888' }]}>
-              {selectedUser ? 
-                "Password must be at least 6 characters (if changed)" : 
-                "Password must be at least 6 characters"}
-            </RegularText>
+            {/* Password field only for new user */}
+            {!selectedUser && (
+              <>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[
+                      styles.passwordInput, 
+                      { 
+                        backgroundColor: theme?.input || '#F5F5F5', 
+                        color: theme?.text || '#000000',
+                        borderColor: theme?.border || '#E0E0E0',
+                        fontSize: 12
+                      }
+                    ]}
+                    placeholder="Password"
+                    value={localUser.password}
+                    onChangeText={(text) => {
+                      setLocalUser(prev => ({ ...prev, password: text }));
+                      setLocalError('');
+                    }}
+                    secureTextEntry={!showPassword}
+                    placeholderTextColor={theme?.textMuted || '#888888'}
+                  />
+                  <TouchableOpacity 
+                    style={styles.passwordVisibilityButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <Ionicons 
+                      name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                      size={24} 
+                      color={theme?.textMuted || '#888888'} 
+                    />
+                  </TouchableOpacity>
+                </View>
+                
+                <RegularText style={[styles.passwordHint, { color: theme?.textMuted || '#888888' }]}>
+                  Password must be at least 6 characters
+                </RegularText>
 
-            {/* User Type Selection */}
-            <View style={styles.userTypeRadioContainer}>
-              {['customer', 'staff', 'admin'].map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={styles.userTypeRadioButton}
-                  onPress={() => {
-                    setLocalUser(prev => ({ ...prev, userType: type }));
-                  }}
-                >
-                  <View style={[
-                    styles.radioOuterCircle,
-                    { 
-                      borderColor: localUser.userType === type 
-                        ? (theme?.primary || '#007BFF')
-                        : (theme?.border || '#E0E0E0')
-                    }
-                  ]}>
-                    {localUser.userType === type && (
-                      <View 
-                        style={[
-                          styles.radioInnerCircle,
-                          { backgroundColor: theme?.primary || '#007BFF' }
-                        ]} 
-                      />
-                    )}
-                  </View>
-                  <RegularText style={{ color: theme?.text || '#000000' }}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </RegularText>
-                </TouchableOpacity>
-              ))}
-            </View>
+                {/* User Type Selection */}
+                <View style={styles.userTypeRadioContainer}>
+                  {['customer', 'staff', 'admin'].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={styles.userTypeRadioButton}
+                      onPress={() => {
+                        setLocalUser(prev => ({ ...prev, userType: type }));
+                      }}
+                    >
+                      <View style={[
+                        styles.radioOuterCircle,
+                        { 
+                          borderColor: localUser.userType === type 
+                            ? (theme?.primary || '#007BFF')
+                            : (theme?.border || '#E0E0E0')
+                        }
+                      ]}>
+                        {localUser.userType === type && (
+                          <View 
+                            style={[
+                              styles.radioInnerCircle,
+                              { backgroundColor: theme?.primary || '#007BFF' }
+                            ]} 
+                          />
+                        )}
+                      </View>
+                      <RegularText style={{ color: theme?.text || '#000000' }}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </RegularText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
 
             {/* Action Buttons */}
             <View style={styles.modalButtonContainer}>

@@ -744,11 +744,9 @@ const StaffContainersList = ({ navigation, route }) => {
         
         {/* Containers List */}
         <View style={styles.section}>
-        <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
-          {searchQuery.trim() 
-            ? `Search Results (${filteredContainers.length})` 
-            : `${filterOptions.find(option => option.id === activeFilter)?.label} Containers`}
-        </SemiBoldText>
+          <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
+            {filteredContainers.length} {activeFilter === 'all' ? '' : activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Containers Found
+          </SemiBoldText>
 
           <FilterTabs 
             options={filterOptions}
@@ -856,11 +854,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
   },
   cardContent: {
     alignItems: 'center',
