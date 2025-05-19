@@ -35,11 +35,18 @@ const { width, height } = Dimensions.get('window');
 
 
 
-const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
+const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress, isSelected }) => {
   const { theme } = useTheme();
   
   return (
-    <View style={[styles.card, { backgroundColor }]}>
+    <TouchableOpacity 
+      style={[
+        styles.card, 
+        { backgroundColor },
+        isSelected && styles.selectedCard
+      ]}
+      onPress={onPress}
+    >
       <View style={styles.cardContent}>
         <Ionicons name={icon} size={24} color={textColor} style={styles.cardIcon} />
         <View style={styles.cardTextContainer}>
@@ -47,7 +54,7 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
           <BoldText style={[styles.cardValue, { color: textColor }]}>{value}</BoldText>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -842,11 +849,23 @@ const ContainersList = ({ navigation, route }) => {
         <View style={styles.section}>
           <View style={styles.cardsContainer}>
             <ContainerCard 
+              title="All" 
+              value={containers.length}
+              icon="apps-outline"
+              backgroundColor="#f5f5f5"
+              textColor="#757575"
+              onPress={() => handleFilterChange('all')}
+              isSelected={activeFilter === 'all'}
+            />
+            
+            <ContainerCard 
               title="Active" 
               value={containerStats.activeContainers}
               icon="cube-outline"
               backgroundColor="#e8f5e9"
               textColor="#2e7d32"
+              onPress={() => handleFilterChange('active')}
+              isSelected={activeFilter === 'active'}
             />
             
             <ContainerCard 
@@ -855,6 +874,28 @@ const ContainersList = ({ navigation, route }) => {
               icon="refresh-outline"
               backgroundColor="#e3f2fd"
               textColor="#0277bd"
+              onPress={() => handleFilterChange('returned')}
+              isSelected={activeFilter === 'returned'}
+            />
+
+            <ContainerCard 
+              title="Lost" 
+              value={containerStats.lostContainers || 0}
+              icon="help-circle-outline"
+              backgroundColor="#fff3e0"
+              textColor="#ff9800"
+              onPress={() => handleFilterChange('lost')}
+              isSelected={activeFilter === 'lost'}
+            />
+
+            <ContainerCard 
+              title="Damaged" 
+              value={containerStats.damagedContainers || 0}
+              icon="alert-circle-outline"
+              backgroundColor="#ffebee"
+              textColor="#d32f2f"
+              onPress={() => handleFilterChange('damaged')}
+              isSelected={activeFilter === 'damaged'}
             />
             
             <ContainerCard 
@@ -863,33 +904,35 @@ const ContainersList = ({ navigation, route }) => {
               icon="cash-outline"
               backgroundColor="#fffde7"
               textColor="#f57f17"
+              onPress={() => navigation.navigate('Activities', { filter: 'rebate' })}
             />
           </View>
         </View>
         
         {/* Containers List */}
         <View style={styles.section}>
-        <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
-          {searchQuery.trim() 
-            ? `Search Results (${filteredContainers.length})` 
-            : `${filterOptions.find(option => option.id === activeFilter)?.label} Containers`}
-        </SemiBoldText>
+          <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
+            {searchQuery.trim() 
+              ? `${filteredContainers.length} Search Results Found` 
+              : activeFilter === 'all'
+                ? `${filteredContainers.length} Containers Found`
+                : `${filteredContainers.length} ${filterOptions.find(option => option.id === activeFilter)?.label} Containers Found`}
+          </SemiBoldText>
 
-
-          <FilterTabs 
+          {/* <FilterTabs 
             options={filterOptions}
             activeFilter={activeFilter}
             onFilterChange={handleFilterChange}
             theme={theme}
-          />
+          /> */}
 
-        <SearchComponent 
-          onSearch={handleSearch}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          theme={theme}
-          placeholder="Search by type, QR code, or restaurant..."
-        />
+          <SearchComponent 
+            onSearch={handleSearch}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            theme={theme}
+            placeholder="Search by type, QR code, or restaurant..."
+          />
           
           {renderSortButtons()}
           
@@ -989,13 +1032,15 @@ const styles = StyleSheet.create({
   card: {
     width: width / 3 - 14,
     borderRadius: 12,
-    padding: 12,
+    padding: 8,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedCard: {
+    borderColor: '#00df82',
+    borderWidth: 2,
   },
   cardContent: {
     alignItems: 'center',

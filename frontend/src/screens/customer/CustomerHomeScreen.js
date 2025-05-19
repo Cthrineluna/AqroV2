@@ -329,7 +329,7 @@ const CustomerHomeScreen = ({ navigation }) => {
               icon="cash-outline"
               backgroundColor="#fffde7"
               textColor="#f57f17"
-              onPress={() => navigation.navigate('Containers')}
+              onPress={() => navigation.navigate('Activities', { filter: 'rebate' })}
             />
           </View>
         </View>

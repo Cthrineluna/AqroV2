@@ -252,10 +252,24 @@ exports.getRestaurantContainerStats = async (req, res) => {
       status: 'returned'
     });
 
+    // Get lost containers count
+    const lostContainers = await Container.countDocuments({
+      restaurantId,
+      status: 'lost'
+    });
+
+    // Get damaged containers count
+    const damagedContainers = await Container.countDocuments({
+      restaurantId,
+      status: 'damaged'
+    });
+
     res.json({
       availableContainers,
       activeContainers,
-      returnedContainers
+      returnedContainers,
+      lostContainers,
+      damagedContainers
     });
   } catch (error) {
     console.error('Error getting restaurant container stats:', error);
