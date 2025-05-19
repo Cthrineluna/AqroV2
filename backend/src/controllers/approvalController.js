@@ -2,6 +2,7 @@
 const User = require('../models/Users');
 const Restaurant = require('../models/Restaurant');
 const emailService = require('../services/emailService');
+const { addDays } = require('date-fns');
 
 // Get pending staff approvals
 exports.getPendingStaff = async (req, res) => {
@@ -9,7 +10,8 @@ exports.getPendingStaff = async (req, res) => {
       const pendingStaff = await User.find({ 
         userType: 'staff',
         isApproved: false,
-        isEmailVerified: true 
+        isEmailVerified: true,
+        approvalStatus: 'pending'
       })
         .select('-password')
         .populate('restaurantId', 'name contactNumber');
@@ -86,45 +88,73 @@ exports.getPendingStaff = async (req, res) => {
   };
 
 // Reject staff member
-// Modify in controllers/approvalController.js
 exports.rejectStaff = async (req, res) => {
   try {
     const { staffId } = req.params;
-    const { reason } = req.body;
+    const { reason, permanent, documentsToRevise, deadline } = req.body;
 
-    // First find the user to get their email and restaurant info
+    // Find the user
     const user = await User.findById(staffId);
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Get the restaurantId before deleting
-    const restaurantId = user.restaurantId;
-    
-    // Store user email for sending rejection email
-    const userEmail = user.email;
-    const firstName = user.firstName;
-    
-    // Delete the restaurant if it exists
-    if (restaurantId) {
-      await Restaurant.findByIdAndDelete(restaurantId);
+    if (permanent) {
+      // For permanent rejection, delete both user and restaurant
+      const restaurantId = user.restaurantId;
+      
+      // Delete the restaurant first
+      if (restaurantId) {
+        await Restaurant.findByIdAndDelete(restaurantId);
+      }
+      
+      // Then delete the user
+      await User.findByIdAndDelete(staffId);
+
+      // Send permanent rejection email
+      await emailService.sendRejectionEmail(
+        { email: user.email, firstName: user.firstName }, 
+        reason,
+        null // No revision deadline for permanent rejection
+      );
+
+      res.json({ 
+        message: 'Staff permanently rejected and removed from the system',
+        user: {
+          id: user._id,
+          email: user.email
+        }
+      });
+    } else {
+      // Temporary rejection with revision
+      user.approvalStatus = 'needs_revision';
+      user.revisionRequestedAt = new Date();
+      user.revisionReason = reason;
+      user.revisionDeadline = deadline || addDays(new Date(), 7); // Use custom deadline if provided, otherwise default to 1 week
+      user.documentsToRevise = documentsToRevise || []; // Store which documents need revision
+      user.isActive = false;
+
+      await user.save();
+
+      // Send rejection email with revision deadline
+      await emailService.sendRejectionEmail(
+        { email: user.email, firstName: user.firstName }, 
+        reason,
+        user.revisionDeadline,
+        documentsToRevise
+      );
+
+      res.json({ 
+        message: 'Staff marked for document revision',
+        user: {
+          id: user._id,
+          email: user.email,
+          revisionDeadline: user.revisionDeadline,
+          documentsToRevise: user.documentsToRevise
+        }
+      });
     }
-    
-    // Delete the user
-    await User.findByIdAndDelete(staffId);
-
-    // Send rejection email
-    await emailService.sendRejectionEmail(
-      { email: userEmail, firstName: firstName }, 
-      reason
-    );
-
-    res.json({ 
-      message: 'Staff registration rejected and account deleted',
-      deletedUserId: staffId,
-      deletedRestaurantId: restaurantId
-    });
   } catch (error) {
     console.error('Error rejecting staff:', error);
     res.status(500).json({ message: 'Server error' });
@@ -219,5 +249,23 @@ exports.getStaffDocuments = async (req, res) => {
       message: 'Server error while retrieving document',
       error: error.message
     });
+  }
+};
+
+// Get staff members who need revision
+exports.getStaffNeedingRevision = async (req, res) => {
+  try {
+    const staffNeedingRevision = await User.find({ 
+      userType: 'staff',
+      approvalStatus: 'needs_revision',
+      isEmailVerified: true 
+    })
+      .select('-password')
+      .populate('restaurantId', 'name contactNumber');
+    
+    res.json(staffNeedingRevision);
+  } catch (error) {
+    console.error('Error fetching staff needing revision:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

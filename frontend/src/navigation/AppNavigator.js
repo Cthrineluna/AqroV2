@@ -11,7 +11,8 @@ import RetailRegisterScreen from '../screens/auth/RetailerRegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
-import PendingApprovalScreen from '../screens/auth/PendingApprovalScreen'; 
+import PendingApprovalScreen from '../screens/auth/PendingApprovalScreen';
+import DocumentResubmissionScreen from '../screens/auth/DocumentResubmissionScreen';
 
 // Shared screens
 import SettingsScreen from '../screens/shared/SettingsScreen';
@@ -68,13 +69,25 @@ const AppNavigator = () => {
           <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
         </>
       ) : userType === 'staff' && !user?.isApproved ? (
-        // Staff-specific: Approved pending
+        // Staff-specific: Approval pending or needs revision
         <>
-          <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
-          <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ headerShown: false }} />
+          {user?.approvalStatus === 'needs_revision' ? (
+            // Document resubmission flow
+            <>
+              <Stack.Screen name="DocumentResubmission" component={DocumentResubmissionScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+            </>
+          ) : (
+            // Regular approval pending flow
+            <>
+              <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Reports" component={ReportsScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ headerShown: false }} />
+            </>
+          )}
         </>
       ) : userType === 'customer' ? (
         // Customer flow
@@ -94,7 +107,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="StaffScanner" component={StaffScannerScreen} />
           <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
-          <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
+          <Stack.Screen name="Reports" component={ReportsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ headerShown: false }} />
         </>
       ) : (
@@ -106,7 +119,7 @@ const AppNavigator = () => {
           <Stack.Screen name="ViewQr" component={ViewQRScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="Reports" component={ReportsScreen}  options={{ headerShown: false }} />
+          <Stack.Screen name="Reports" component={ReportsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ headerShown: false }} />
         </>
       )}

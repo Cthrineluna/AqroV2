@@ -20,7 +20,7 @@ import {
   TextInput
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { approveStaff, getPendingStaff, getStaffDocuments, rejectStaff  } from '../../services/approvalService';
+import { approveStaff, getPendingStaff, getStaffDocuments, rejectStaff, getStaffNeedingRevision } from '../../services/approvalService';
 import { Ionicons } from '@expo/vector-icons';
 import {
   RegularText,
@@ -36,10 +36,13 @@ import * as Sharing from 'expo-sharing';
 import { StorageAccessFramework } from 'expo-file-system';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { Animated } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AdminApprovalScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'revision'
   const [pendingStaff, setPendingStaff] = useState([]);
+  const [revisionStaff, setRevisionStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [buttonLoading, setButtonLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,24 +58,34 @@ const AdminApprovalScreen = ({ navigation }) => {
   const [debouncedHelpVisible, setDebouncedHelpVisible] = useState(true);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
+  const [isPermanentRejection, setIsPermanentRejection] = useState(false);
+  const [selectedDocuments, setSelectedDocuments] = useState({
+    businessPermit: false,
+    birRegistration: false
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customDeadline, setCustomDeadline] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default 1 week
+  const [useCustomDeadline, setUseCustomDeadline] = useState(false);
 
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setDebouncedHelpVisible(selectedStaffIds.length === 0);
-  }, 0); 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedHelpVisible(selectedStaffIds.length === 0);
+    }, 0); 
 
-  return () => clearTimeout(timer); // Cleanup
-}, [selectedStaffIds.length]);
+    return () => clearTimeout(timer);
+  }, [selectedStaffIds.length]);
 
-  
-
-
-  const fetchPendingStaff = async () => {
+  const fetchStaff = async () => {
     try {
-      const staff = await getPendingStaff();
-      setPendingStaff(staff);
+      setLoading(true);
+      const [pending, revision] = await Promise.all([
+        getPendingStaff(),
+        getStaffNeedingRevision()
+      ]);
+      setPendingStaff(pending);
+      setRevisionStaff(revision);
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch pending staff');
+      Alert.alert('Error', 'Failed to fetch staff data');
       console.error(error);
     } finally {
       setLoading(false);
@@ -81,8 +94,13 @@ useEffect(() => {
   };
 
   useEffect(() => {
-    fetchPendingStaff();
+    fetchStaff();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchStaff();
+  };
 
   const handleApproveSelected = async () => {
     if (selectedStaffIds.length === 0) {
@@ -99,7 +117,11 @@ useEffect(() => {
       
       Alert.alert('Success', `${selectedStaffIds.length} staff member(s) approved successfully`);
       // Remove approved staff from the list
-      setPendingStaff(pendingStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
+      if (activeTab === 'pending') {
+        setPendingStaff(pendingStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
+      } else {
+        setRevisionStaff(revisionStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
+      }
       // Clear selection
       setSelectedStaffIds([]);
     } catch (error) {
@@ -110,78 +132,64 @@ useEffect(() => {
     }
   };
 
-const handleRejectSelected = async () => {
-  if (selectedStaffIds.length === 0) {
-    Alert.alert('Info', 'Please select at least one staff member to reject');
-    return;
-  }
-
-   setRejectionReason(''); // Clear previous reason
-  setRejectionModalVisible(true);
-
-  // Use Alert.prompt or a modal to get the rejection reason
-  Alert.prompt(
-    'Rejection Reason',
-    'Please provide a reason for rejection (will be included in email):',
-    [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Reject',
-        style: 'destructive',
-        onPress: async (reason) => {
-          try {
-            setButtonLoading(true);
-            // Process rejections sequentially
-            for (const staffId of selectedStaffIds) {
-              await rejectStaff(staffId, reason);
-            }
-            
-            Alert.alert('Success', `${selectedStaffIds.length} staff member(s) rejected`);
-            // Update the list after rejection
-            setPendingStaff(pendingStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
-            // Clear selection
-            setSelectedStaffIds([]);
-          } catch (error) {
-            Alert.alert('Error', 'Failed to reject staff');
-            console.error(error);
-          } finally {
-            setButtonLoading(false);
-          }
-        }
-      }
-    ],
-    'plain-text'
-  );
-};
-
-const confirmRejection = async () => {
-  try {
-    setButtonLoading(true);
-    // Process rejections sequentially
-    for (const staffId of selectedStaffIds) {
-      await rejectStaff(staffId, rejectionReason);
+  const handleRejectSelected = async () => {
+    if (selectedStaffIds.length === 0) {
+      Alert.alert('Info', 'Please select at least one staff member to reject');
+      return;
     }
-    
-    Alert.alert('Success', `${selectedStaffIds.length} staff member(s) rejected`);
-    // Update the list after rejection
-    setPendingStaff(pendingStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
-    // Clear selection
-    setSelectedStaffIds([]);
-    setRejectionModalVisible(false);
-  } catch (error) {
-    Alert.alert('Error', 'Failed to reject staff');
-    console.error(error);
-  } finally {
-    setButtonLoading(false);
-  }
-};
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchPendingStaff();
+    setRejectionReason('');
+    setRejectionModalVisible(true);
+  };
+
+  const confirmRejection = async () => {
+    try {
+      setButtonLoading(true);
+      
+      // Convert selected documents to array
+      const documentsToRevise = Object.entries(selectedDocuments)
+        .filter(([_, selected]) => selected)
+        .map(([docType]) => docType);
+
+      // Calculate deadline
+      const deadline = useCustomDeadline ? customDeadline : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      // Process rejections sequentially
+      for (const staffId of selectedStaffIds) {
+        await rejectStaff(staffId, rejectionReason, isPermanentRejection, documentsToRevise, deadline);
+      }
+      
+      Alert.alert(
+        'Success', 
+        `${selectedStaffIds.length} staff member(s) ${isPermanentRejection ? 'permanently rejected' : 'marked for revision'}`
+      );
+      
+      // Update the lists after rejection
+      if (isPermanentRejection) {
+        // If permanent rejection, remove from both lists
+        setPendingStaff(pendingStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
+        setRevisionStaff(revisionStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
+      } else {
+        // If temporary rejection (needs revision), move from pending to revision list
+        const rejectedStaff = pendingStaff.filter(staff => selectedStaffIds.includes(staff._id));
+        setPendingStaff(pendingStaff.filter(staff => !selectedStaffIds.includes(staff._id)));
+        setRevisionStaff([...revisionStaff, ...rejectedStaff]);
+      }
+      
+      // Clear selection and modal
+      setSelectedStaffIds([]);
+      setRejectionModalVisible(false);
+      setRejectionReason('');
+      setIsPermanentRejection(false);
+      setSelectedDocuments({ businessPermit: false, birRegistration: false });
+      setUseCustomDeadline(false);
+      setCustomDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    } catch (error) {
+      Alert.alert('Error', 'Failed to process rejection request');
+      console.error(error);
+    } finally {
+      setButtonLoading(false);
+    }
   };
 
   const handleSelectStaff = (staffId) => {
@@ -308,21 +316,124 @@ const confirmRejection = async () => {
       setDocumentProcessing(false);
     }
   };
+
   const handleToggleSelectAll = () => {
-    if (selectedStaffIds.length === pendingStaff.length) {
+    if (selectedStaffIds.length === (activeTab === 'pending' ? pendingStaff : revisionStaff).length) {
       // Deselect all
       setSelectedStaffIds([]);
     } else {
       // Select all
-      setSelectedStaffIds(pendingStaff.map(staff => staff._id));
+      setSelectedStaffIds((activeTab === 'pending' ? pendingStaff : revisionStaff).map(staff => staff._id));
     }
   };
-  
 
-  {/* Rejection Reason Modal */}
+  const renderTabs = () => (
+    <View style={styles.tabContainer}>
+      <TouchableOpacity
+        style={[
+          styles.tab,
+          activeTab === 'pending' && styles.activeTab,
+          { borderColor: theme.primary }
+        ]}
+        onPress={() => {
+          setActiveTab('pending');
+          setSelectedStaffIds([]);
+        }}
+      >
+        <MediumText style={[
+          styles.tabText,
+          activeTab === 'pending' && { color: theme.primary }
+        ]}>
+          Pending ({pendingStaff.length})
+        </MediumText>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={[
+          styles.tab,
+          activeTab === 'revision' && styles.activeTab,
+          { borderColor: theme.primary }
+        ]}
+        onPress={() => {
+          setActiveTab('revision');
+          setSelectedStaffIds([]);
+        }}
+      >
+        <MediumText style={[
+          styles.tabText,
+          activeTab === 'revision' && { color: theme.primary }
+        ]}>
+          Needs Revision ({revisionStaff.length})
+        </MediumText>
+      </TouchableOpacity>
+    </View>
+  );
 
-  
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
 
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      onPress={() => handleSelectStaff(item._id)}
+      onLongPress={() => handleLongPressStaff(item)}
+      delayLongPress={500}
+      activeOpacity={0.7}
+    >
+      <ThemedView style={[
+        styles.card,
+        { 
+          backgroundColor: selectedStaffIds.includes(item._id) 
+            ? theme.card || '#e3f2fd'  
+            : theme.card || '#ffffff',
+          borderColor: theme?.border || '#E0E0E0' 
+        },
+        selectedStaffIds.includes(item._id) && { 
+          borderColor: theme.primary, 
+          borderWidth: 2 
+        }
+      ]}>
+        <View style={styles.infoContainer}>
+          <SemiBoldText style={styles.name}>
+            {item.firstName} {item.lastName}
+          </SemiBoldText>
+          <RegularText style={[styles.email, { color: theme.primary }]}>
+            {item.email}
+          </RegularText>
+          <MediumText style={styles.restaurant}>
+            Restaurant: {item.restaurantId?.name || 'N/A'}
+          </MediumText>
+          <RegularText style={[styles.date, { color: theme.primary }]}>
+            Registered: {formatDate(item.createdAt)}
+          </RegularText>
+          {activeTab === 'revision' && item.revisionReason && (
+            <View style={styles.revisionInfo}>
+              <MediumText style={[styles.revisionReason, { color: theme.error || '#ff6b6b' }]}>
+                Revision Reason: {item.revisionReason}
+              </MediumText>
+              {item.revisionDeadline && (
+                <RegularText style={[styles.deadline, { color: theme.text }]}>
+                  Deadline: {formatDate(item.revisionDeadline)}
+                </RegularText>
+              )}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.statusIndicator}>
+          <Ionicons 
+            name={selectedStaffIds.includes(item._id) ? "checkmark-circle" : "ellipse"} 
+            size={24} 
+            color={selectedStaffIds.includes(item._id) ? theme.primary : theme.background} 
+          />
+        </View>
+      </ThemedView>
+    </TouchableOpacity>
+  );
 
   // Now let's update the renderDocumentModal function
   const renderDocumentModal = () => (
@@ -419,54 +530,13 @@ const confirmRejection = async () => {
       </View>
     </Modal>
   );
-  
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => handleSelectStaff(item._id)}
-      onLongPress={() => handleLongPressStaff(item)}
-      delayLongPress={500} // 500ms long press to view documents
-      activeOpacity={0.7}
-    >
-      <ThemedView style={[
-        styles.card,
-        { 
-          backgroundColor: selectedStaffIds.includes(item._id) 
-            ? theme.card || '#e3f2fd'  
-            : theme.card || '#ffffff',
-            borderColor: theme?.border || '#E0E0E0' 
-                   
-        },
-        selectedStaffIds.includes(item._id) && { 
-          borderColor: theme.primary, 
-          borderWidth: 2 
-        }
-      ]}>
-        <View style={styles.infoContainer}>
-          <SemiBoldText style={styles.name}>
-            {item.firstName} {item.lastName}
-          </SemiBoldText>
-          <RegularText style={[styles.email, { color: theme.primary }]}>
-            {item.email}
-          </RegularText>
-          <MediumText style={styles.restaurant}>
-            Restaurant: {item.restaurantId?.name || 'N/A'}
-          </MediumText>
-          <RegularText style={[styles.date, { color: theme.primary }]}>
-            Registered: {new Date(item.createdAt).toLocaleDateString()}
-          </RegularText>
-        </View>
-
-        <View style={styles.statusIndicator}>
-          <Ionicons 
-            name={selectedStaffIds.includes(item._id) ? "checkmark-circle" : "ellipse"} 
-            size={24} 
-            color={selectedStaffIds.includes(item._id) ? theme.primary : theme.background} 
-          />
-        </View>
-      </ThemedView>
-    </TouchableOpacity>
-  );
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setCustomDeadline(selectedDate);
+    }
+  };
 
   if (loading && !refreshing) {
     return (
@@ -479,55 +549,59 @@ const confirmRejection = async () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <StatusBar 
-              backgroundColor={theme?.background || '#FFFFFF'} 
-              barStyle={isDark ? "light-content" : "dark-content"} 
-            />
+        backgroundColor={theme?.background || '#FFFFFF'} 
+        barStyle={isDark ? "light-content" : "dark-content"} 
+      />
       <ThemedView style={styles.container}>
-         <View style={[
-                styles.header, 
-                { backgroundColor: theme?.background || '#FFFFFF' }
-              ]}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <Ionicons 
-                    name="arrow-back" 
-                    size={24} 
-                    color={theme?.text || '#000000'} 
-                  />
-                </TouchableOpacity>
-                
-                <SemiBoldText style={[
-                  styles.headerTitle, 
-                  { color: theme?.text || '#000000' }
-                ]}>
-                 Approvals
-                </SemiBoldText>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <RegularText style={{ marginRight: 10 }}>
-                {selectedStaffIds.length} selected
-              </RegularText>
-              {pendingStaff.length > 0 && (
-                <TouchableOpacity 
-                  onPress={handleToggleSelectAll}
-                  style={{ padding: 5 }}
-                >
-                  <MediumText style={{ color: theme.primary }}>
-                    {selectedStaffIds.length === pendingStaff.length ? 'Deselect All' : 'Select All'}
-                  </MediumText>
-                </TouchableOpacity>
-              )}
-            </View>
+        <View style={[
+          styles.header, 
+          { backgroundColor: theme?.background || '#FFFFFF' }
+        ]}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons 
+              name="arrow-back" 
+              size={24} 
+              color={theme?.text || '#000000'} 
+            />
+          </TouchableOpacity>
+          
+          <SemiBoldText style={[
+            styles.headerTitle, 
+            { color: theme?.text || '#000000' }
+          ]}>
+            Approvals
+          </SemiBoldText>
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <RegularText style={{ marginRight: 10 }}>
+              {selectedStaffIds.length} selected
+            </RegularText>
+            {(activeTab === 'pending' ? pendingStaff : revisionStaff).length > 0 && (
+              <TouchableOpacity 
+                onPress={handleToggleSelectAll}
+                style={{ padding: 5 }}
+              >
+                <MediumText style={{ color: theme.primary }}>
+                  {selectedStaffIds.length === (activeTab === 'pending' ? pendingStaff : revisionStaff).length ? 'Deselect All' : 'Select All'}
+                </MediumText>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
+
+        {renderTabs()}
         
         <FlatList
-          data={pendingStaff}
+          data={activeTab === 'pending' ? pendingStaff : revisionStaff}
           renderItem={renderItem}
           keyExtractor={(item) => item._id}
-          
           ListEmptyComponent={
             <ThemedView style={styles.emptyContainer}>
               <Ionicons name="checkmark-done-circle" size={64} color={theme.primary} />
               <MediumText style={styles.emptyText}>
-                No pending staff approvals
+                {activeTab === 'pending' 
+                  ? 'No pending staff approvals'
+                  : 'No staff members need revision'}
               </MediumText>
             </ThemedView>
           }
@@ -569,99 +643,181 @@ const confirmRejection = async () => {
             </View>
           </View>
         )}
+
         {debouncedHelpVisible && (
-        <TouchableOpacity 
-          style={[styles.helpButton, { backgroundColor: theme.primary }]}
-          onPress={() => Alert.alert('Help', 'Tap a staff card to select for approval/rejection. Hold a card to view their documents. You can select multiple staff members to approve or reject in batch.')}
+          <TouchableOpacity 
+            style={[styles.helpButton, { backgroundColor: theme.primary }]}
+            onPress={() => Alert.alert('Help', 'Tap a staff card to select for approval/rejection. Hold a card to view their documents. You can select multiple staff members to approve or reject in batch.')}
+          >
+            <Ionicons name="help" size={24} color="white" />
+          </TouchableOpacity>
+        )}
+
+        {/* Rejection Reason Modal */}
+        <Modal
+          visible={rejectionModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setRejectionModalVisible(false)}
         >
-          <Ionicons name="help" size={24} color="white" />
-        </TouchableOpacity>
-)}
-{/* Rejection Reason Modal */}
-<Modal
-  visible={rejectionModalVisible}
-  transparent={true}
-  animationType="slide"
-  onRequestClose={() => setRejectionModalVisible(false)}
->
-  <View style={{
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)'
-  }}>
-    <View style={{
-      width: '80%',
-      backgroundColor: isDark ? '#1e1e1e' : '#ffffff',
-      borderRadius: 10,
-      padding: 20,
-      elevation: 5
-    }}>
-      <Text style={{
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: isDark ? '#ffffff' : '#000000',
-        marginBottom: 15
-      }}>
-        Rejection Reason
-      </Text>
-      <TextInput
-        style={{
-          borderWidth: 1,
-          borderColor: isDark ? '#444444' : '#cccccc',
-          borderRadius: 5,
-          padding: 10,
-          color: isDark ? '#ffffff' : '#000000',
-          backgroundColor: isDark ? '#333333' : '#f5f5f5',
-          marginBottom: 20,
-          textAlignVertical: 'top'
-        }}
-        multiline
-        numberOfLines={4}
-        placeholder="Please provide a reason for rejection (will be included in email)"
-        placeholderTextColor={isDark ? '#aaaaaa' : '#777777'}
-        value={rejectionReason}
-        onChangeText={setRejectionReason}
-      />
-      <View style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between'
-      }}>
-        <TouchableOpacity
-          style={{
-            padding: 10,
-            borderRadius: 5,
-            backgroundColor: isDark ? '#444444' : '#dddddd',
-            width: '45%',
-            alignItems: 'center'
-          }}
-          onPress={() => setRejectionModalVisible(false)}
-        >
-          <Text style={{ color: isDark ? '#ffffff' : '#000000' }}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{
-            padding: 10,
-            borderRadius: 5,
-            backgroundColor: '#ff6b6b',
-            width: '45%',
-            alignItems: 'center'
-          }}
-          onPress={confirmRejection}
-          disabled={buttonLoading}
-        >
-          {buttonLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={{ color: '#fff' }}>Reject</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
+          <TouchableOpacity 
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setRejectionModalVisible(false)}
+          >
+            <TouchableOpacity 
+              activeOpacity={1} 
+              style={[styles.modalContent, { backgroundColor: theme.card }]}
+            >
+              <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+                <BoldText style={[styles.modalTitle, { color: theme.text }]}>
+                  {isPermanentRejection ? 'Permanently Reject Staff' : 'Request Document Revision'}
+                </BoldText>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setRejectionModalVisible(false);
+                    setRejectionReason('');
+                    setIsPermanentRejection(false);
+                    setUseCustomDeadline(false);
+                    setCustomDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+                  }}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close" size={24} color={theme.text} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalBody}>
+                <RegularText style={[styles.modalSubtitle, { 
+                  color: isPermanentRejection ? theme.danger : theme.text 
+                }]}>
+                  {isPermanentRejection 
+                    ? 'WARNING: This action will permanently remove the staff member and their restaurant from the system. This cannot be undone.'
+                    : 'Please provide a reason why the documents need to be revised.'}
+                </RegularText>
+                
+                <TextInput
+                  style={[styles.reasonInput, { 
+                    backgroundColor: theme.input,
+                    color: theme.text,
+                    borderColor: isPermanentRejection ? theme.danger : theme.border
+                  }]}
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Enter reason..."
+                  placeholderTextColor={theme.text + '80'}
+                  value={rejectionReason}
+                  onChangeText={setRejectionReason}
+                />
+
+                {!isPermanentRejection && (
+                  <>
+                    <View style={styles.deadlineContainer}>
+                      <TouchableOpacity
+                        style={[styles.datePickerButton, { borderColor: theme.border }]}
+                        onPress={() => setShowDatePicker(true)}
+                      >
+                        <Ionicons name="calendar-outline" size={20} color={theme.primary} />
+                        <RegularText style={{ marginLeft: 8, color: theme.text }}>
+                          Deadline: {formatDate(customDeadline)}
+                        </RegularText>
+                      </TouchableOpacity>
+
+                      {showDatePicker && (
+                        <DateTimePicker
+                          value={customDeadline}
+                          mode="date"
+                          display="default"
+                          onChange={handleDateChange}
+                          minimumDate={new Date()}
+                        />
+                      )}
+                    </View>
+
+                    <View style={styles.documentSelectionContainer}>
+                      <RegularText style={[styles.documentSelectionTitle, { color: theme.text }]}>
+                        Select documents that need revision:
+                      </RegularText>
+                      
+                      <TouchableOpacity
+                        style={styles.documentCheckbox}
+                        onPress={() => setSelectedDocuments(prev => ({
+                          ...prev,
+                          businessPermit: !prev.businessPermit
+                        }))}
+                      >
+                        <Ionicons 
+                          name={selectedDocuments.businessPermit ? "checkbox" : "square-outline"} 
+                          size={24} 
+                          color={theme.primary} 
+                        />
+                        <RegularText style={{ marginLeft: 8, color: theme.text }}>
+                          Business Permit
+                        </RegularText>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.documentCheckbox}
+                        onPress={() => setSelectedDocuments(prev => ({
+                          ...prev,
+                          birRegistration: !prev.birRegistration
+                        }))}
+                      >
+                        <Ionicons 
+                          name={selectedDocuments.birRegistration ? "checkbox" : "square-outline"} 
+                          size={24} 
+                          color={theme.primary} 
+                        />
+                        <RegularText style={{ marginLeft: 8, color: theme.text }}>
+                          BIR Registration
+                        </RegularText>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.rejectionTypeButton, { justifyContent: 'center' }]}
+                  onPress={() => setIsPermanentRejection(!isPermanentRejection)}
+                >
+                  <Ionicons 
+                    name={isPermanentRejection ? "checkbox" : "square-outline"} 
+                    size={24} 
+                    color={isPermanentRejection ? theme.danger : theme.primary} 
+                  />
+                  <RegularText style={{ 
+                    marginLeft: 8, 
+                    color: isPermanentRejection ? theme.danger : theme.text,
+                    fontSize: 16
+                  }}>
+                    Permanently reject
+                  </RegularText>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  style={[
+                    styles.confirmButton,
+                    isPermanentRejection && { 
+                      backgroundColor: theme.danger,
+                      borderColor: theme.danger
+                    },
+                    (!rejectionReason.trim() || buttonLoading) && { opacity: 0.5 }
+                  ]}
+                  onPress={confirmRejection}
+                  disabled={!rejectionReason.trim() || buttonLoading}
+                >
+                  <BoldText style={{ color: 'white', textAlign: 'center' }}>
+                    {buttonLoading ? 'Processing...' : isPermanentRejection ? 'Permanently Reject' : 'Request Revision'}
+                  </BoldText>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+
         {/* Document Modal - No WebView */}
-        
         {renderDocumentModal()}
       </ThemedView>
     </SafeAreaView>
@@ -853,26 +1009,22 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#4CAF50',
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: Platform.select({
-      ios: 16,
-      android: 8,
-    }),
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
   },
   modalContent: {
-    borderRadius: 12,
-    padding: 16,
-    maxHeight: Platform.select({
-      ios: '80%',
-      android: '90%', // Slightly taller on Android
-    }),
     width: '100%',
-    marginHorizontal: Platform.select({
-      android: 8, // Add some margin on Android
-    }),
+    maxWidth: 500,
+    borderRadius: 12,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -880,7 +1032,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 20,
+    flex: 1,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalBody: {
+    padding: 16,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    fontSize: 16,
+  },
+  modalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+    alignItems: 'center',
+  },
+  confirmButton: {
+    backgroundColor: '#00df82',
+    borderRadius: 8,
+    padding: 12,
+    minWidth: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   documentContainer: {
     padding: 8,
@@ -936,9 +1124,82 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   // Add to your StyleSheet
-selectAllText: {
-  fontSize: 14,
-},
+  selectAllText: {
+    fontSize: 14,
+  },
+  rejectionTypeContainer: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  rejectionTypeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  documentSelectionContainer: {
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  documentSelectionTitle: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  documentCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 0,
+    marginHorizontal: 4,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 14,
+  },
+  revisionInfo: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    borderRadius: 8,
+  },
+  revisionReason: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  deadline: {
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  deadlineContainer: {
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  deadlineToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 8,
+  },
 });
 
 export default AdminApprovalScreen;

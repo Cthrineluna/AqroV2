@@ -38,20 +38,20 @@ export const getPendingStaff = async () => {
   };
 
 // Reject a staff member (for admin)
-  export const rejectStaff = async (staffId, reason) => {
-    try {
-      const token = await AsyncStorage.getItem('aqro_token');
-      const response = await axios.post(
-        `${getApiUrl()}/admin/reject-staff/${staffId}`,
-        { reason },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error rejecting staff:', error);
-      throw error.response?.data || { message: 'Failed to reject staff' };
-    }
-  };
+export const rejectStaff = async (staffId, reason, permanent = false, documentsToRevise = [], deadline = null) => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    const response = await axios.post(
+      `${getApiUrl()}/admin/reject-staff/${staffId}`,
+      { reason, permanent, documentsToRevise, deadline },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error rejecting staff:', error);
+    throw error.response?.data || { message: 'Failed to reject staff' };
+  }
+};
 
 // In approvalService.js
 // Add this to your approvalService.js
@@ -207,5 +207,19 @@ export const checkApprovalStatus = async () => {
   } catch (error) {
     console.error('Error checking approval status:', error);
     throw error.response?.data || { message: 'Failed to check approval status' };
+  }
+};
+
+// Get staff members who need revision
+export const getStaffNeedingRevision = async () => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    const response = await axios.get(`${getApiUrl()}/admin/staff-needing-revision`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching staff needing revision:', error);
+    throw error.response?.data || { message: 'Failed to fetch staff needing revision' };
   }
 };

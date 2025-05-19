@@ -11,6 +11,7 @@ export const lightTheme = {
   card: '#ffffff',
   border: 'rgba(3, 15, 15, 0.1)',
   input: '#ffffff',
+  danger: '#ff4444',     // Red for danger/warning
 };
 
 export const darkTheme = {
@@ -20,7 +21,8 @@ export const darkTheme = {
   secondary: '#a3a2a2',   // Dark secondary
   card: '#1e1e1e',
   border: 'rgba(240, 248, 255, 0.1)',
-  input: '#1e1e1e'
+  input: '#1e1e1e',
+  danger: '#ff6b6b',      // Slightly lighter red for dark theme
 };
 
 // Create context

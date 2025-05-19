@@ -27,7 +27,13 @@ exports.protect = async (req, res, next) => {
       return res.status(401).json({ message: 'User no longer exists' });
     }
 
-    // Check if user is active
+    // For staff users with needs_revision status, allow access
+    if (user.userType === 'staff' && user.approvalStatus === 'needs_revision') {
+      req.user = user;
+      return next();
+    }
+
+    // Check if user is active (for all other cases)
     if (!user.isActive) {
       return res.status(403).json({ message: 'User account has been deactivated' });
     }

@@ -50,7 +50,10 @@ const generateToken = (user) => {
     { 
       id: user._id, 
       email: user.email,
-      userType: user.userType 
+      userType: user.userType,
+      isEmailVerified: user.isEmailVerified,
+      isApproved: user.userType === 'staff' ? user.isApproved : true,
+      approvalStatus: user.approvalStatus || 'pending'
     },
     process.env.JWT_SECRET || 'your-secret-key',
     { expiresIn: '7d' }
@@ -281,8 +284,6 @@ exports.resendVerification = async (req, res) => {
   }
 };
 
-
-
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -303,11 +304,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(403).json({ message: 'Account is disabled. Please contact support.' });
-    }
-
     // Check if email is verified
     if (!user.isEmailVerified) {
       return res.status(403).json({ 
@@ -318,50 +314,73 @@ exports.login = async (req, res) => {
     }
 
     // Check if password matches
-   const isMatch = await user.comparePassword(password);
-if (!isMatch) {
-  // Increment login attempts
-  user.loginAttempts += 1;
-  
-  // Start progressive lockout after 3 failed attempts
-  if (user.loginAttempts >= 5) {
-    const lockDuration = calculateLockoutDuration(user.loginAttempts - 4); // Adjust index because we start at attempt 3
-    user.lockUntil = Date.now() + lockDuration;
-    
-    // Format the lockout duration for the message
-    const lockoutTimeMessage = formatLockoutTime(lockDuration);
-    
-    await user.save();
-    
-    return res.status(403).json({ 
-      message: `Too many failed login attempts. Your account has been temporarily locked for ${lockoutTimeMessage}. Please try resetting your password.`,
-      accountLocked: true,
-      email: user.email,
-      lockDuration: lockDuration // Send duration to frontend
-    });
-  }
-  
-  await user.save();
-  // We'll show warning after 2 attempts
-  const warningThreshold = 4;
-  
-  if (user.loginAttempts >= warningThreshold) {
-    return res.status(400).json({ 
-      message: `Invalid email or password. ${5 - user.loginAttempts} attempt${5 - user.loginAttempts !== 1 ? 's' : ''} remaining before lockout.`,
-      attemptsRemaining: 5 - user.loginAttempts
-    });
-  } else {
-    return res.status(400).json({ 
-      message: 'Invalid email or password.',
-      attemptsRemaining: 5 - user.loginAttempts
-    });
-  }
-}
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      // Increment login attempts
+      user.loginAttempts += 1;
+      
+      // Start progressive lockout after 3 failed attempts
+      if (user.loginAttempts >= 5) {
+        const lockDuration = calculateLockoutDuration(user.loginAttempts - 4);
+        user.lockUntil = Date.now() + lockDuration;
+        const lockoutTimeMessage = formatLockoutTime(lockDuration);
+        
+        await user.save();
+        
+        return res.status(403).json({ 
+          message: `Too many failed login attempts. Your account has been temporarily locked for ${lockoutTimeMessage}. Please try resetting your password.`,
+          accountLocked: true,
+          email: user.email,
+          lockDuration: lockDuration
+        });
+      }
+      
+      await user.save();
+      const warningThreshold = 4;
+      
+      if (user.loginAttempts >= warningThreshold) {
+        return res.status(400).json({ 
+          message: `Invalid email or password. ${5 - user.loginAttempts} attempt${5 - user.loginAttempts !== 1 ? 's' : ''} remaining before lockout.`,
+          attemptsRemaining: 5 - user.loginAttempts
+        });
+      } else {
+        return res.status(400).json({ 
+          message: 'Invalid email or password.',
+          attemptsRemaining: 5 - user.loginAttempts
+        });
+      }
+    }
 
     // Reset login attempts on successful login
     user.loginAttempts = 0;
     user.lockUntil = null;
     await user.save();
+
+    // For staff users, check approval status before isActive
+    if (user.userType === 'staff') {
+      if (user.approvalStatus === 'needs_revision') {
+        // Generate token and return user info for revision
+        const token = generateToken(user);
+        return res.json({
+          token,
+          user: {
+            id: user._id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            userType: user.userType,
+            isEmailVerified: user.isEmailVerified,
+            isApproved: false,
+            approvalStatus: 'needs_revision'
+          }
+        });
+      }
+    }
+
+    // Check if user is active (for non-staff or approved staff)
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Account is disabled. Please contact support.' });
+    }
 
     // Generate token
     const token = generateToken(user);
@@ -375,7 +394,9 @@ if (!isMatch) {
         firstName: user.firstName,
         lastName: user.lastName,
         userType: user.userType,
-        isEmailVerified: user.isEmailVerified
+        isEmailVerified: user.isEmailVerified,
+        isApproved: user.isApproved || false,
+        approvalStatus: user.approvalStatus || 'pending'
       }
     });
   } catch (error) {

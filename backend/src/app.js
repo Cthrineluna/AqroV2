@@ -12,6 +12,7 @@ const { userRoutes, adminUserRoutes } = require('./routes/userRoutes');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 const path = require('path');
+const documentRoutes = require('./routes/documentRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -40,6 +41,7 @@ app.use('/api/containers/qrcode', cors({
 app.use('/api/rebates', rebateRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/api/documents', documentRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/aqro')

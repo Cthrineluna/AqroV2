@@ -57,22 +57,34 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  approvalStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'needs_revision'],
+    default: 'pending'
+  },
   approvalRequestedAt: Date,
   approvedAt: Date,
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  revisionRequestedAt: Date,
+  revisionReason: String,
+  revisionDeadline: Date,
+  documentsToRevise: {
+    type: [String],
+    default: []
+  },
   resetPasswordToken: {
-  type: String,
-  default: null
-},
-resetPasswordExpires: {
-  type: Date,
-  default: null
-},
-loginAttempts: { type: Number, default: 0 },
-lockUntil: { type: Date, default: null }
+    type: String,
+    default: null
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null
+  },
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: { type: Date, default: null }
 }, {
   timestamps: true
 });

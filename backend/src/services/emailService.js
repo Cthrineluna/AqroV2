@@ -129,34 +129,35 @@ exports.sendApprovalNotification = async (user) => {
 
 // Send rejection email to staff
 // Update in services/emailService.js
-exports.sendRejectionEmail = async (user, reason) => {
+exports.sendRejectionEmail = async (user, reason, revisionDeadline) => {
   try {
-    // Support both full user objects and minimal objects with just email/firstName
-    const userEmail = user.email;
-    const userName = user.firstName || 'Applicant';
-    
     const mailOptions = {
-      from: process.env.EMAIL_FROM || '"AQRO App" <noreply@aqro.app>',
-      to: userEmail,
-      subject: 'Update on Your AQRO Account Application',
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: revisionDeadline ? 'Document Revision Required - AQRO Staff Registration' : 'Staff Registration Rejected - AQRO',
       html: `
-        <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #00df82;">Account Application Status</h2>
-          <p>Hello ${userName},</p>
-          <p>Thank you for your interest in AQRO. We have reviewed your application and are unable to approve your account at this time.</p>
-          ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-          <p>Your application has been removed from our system. If you would like to apply again with updated information, please create a new account.</p>
-          <p>If you have any questions or would like to provide additional information, please contact our support team.</p>
-          <p>Best regards,<br>The AQRO Team</p>
-        </div>
+        <h2>${revisionDeadline ? 'Document Revision Required' : 'Registration Rejected'}</h2>
+        <p>Dear ${user.firstName},</p>
+        ${revisionDeadline ? `
+          <p>Your staff registration documents require revision. Please review the following feedback:</p>
+          <p><strong>Reason for Revision:</strong> ${reason}</p>
+          <p>You have until ${new Date(revisionDeadline).toLocaleDateString()} to resubmit your documents.</p>
+          <p>Please log in to your account and navigate to the document resubmission page to upload the revised documents.</p>
+        ` : `
+          <p>We regret to inform you that your staff registration has been rejected. Please review the following reason:</p>
+          <p><strong>Reason for Rejection:</strong> ${reason}</p>
+          <p>This decision is final and cannot be appealed. If you believe this is an error, please contact our support team.</p>
+        `}
+        <p>If you have any questions, please contact our support team.</p>
+        <br>
+        <p>Best regards,</p>
+        <p>The AQRO Team</p>
       `
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Rejection email sent:', info.messageId);
-    return info;
+    await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error('Error sending rejection email:', error);
-    throw new Error('Failed to send rejection email');
+    throw error;
   }
 };

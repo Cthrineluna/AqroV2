@@ -6,6 +6,7 @@ const approvalController = require('../controllers/approvalController');
 
 // Admin approval routes
 router.get('/admin/pending-staff', protect, authorize('admin'), approvalController.getPendingStaff);
+router.get('/admin/staff-needing-revision', protect, authorize('admin'), approvalController.getStaffNeedingRevision);
 router.post('/admin/approve-staff/:staffId', protect, authorize('admin'), approvalController.approveStaff);
 router.post('/admin/reject-staff/:staffId', protect, authorize('admin'), approvalController.rejectStaff);
 
