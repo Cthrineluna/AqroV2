@@ -37,14 +37,16 @@ const RestaurantCarousel = ({
   
     if (autoPlay && restaurants.length > 1) {
       interval = setInterval(() => {
-        const nextIndex = (activeIndex + 1) % restaurants.length;
-        
-        flatlistRef.current?.scrollToIndex({
-          index: nextIndex,
-          animated: true,
-        });
-  
-        setActiveIndex(nextIndex);
+        if (flatlistRef.current) {
+          const nextIndex = (activeIndex + 1) % restaurants.length;
+          
+          flatlistRef.current.scrollToIndex({
+            index: nextIndex,
+            animated: true,
+          });
+    
+          setActiveIndex(nextIndex);
+        }
       }, autoPlayInterval);
     }
   
@@ -171,32 +173,23 @@ const RestaurantCarousel = ({
     );
   };
   
-  const handleOnScroll = (event) => {
-  
-    const scrollPosition = event.nativeEvent.contentOffset.x;
-
-    Animated.event(
-      [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-      { useNativeDriver: false }
-    )(event);
-
-    const newIndex = Math.round(scrollPosition / ITEM_WIDTH);
-  };
+  const handleOnScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+    { useNativeDriver: false }
+  );
 
   const viewabilityConfig = { itemVisiblePercentThreshold: 50 };
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems.length > 0 && !viewableItems[0].item.spacer) {
-
-      const adjustedIndex = viewableItems[0].index - 1;
-      if (adjustedIndex >= 0) {
-        setActiveIndex(adjustedIndex);
+    if (viewableItems.length > 0) {
+      const newIndex = viewableItems[0].index;
+      if (newIndex >= 0 && newIndex < restaurants.length) {
+        setActiveIndex(newIndex);
       }
     }
   }).current;
 
   const handleMomentumScrollEnd = (event) => {
-
-    const newIndex = Math.round(event.nativeEvent.contentOffset.x / ITEM_WIDTH) - 1;
+    const newIndex = Math.round(event.nativeEvent.contentOffset.x / ITEM_WIDTH);
     if (newIndex >= 0 && newIndex < restaurants.length) {
       setActiveIndex(newIndex);
     }
