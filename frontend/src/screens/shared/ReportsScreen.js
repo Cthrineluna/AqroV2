@@ -204,7 +204,7 @@ const getFilteredActivities = useCallback((activities) => {
       const groupedRebates = groupRebatesByTimeFrame(rebateActivities, timeFrame);
       setReportData(formatChartData(groupedRebates, 'Rebate Amount (₱)', timeFrame));
     } else if (activeReport === 'container') {
-      const groupedByType = groupByContainerType(chartFilteredActivities);
+      const groupedByType = groupByContainerType(chartFilteredActivities, timeFrame);
       setReportData(formatBarChartData(groupedByType, 'Container Usage'));
     }
     
@@ -337,28 +337,53 @@ const groupRebatesByTimeFrame = (activities, timeFrame) => {
   return grouped;
 };
   
-  const groupByContainerType = (activities) => {
-    const grouped = {};
+const groupByContainerType = (activities, timeFrame) => {
+  const grouped = {};
+  
+  if (!activities || !Array.isArray(activities)) {
+    console.warn('Invalid activities data in groupByContainerType', activities);
+    return {};
+  }
+
+  const now = new Date();
+  let filteredActivities = activities;
+
+  // Filter activities based on time frame
+  if (timeFrame === 'month') {
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    filteredActivities = activities.filter(activity => {
+      const activityDate = new Date(activity.createdAt);
+      return activityDate.getMonth() === currentMonth && activityDate.getFullYear() === currentYear;
+    });
+  } else if (timeFrame === 'week') {
+    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+    filteredActivities = activities.filter(activity => {
+      const activityDate = new Date(activity.createdAt);
+      return activityDate >= weekStart;
+    });
+  } else if (timeFrame === 'year') {
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    filteredActivities = activities.filter(activity => {
+      const activityDate = new Date(activity.createdAt);
+      return activityDate >= yearStart;
+    });
+  }
+  
+  filteredActivities.forEach(activity => {
+    if (!activity || !activity.containerId) return;
     
-    if (!activities || !Array.isArray(activities)) {
-      console.warn('Invalid activities data in groupByContainerType', activities);
-      return {};
+    const containerType = activity.containerId?.containerTypeId?.name || 'Unknown';
+    
+    if (!grouped[containerType]) {
+      grouped[containerType] = 0;
     }
     
-    activities.forEach(activity => {
-      if (!activity || !activity.containerId) return;
-      
-      const containerType = activity.containerId?.containerTypeId?.name || 'Unknown';
-      
-      if (!grouped[containerType]) {
-        grouped[containerType] = 0;
-      }
-      
-      grouped[containerType] += 1;
-    });
-    
-    return grouped;
-  };
+    grouped[containerType] += 1;
+  });
+  
+  return grouped;
+};
 
 const formatChartData = (groupedData, legend, timeFrame) => {
   let labels = [];
