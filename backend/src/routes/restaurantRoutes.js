@@ -15,7 +15,7 @@ const upload = multer({
 router.get('/', protect, authorize('admin', 'staff', 'customer'), restaurantController.getRestaurants);
 
 // Get a single restaurant by ID
-router.get('/:restaurantId', protect, authorize('admin', 'staff'), restaurantController.getRestaurantById);
+router.get('/:restaurantId', protect, authorize('admin', 'staff', 'customer'), restaurantController.getRestaurantById);
 
 // Create new restaurant
 router.post('/', protect, authorize('admin'), upload.fields([

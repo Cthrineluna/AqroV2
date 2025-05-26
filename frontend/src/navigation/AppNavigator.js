@@ -25,6 +25,7 @@ import CustomerTabNavigator from './CustomerTabNavigator';
 import ScannerScreen from '../screens/customer/ScannerScreen';
 import SideMenu from '../components/SideMenu';
 import ActivityListScreen from '../screens/customer/ActivityListScreen';
+import RestaurantDetailScreen from '../screens/customer/RestaurantDetailScreen';
 
 // Staff screens
 import StaffTabNavigator from './StaffTabNavigator';
@@ -98,6 +99,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="SideMenu" component={SideMenu} />
+          <Stack.Screen name="RestaurantDetail" component={RestaurantDetailScreen} />
         </>
       ) : userType === 'staff' ? (
         // Approved staff flow
