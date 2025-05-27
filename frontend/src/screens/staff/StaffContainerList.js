@@ -362,7 +362,7 @@ const StaffContainersList = ({ navigation, route }) => {
   const [restaurantName, setRestaurantName] = useState("Restaurant");
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [sortBy, setSortBy] = useState('name'); // 'name', 'date', 'uses'
+  const [sortBy, setSortBy] = useState('type'); // Changed from 'name' to 'type'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
 
   // Update activeFilter when route.params.filter changes
@@ -600,14 +600,16 @@ const StaffContainersList = ({ navigation, route }) => {
       let comparison = 0;
       
       switch (sortBy) {
-        case 'name':
+        case 'type':
           comparison = a.containerTypeId.name.localeCompare(b.containerTypeId.name);
           break;
         case 'date':
           comparison = new Date(a.registrationDate) - new Date(b.registrationDate);
           break;
-        case 'uses':
-          comparison = a.usesCount - b.usesCount;
+        case 'usesLeft':
+          const aUsesLeft = a.containerTypeId.maxUses - a.usesCount;
+          const bUsesLeft = b.containerTypeId.maxUses - b.usesCount;
+          comparison = aUsesLeft - bUsesLeft;
           break;
       }
       

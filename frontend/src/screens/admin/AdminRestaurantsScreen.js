@@ -575,27 +575,35 @@ const handleSaveRestaurant = async (restaurantData) => {
     };
 
     const validateForm = () => {
+      setLocalError('');
+
+      // Check required fields
       if (!localRestaurant.name.trim()) {
         setLocalError('Restaurant name is required');
         return false;
       }
+
       if (!localRestaurant.contactNumber.trim()) {
         setLocalError('Contact number is required');
         return false;
       }
+
+      // Validate phone number format
       if (!isValidPhoneNumber(localRestaurant.contactNumber)) {
         setLocalError('Please enter a valid Philippine phone number (e.g., 09123456789)');
         return false;
       }
+
       if (!localRestaurant.location.address.trim()) {
         setLocalError('Address is required');
         return false;
       }
+
       if (!localRestaurant.location.city.trim()) {
         setLocalError('City is required');
         return false;
       }
-      
+
       return true;
     };
     
@@ -663,55 +671,133 @@ const handleSaveRestaurant = async (restaurantData) => {
                 {viewOnly ? 'Restaurant Details' : (selectedRestaurant ? 'Edit Restaurant' : 'Add New Restaurant')}
               </SemiBoldText>
 
+              {/* Error Message */}
+              {localError ? (
+                <View style={[
+                  styles.errorContainer,
+                  { 
+                    backgroundColor: theme?.danger + '10' || 'rgba(220,53,69,0.1)',
+                    borderLeftColor: theme?.danger || '#DC3545'
+                  }
+                ]}>
+                  <RegularText style={[
+                    styles.errorText,
+                    { color: theme?.danger || '#DC3545' }
+                  ]}>
+                    {localError}
+                  </RegularText>
+                </View>
+              ) : null}
+
               {/* Banner and Logo Section - Make them non-touchable in view mode */}
               <View style={styles.bannerContainer}>
-                <View style={styles.bannerTouchable}>
-                  {localRestaurant.banner ? (
-                    <Image 
-                      source={{ uri: localRestaurant.banner }} 
-                      style={styles.bannerImage} 
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={[
-                      styles.bannerPlaceholder,
-                      { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
-                    ]}>
-                      <Ionicons 
-                        name="image-outline" 
-                        size={32} 
-                        color={theme?.primary || '#007BFF'} 
+                {!viewOnly ? (
+                  <TouchableOpacity 
+                    style={styles.bannerTouchable}
+                    onPress={pickBannerImage}
+                    activeOpacity={0.7}
+                  >
+                    {localRestaurant.banner ? (
+                      <Image 
+                        source={{ uri: localRestaurant.banner }} 
+                        style={styles.bannerImage} 
+                        resizeMode="cover"
                       />
-                      <RegularText style={[
-                        styles.bannerHint, 
-                        { color: theme?.primary || '#007BFF' }
+                    ) : (
+                      <View style={[
+                        styles.bannerPlaceholder,
+                        { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
                       ]}>
-                        {viewOnly ? 'No Banner Image' : 'Add Banner Image'}
-                      </RegularText>
-                    </View>
-                  )}
-                </View>
+                        <Ionicons 
+                          name="image-outline" 
+                          size={32} 
+                          color={theme?.primary || '#007BFF'} 
+                        />
+                        <RegularText style={[
+                          styles.bannerHint, 
+                          { color: theme?.primary || '#007BFF' }
+                        ]}>
+                          Add Banner Image
+                        </RegularText>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.bannerTouchable}>
+                    {localRestaurant.banner ? (
+                      <Image 
+                        source={{ uri: localRestaurant.banner }} 
+                        style={styles.bannerImage} 
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[
+                        styles.bannerPlaceholder,
+                        { backgroundColor: theme?.primary + '20' || 'rgba(0,123,255,0.1)' }
+                      ]}>
+                        <Ionicons 
+                          name="image-outline" 
+                          size={32} 
+                          color={theme?.primary || '#007BFF'} 
+                        />
+                        <RegularText style={[
+                          styles.bannerHint, 
+                          { color: theme?.primary || '#007BFF' }
+                        ]}>
+                          No Banner Image
+                        </RegularText>
+                      </View>
+                    )}
+                  </View>
+                )}
 
-                <View style={styles.overlappingLogoContainer}>
-                  {localRestaurant.logo ? (
-                    <Image 
-                      source={{ uri: localRestaurant.logo }} 
-                      style={styles.logoImage} 
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={[
-                      styles.logoInitialsContainer,
-                      { backgroundColor: theme?.primary || '#007BFF' }
-                    ]}>
-                      <RegularText style={styles.logoInitialsText}>
-                        {localRestaurant.name 
-                          ? localRestaurant.name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2)
-                          : 'RS'}
-                      </RegularText>
-                    </View>
-                  )}
-                </View>
+                {!viewOnly ? (
+                  <TouchableOpacity 
+                    style={styles.overlappingLogoContainer}
+                    onPress={pickLogoImage}
+                    activeOpacity={0.7}
+                  >
+                    {localRestaurant.logo ? (
+                      <Image 
+                        source={{ uri: localRestaurant.logo }} 
+                        style={styles.logoImage} 
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[
+                        styles.logoInitialsContainer,
+                        { backgroundColor: theme?.primary || '#007BFF' }
+                      ]}>
+                        <RegularText style={styles.logoInitialsText}>
+                          {localRestaurant.name 
+                            ? localRestaurant.name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2)
+                            : 'RS'}
+                        </RegularText>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.overlappingLogoContainer}>
+                    {localRestaurant.logo ? (
+                      <Image 
+                        source={{ uri: localRestaurant.logo }} 
+                        style={styles.logoImage} 
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[
+                        styles.logoInitialsContainer,
+                        { backgroundColor: theme?.primary || '#007BFF' }
+                      ]}>
+                        <RegularText style={styles.logoInitialsText}>
+                          {localRestaurant.name 
+                            ? localRestaurant.name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2)
+                            : 'RS'}
+                        </RegularText>
+                      </View>
+                    )}
+                  </View>
+                )}
 
                 {!viewOnly && (
                   <View style={styles.logoHintContainer}>
@@ -1421,13 +1507,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   errorContainer: {
-    backgroundColor: 'rgba(220,53,69,0.1)',
-    padding: 10,
+    backgroundColor: '#ffebee',
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f44336',
   },
   errorText: {
-    color: '#DC3545',
     fontSize: 14,
   },
   activeToggleContainer: {

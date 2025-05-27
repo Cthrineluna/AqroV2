@@ -346,6 +346,18 @@ exports.getContainerStats = async (req, res) => {
       status: 'returned'
     });
 
+    // Get lost containers count
+    const lostContainers = await Container.countDocuments({
+      customerId,
+      status: 'lost'
+    });
+
+    // Get damaged containers count
+    const damagedContainers = await Container.countDocuments({
+      customerId,
+      status: 'damaged'
+    });
+
     // Get total rebate amount
     const rebates = await Rebate.find({ customerId });
     const totalRebate = rebates.reduce((total, rebate) => total + rebate.amount, 0);
@@ -353,6 +365,8 @@ exports.getContainerStats = async (req, res) => {
     res.json({
       activeContainers,
       returnedContainers,
+      lostContainers,
+      damagedContainers,
       totalRebate
     });
   } catch (error) {
