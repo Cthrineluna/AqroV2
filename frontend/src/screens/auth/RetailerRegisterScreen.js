@@ -323,7 +323,7 @@ const pickImage = async () => {
               <Image 
                 source={isDark 
                   ? require('../../../assets/images/aqro-logo-dark.png') 
-                  : require('../../../assets/images/aqro-logo.png')} 
+                  : require('../../../assets/images/aqro-light.png')} 
                 style={styles.logo} 
                 resizeMode="contain" 
               />
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.7,
     marginBottom: 4,
-    color: '#00df82',
+    color: '#677324',
   },
   input: {
     fontSize: 16,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   registerButton: {
-    backgroundColor: '#00df82',
+    backgroundColor: '#677324',
     borderRadius: 30,
     paddingVertical: 15,
     width: '100%',
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
   },
   loginLinkText: {
     fontSize: 16,
-    color: '#00df82',
+    color: '#677324',
   },
   loadingContainer: {
     flexDirection: 'row',

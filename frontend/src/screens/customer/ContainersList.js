@@ -830,7 +830,7 @@ const ContainersList = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <BoldText style={[styles.headerTitle, { color: theme.text }]}>My Containers</BoldText>
+        <BoldText style={[styles.headerTitle, { color: theme.text }]}>My Coffee Containers</BoldText>
         <View style={{ width: 24 }} />
       </View>
       
@@ -861,9 +861,9 @@ const ContainersList = ({ navigation, route }) => {
             <ContainerCard 
               title="Active" 
               value={containerStats.activeContainers}
-              icon="cube-outline"
-              backgroundColor="#e8f5e9"
-              textColor="#2e7d32"
+              icon="cafe"
+              backgroundColor="#BBC191"
+              textColor="#677325"
               onPress={() => handleFilterChange('active')}
               isSelected={activeFilter === 'active'}
             />
@@ -872,8 +872,8 @@ const ContainersList = ({ navigation, route }) => {
               title="Returned" 
               value={containerStats.returnedContainers}
               icon="refresh-outline"
-              backgroundColor="#e3f2fd"
-              textColor="#0277bd"
+              backgroundColor="#E0C7AC"
+              textColor="#5A3E29"
               onPress={() => handleFilterChange('returned')}
               isSelected={activeFilter === 'returned'}
             />
@@ -882,8 +882,8 @@ const ContainersList = ({ navigation, route }) => {
               title="Lost" 
               value={containerStats.lostContainers || 0}
               icon="help-circle-outline"
-              backgroundColor="#fff3e0"
-              textColor="#ff9800"
+              backgroundColor="#c3b49aff"
+              textColor="#885f22ff"
               onPress={() => handleFilterChange('lost')}
               isSelected={activeFilter === 'lost'}
             />
@@ -892,8 +892,8 @@ const ContainersList = ({ navigation, route }) => {
               title="Damaged" 
               value={containerStats.damagedContainers || 0}
               icon="alert-circle-outline"
-              backgroundColor="#ffebee"
-              textColor="#d32f2f"
+              backgroundColor="#b2040466"
+              textColor="#B20404"
               onPress={() => handleFilterChange('damaged')}
               isSelected={activeFilter === 'damaged'}
             />
@@ -902,8 +902,8 @@ const ContainersList = ({ navigation, route }) => {
               title="Total Rebate" 
               value={`₱${containerStats.totalRebate.toFixed(2)}`}
               icon="cash-outline"
-              backgroundColor="#fffde7"
-              textColor="#f57f17"
+              backgroundColor="#EBC684"
+              textColor="#7C663E"
               onPress={() => navigation.navigate('Activities', { filter: 'rebate' })}
             />
           </View>
@@ -941,15 +941,15 @@ const ContainersList = ({ navigation, route }) => {
               <Ionicons name="cube-outline" size={48} color={theme.text} style={{ opacity: 0.4 }} />
               <RegularText style={{ color: theme.text, textAlign: 'center', marginTop: 12 }}>
                 {containers.length === 0 
-                  ? "You don't have any containers yet." 
-                  : "No containers match the selected filter."}
+                  ? "You don't have any cup yet." 
+                  : "No cup match the selected filter."}
               </RegularText>
               <TouchableOpacity 
                 style={styles.scanButton}
                 onPress={() => navigation.navigate('Scanner')}
               >
                 <Ionicons name="qr-code-outline" size={20} color="#FFFFFF" style={styles.scanIcon} />
-                <BoldText style={styles.scanButtonText}>Scan a Container</BoldText>
+                <BoldText style={styles.scanButtonText}>Scan a Cup</BoldText>
               </TouchableOpacity>
             </View>
           ) : (
@@ -1039,7 +1039,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selectedCard: {
-    borderColor: '#00df82',
+    borderColor: '#677324',
     borderWidth: 2,
   },
   cardContent: {
@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
   scanButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#00df82',
+    backgroundColor: '#677324',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,

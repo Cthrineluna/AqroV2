@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Dimensions, Image } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -13,7 +13,6 @@ import {
   RegularText, 
 } from '../components/StyledComponents';
 
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const RenderItem = ({ 
@@ -25,32 +24,33 @@ const RenderItem = ({
   screenHeight,
   useTransparentBackground = false 
 }) => {
-  // Animation reference
+  // Determine media type
+  const hasImage = !!item?.imageSource || item?.mediaType === 'image';
+  const hasAnimation = !!item?.animationSource && !hasImage; // image takes precedence if both are set
+
+  // Animation reference (only used for Lottie)
   const animationRef = useRef(null);
 
   // Function to restart animation (needs to run on JS thread)
   const restartAnimation = () => {
-    if (animationRef.current) {
+    if (hasAnimation && animationRef.current) {
       animationRef.current.reset();
       animationRef.current.play();
     }
   };
   
-  // Use Reanimated's useAnimatedReaction to detect when this slide becomes active
+  // Detect when this slide becomes active and (if Lottie) restart animation
   useAnimatedReaction(
-    () => {
-      return Math.round(x.value / SCREEN_WIDTH);
-    },
+    () => Math.round(x.value / SCREEN_WIDTH),
     (currentIndex, previousIndex) => {
-      // Only restart if this slide just became active
-      if (currentIndex === index && previousIndex !== index) {
+      if (hasAnimation && currentIndex === index && previousIndex !== index) {
         runOnJS(restartAnimation)();
       }
     },
-    [index] // Dependencies array
+    [index, hasAnimation]
   );
 
-  // Animation for the content sliding in
+  // Slide-in / fade animation for content
   const contentAnimationStyle = useAnimatedStyle(() => {
     const translateYAnimation = interpolate(
       x.value,
@@ -82,46 +82,52 @@ const RenderItem = ({
 
   // Adjust styles based on platform and settings
   const getContainerStyle = () => {
-    // Use transparent background when specified
     const backgroundColor = useTransparentBackground ? 'transparent' : item.backgroundColor;
-    
     const baseStyle = [
       styles.container, 
       { width: SCREEN_WIDTH, backgroundColor }
     ];
-    
-    if (isWeb) {
-      return [...baseStyle, styles.webContainer];
-    }
-    
-    if (isIOS) {
-      return [...baseStyle, styles.iosContainer];
-    }
-    
+    if (isWeb) return [...baseStyle, styles.webContainer];
+    if (isIOS) return [...baseStyle, styles.iosContainer];
     return baseStyle;
   };
 
-  // Initial play when component mounts
+  // Initial play when component mounts (only for Lottie)
   useEffect(() => {
-    // Check if this is the initial active slide
-    if (Math.round(x.value / SCREEN_WIDTH) === index && animationRef.current) {
+    if (hasAnimation && Math.round(x.value / SCREEN_WIDTH) === index && animationRef.current) {
       animationRef.current.play();
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <View style={getContainerStyle()}>
       <View style={styles.contentWrapper}>
-        {/* Lottie Animation */}
-        <Animated.View style={[styles.animationContainer, contentAnimationStyle]}>
-          <LottieView
-            ref={animationRef}
-            source={item.animationSource}
-            style={styles.lottieAnimation}
-            autoPlay={false} // Change to false so we control playback manually
-            loop={true}
-            resizeMode="contain"
-          />
+        {/* Media */}
+        <Animated.View style={[styles.mediaContainer, contentAnimationStyle]}>
+          {hasImage ? (
+            <Image
+              source={item.imageSource}
+              resizeMode="contain"
+              style={[
+                styles.media,
+                { height: Math.min(600, screenHeight * 0.38) },
+              ]}
+              accessible
+              accessibilityLabel={item.title}
+            />
+          ) : hasAnimation ? (
+            <LottieView
+              ref={animationRef}
+              source={item.animationSource}
+              style={[
+                styles.media,
+                { height: Math.min(320, screenHeight * 0.35) },
+              ]}
+              autoPlay={false} // control playback manually
+              loop
+              resizeMode="contain"
+            />
+          ) : null}
         </Animated.View>
 
         {/* Text Content */}
@@ -141,12 +147,12 @@ const RenderItem = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start', // Changed from center to flex-start
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   webContainer: {
     height: '100%',
-    minHeight: 500,
+    minHeight: 1000,
   },
   iosContainer: {
     paddingTop: 20,
@@ -155,21 +161,18 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     paddingHorizontal: 20,
-    // Move content up
-    paddingTop: 80, // Add space below the header
-    justifyContent: 'flex-start', // Changed from center to flex-start
+    paddingTop: 80,
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
-  animationContainer: {
+  mediaContainer: {
     width: '100%',
-    height: 280,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
-  lottieAnimation: {
-    width: 280,
-    height: 280,
+  media: {
+    width: 500,
     alignSelf: 'center',
   },
   textContainer: {
@@ -186,10 +189,11 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
-    color: '#6F7F89',
+    color: '#151515b1',
     textAlign: 'center',
     lineHeight: 22,
   },
 });
 
 export default RenderItem;
+

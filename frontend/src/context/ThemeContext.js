@@ -4,10 +4,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define your theme colors
 export const lightTheme = {
-  background: '#F0F8FF', // Alice Blue
+  background: '#F2ECE1', // Alice Blue
   text: '#030f0f',       // Black-ish
-  primary: '#00df82',    // Green
-  secondary: '#ffffff',  // White
+  primary: '#5A3E29',    // Green
+  secondary: '#677324',  // White
   card: '#ffffff',
   border: 'rgba(3, 15, 15, 0.1)',
   input: '#ffffff',
@@ -15,14 +15,14 @@ export const lightTheme = {
 };
 
 export const darkTheme = {
-  background: '#121212',  // Dark background
-  text: '#F0F8FF',        // Light text
-  primary: '#00df82',     // Keep the same green
-  secondary: '#a3a2a2',   // Dark secondary
-  card: '#1e1e1e',
-  border: 'rgba(240, 248, 255, 0.1)',
-  input: '#1e1e1e',
-  danger: '#ff6b6b',      // Slightly lighter red for dark theme
+  background: '#1F1C19', // Dark roasted beans with a hint of charcoal
+  text: '#F5E9DA',       // Creamy beige for strong readability
+  primary: '#B07B4C',    // Caramel latte accent
+  secondary: '#D8B26E',  // Honey-golden for highlights
+  card: '#2A2622',       // Soft mocha, lighter than background
+  border: 'rgba(245, 233, 218, 0.12)', // Creamy low-opacity borders
+  input: '#2A2622',      // Same as card for uniformity
+  danger: '#E45C5C',     // Warm muted red that fits the palette
 };
 
 // Create context

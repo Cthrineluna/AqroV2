@@ -27,7 +27,7 @@ const SplashView = ({ onNextClick }) => {
     if (Platform.OS === 'android') {
       const animationListener = backgroundAnimation.addListener(({ value }) => {
 
-        const startColor = hexToRgb('#25AF90');
+        const startColor = hexToRgb('#936541');
         const endColor = hexToRgb(isDark ? theme.background : '#F0F8FF');
         
         const r = Math.round(startColor.r + (endColor.r - startColor.r) * value);
@@ -99,23 +99,23 @@ const SplashView = ({ onNextClick }) => {
 
   const backgroundColor = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#25AF90', isDark ? theme.background : '#F0F8FF'],
+    outputRange: ['#936541', isDark ? theme.background : '#F0F8FF'],
   });
 
 
   const textColorA = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#F0F8FF', isDark ? '#F0F8FF' : '#030f0f'], // White to theme-dependent
+    outputRange: ['#1f3118', isDark ? '#F0F8FF' : '#030f0f'], // White to theme-dependent
   });
   
   const textColorQR = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#FFFFFF', '#00df82'], // Always white to green
+    outputRange: ['#ffffffff', '#1f3118'], // Always white to green
   });
   
   const textColorO = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#FFFFFF', isDark ? '#F0F8FF' : '#030f0f'], // White to theme-dependent
+    outputRange: ['#1f3118', isDark ? '#F0F8FF' : '#030f0f'], // White to theme-dependent
   });
   
   return (
@@ -131,9 +131,9 @@ const SplashView = ({ onNextClick }) => {
           ]}
         >
           <Text style={styles.logoText}>
-            <Animated.Text style={[styles.letter, { color: textColorA }]}>a</Animated.Text>
-            <Animated.Text style={[styles.letter, { color: textColorQR }]}>qr</Animated.Text>
-            <Animated.Text style={[styles.letter, { color: textColorO }]}>o</Animated.Text>
+            <Animated.Text style={[styles.letter, { color: textColorA }]}>A</Animated.Text>
+            <Animated.Text style={[styles.letter, { color: textColorQR }]}>QR</Animated.Text>
+            <Animated.Text style={[styles.letter, { color: textColorO }]}>O</Animated.Text>
           </Text>
         </Animated.View>
 
@@ -141,7 +141,7 @@ const SplashView = ({ onNextClick }) => {
           <Image
             source={isDark 
               ? require('../../../assets/images/aqro-logo-dark.png') 
-              : require('../../../assets/images/aqro-logo.png')}
+              : require('../../../assets/images/aqro-light.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -178,10 +178,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   logoText: {
-    fontSize: 30,
-    fontWeight: '500',
-    letterSpacing: 6,
-    fontFamily: 'Blanka',
+    fontSize: 35,
+    fontWeight: '550',
+    letterSpacing: 1,
+    fontFamily: 'Arial',
     includeFontPadding: false,  // Force no extra padding (Android-only)
     textAlignVertical: 'center' // Ensure vertical alignment
   },
@@ -191,8 +191,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 160,
-    height: 160,
+    width: 250,
+    height: 250,
+    marginBottom: 80,
   },
 });
 

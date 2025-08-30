@@ -1679,14 +1679,14 @@ const renderFilterBadges = () => {
               {isAdmin && (
   <View style={styles.filterSection}>
     <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-      Filter by Restaurant
+      Filter by Coffee Shop
     </MediumText>
     
     <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
       <Ionicons name="search" size={20} color={theme.text} />
       <TextInput
         style={[styles.searchInput, { color: theme.text }]}
-        placeholder="Search restaurants..."
+        placeholder="Search coffee shop..."
         placeholderTextColor={theme.text}
         value={restaurantSearchQuery}
         onChangeText={setRestaurantSearchQuery}
@@ -1715,7 +1715,7 @@ const renderFilterBadges = () => {
             ? theme.primary 
             : theme.text 
         }}>
-          All Restaurants
+          All Coffee Shop
         </MediumText>
         {selectedRestaurants.length === 0 && (
           <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
@@ -1846,14 +1846,14 @@ const renderFilterBadges = () => {
               {/* Container Type Section */}
               <View style={styles.filterSection}>
   <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-    Filter by Container Type
+    Filter by Cup Size
   </MediumText>
   
   <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
     <Ionicons name="search" size={20} color={theme.text} />
     <TextInput
       style={[styles.searchInput, { color: theme.text }]}
-      placeholder="Search container types..."
+      placeholder="Search cup size..."
       placeholderTextColor={theme.text}
       value={containerTypeSearchQuery}
       onChangeText={setContainerTypeSearchQuery}
@@ -1882,7 +1882,7 @@ const renderFilterBadges = () => {
           ? theme.primary 
           : theme.text 
       }}>
-        All Container Types
+        All Cup Size
       </MediumText>
       {selectedContainerTypes.length === 0 && (
         <Ionicons name="checkmark-circle" size={20} color={theme.primary} />

@@ -139,7 +139,7 @@ const RegisterScreen = ({ navigation }) => {
               <Image 
                 source={isDark 
                   ? require('../../../assets/images/aqro-logo-dark.png') 
-                  : require('../../../assets/images/aqro-logo.png')} 
+                  : require('../../../assets/images/aqro-light.png')} 
                 style={styles.logo} 
                 resizeMode="contain" 
               />
@@ -332,8 +332,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   logo: {
-    width: 180,
-    height: 180,
+    width: 250,
+    height: 250,
   },
   heading: {
     marginBottom: 30,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerButton: {
-    backgroundColor: '#00df82', // Theme green color
+    backgroundColor: '#525D13', // Theme green color
     borderRadius: 30,
     paddingVertical: 15,
     width: '80%',
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   loginLinkText: {
     fontSize: 16,
-    color: '#00df82',
+    color: '#525D13',
   },
 loadingContainer: {
   flexDirection: 'row',

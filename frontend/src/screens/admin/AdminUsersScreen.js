@@ -60,8 +60,6 @@ const handleSearch = (query) => {
     return;
   }
 
-
-
   const filtered = activeFilter === 'all' 
     ? users 
     : users.filter(item => item.userType === activeFilter);
@@ -626,6 +624,7 @@ const handleFilterChange = (filter) => {
       </RNModal>
     );
   };
+
 const handleToggleLock = async (userId, isLocked) => {
   try {
     const storedToken = await AsyncStorage.getItem('aqro_token');

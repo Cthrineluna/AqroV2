@@ -36,7 +36,7 @@ const StaffTabNavigator = () => {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: theme.background,
+            backgroundColor: '#BBC191',
             borderTopColor: 'transparent', 
             height: Platform.OS === 'android' ? 60 : 80,
             paddingBottom: 10,
@@ -45,14 +45,14 @@ const StaffTabNavigator = () => {
             shadowOpacity: 0, 
             borderTopWidth: 0,
           },
-          tabBarActiveTintColor: theme.primary,
+          tabBarActiveTintColor: '#677324',
           tabBarInactiveTintColor: theme.text + '80', 
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'Containers') {
+            } else if (route.name === 'Cup Containers') {
               iconName = focused ? 'logo-dropbox' : 'cube-outline';
             } else if (route.name === 'Scanner') {
               iconName = focused ? 'qr-code' : 'qr-code-outline';
@@ -67,7 +67,7 @@ const StaffTabNavigator = () => {
         })}
       >
         <Tab.Screen name="Home" component={StaffHomeScreen} />
-        <Tab.Screen name="Containers" component={StaffContainerList} />
+        <Tab.Screen name="Cup Containers" component={StaffContainerList} />
         <Tab.Screen 
           name="Scanner" 
           component={StaffScannerScreen} 

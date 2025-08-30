@@ -196,7 +196,7 @@ const formatLockDuration = (durationMs) => {
               <Image 
                 source={isDark 
                   ? require('../../../assets/images/aqro-logo-dark.png') 
-                  : require('../../../assets/images/aqro-logo.png')} 
+                  : require('../../../assets/images/aqro-light.png')} 
                 style={styles.logo} 
                 resizeMode="contain" 
               />
@@ -332,8 +332,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40, // Add padding around logo
   },
   logo: {
-    width: 160,
-    height: 160,
+    width: 250,
+    height: 250,
   },
   heading: {
     marginBottom: Platform.OS === 'ios' ? 40 : 10,
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loginButton: {
-    backgroundColor: '#00df82', // Theme green color
+    backgroundColor: '#525D13', // Theme green color
     borderRadius: 30, // More rounded button
     paddingVertical: 15,
     width: '80%', // Less wide as requested
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   signupLinkText: {
     fontSize: 16,
-    color: '#00df82',
+    color: '#525D13',
   }
 });
 

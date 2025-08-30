@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     width: 60,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#00df82',
+    borderColor: '#677324',
   },
   cornerTopRight: {
     position: 'absolute',
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     width: 60,
     borderTopWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#00df82',
+    borderColor: '#677324',
   },
   cornerBottomLeft: {
     position: 'absolute',
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
     width: 60,
     borderBottomWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#00df82',
+    borderColor: '#677324',
   },
   cornerBottomRight: {
     position: 'absolute',
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
     width: 60,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#00df82',
+    borderColor: '#677324',
   },
   footer: {
     alignItems: 'center',
@@ -567,13 +567,13 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   scanAgainButton: {
-    backgroundColor: '#00df82',
+    backgroundColor: '#677324',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 25,
   },
   flipCameraButton: {
-    backgroundColor: '#2e7d32',
+    backgroundColor: '#677324',
     padding: 12,
     borderRadius: 25,
   },

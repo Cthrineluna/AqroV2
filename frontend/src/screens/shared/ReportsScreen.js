@@ -277,7 +277,7 @@ const getFilteredActivities = useCallback((activities) => {
         setContainerTypes(response.data);
       }
     } catch (error) {
-      console.error('Error fetching container types:', error);
+      console.error('Error fetching cup size:', error);
     }
   };
 
@@ -705,10 +705,10 @@ const renderFilterBadges = () => {
         <View style={styles.greetings}>
           <View>
             <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
-              Hello, {user?.firstName || 'User'}!
+              Hello Admin, {user?.firstName || 'User'}!
             </SemiBoldText>
             <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
-              Ready to close the loop?
+              Your dashboard is ready!
             </RegularText> 
           </View>
           <TouchableOpacity
@@ -821,9 +821,9 @@ const renderFilterBadges = () => {
         
         <View style={styles.summaryContainer}>
           <SummaryCard 
-            title="Containers" 
+            title="Cup Containers" 
             value={summaryData.activeContainers.toString()} 
-            icon="cube-outline" 
+            icon="cafe-outline" 
           />
           <SummaryCard 
             title="Returns Rate" 
@@ -905,18 +905,18 @@ const renderFilterBadges = () => {
                 </ScrollView>
               </View>
               
-              {/* Restaurant Section (Admin only) */}
+              {/* Coffee Shop Section (Admin only) */}
               {user?.userType === 'admin' && (
                 <View style={styles.filterSection}>
                   <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-                    Filter by Restaurant
+                    Filter by Coffee Shop
                   </MediumText>
                   
                   <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
                     <Ionicons name="search" size={20} color={theme.text} />
                     <TextInput
                       style={[styles.searchInput, { color: theme.text }]}
-                      placeholder="Search restaurants..."
+                      placeholder="Search coffee shop..."
                       placeholderTextColor={theme.text}
                       value={restaurantSearchQuery}
                       onChangeText={setRestaurantSearchQuery}
@@ -937,7 +937,7 @@ const renderFilterBadges = () => {
   onPress={() => setSelectedRestaurants([])}
 >
   <MediumText style={{ color: selectedRestaurants.length === 0 ? theme.primary : theme.text }}>
-    All Restaurants
+    All Coffee Shop
   </MediumText>
   {selectedRestaurants.length === 0 && (
     <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
@@ -986,14 +986,14 @@ const renderFilterBadges = () => {
               {/* Container Type Section */}
               <View style={styles.filterSection}>
                 <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-                  Filter by Container Type
+                  Filter by Cup size
                 </MediumText>
                 
                 <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
                   <Ionicons name="search" size={20} color={theme.text} />
                   <TextInput
                     style={[styles.searchInput, { color: theme.text }]}
-                    placeholder="Search container types..."
+                    placeholder="Search cup size..."
                     placeholderTextColor={theme.text}
                     value={containerTypeSearchQuery}
                     onChangeText={setContainerTypeSearchQuery}
@@ -1014,7 +1014,7 @@ const renderFilterBadges = () => {
   onPress={() => setSelectedContainerTypes([])}
 >
   <MediumText style={{ color: selectedContainerTypes.length === 0 ? theme.primary : theme.text }}>
-    All Container Types
+    All cup size
   </MediumText>
   {selectedContainerTypes.length === 0 && (
     <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
@@ -1100,8 +1100,10 @@ const styles = StyleSheet.create({
   },
   headerLetter: {
     fontSize: 26,
-    fontFamily: 'Blanka',
+    fontFamily: 'Arial',
     lineHeight: 30,
+    fontWeight: '550',
+
   },
   headerTitle: {
     fontSize: 20,

@@ -266,21 +266,21 @@ const StaffHomeScreen = ({ navigation }) => {
     {
       name: 'Available',
       population: containerStats.availableContainers,
-      color: '#dcbae0',
+      color: '#EBC684',
       legendFontColor: theme.text,
       legendFontSize: 12
     },
     {
       name: 'Active',
       population: containerStats.activeContainers,
-      color: '#a4fcab',
+      color: '#BBC191',
       legendFontColor: theme.text,
       legendFontSize: 12
     },
     {
       name: 'Returned',
       population: containerStats.returnedContainers,
-      color: '#a7d8fc',
+      color: '#E0C7AC',
       legendFontColor: theme.text,
       legendFontSize: 12
     }
@@ -329,7 +329,7 @@ const StaffHomeScreen = ({ navigation }) => {
               Hello, {user?.firstName || 'User'}!
             </SemiBoldText>
             <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
-              Ready to close the loop?
+              Ready to serve customers?
             </RegularText> 
           </View>
           <TouchableOpacity
@@ -391,8 +391,8 @@ const StaffHomeScreen = ({ navigation }) => {
               title="Available" 
               value={containerStats.availableContainers}
               icon="cafe-outline"
-              backgroundColor="#f3e5f5"
-              textColor="#9c27b0"
+              backgroundColor="#EBC684"
+              textColor="#7C663E"
               onPress={() => navigation.navigate('Containers', { filter: 'available' })}
             />
             
@@ -400,8 +400,8 @@ const StaffHomeScreen = ({ navigation }) => {
               title="Active" 
               value={containerStats.activeContainers}
               icon="cube-outline"
-              backgroundColor="#e8f5e9"
-              textColor="#2e7d32"
+              backgroundColor="#BBC191"
+              textColor="#677325"
               onPress={() => navigation.navigate('Containers', { filter: 'active' })}
             />
             
@@ -409,8 +409,8 @@ const StaffHomeScreen = ({ navigation }) => {
               title="Returned" 
               value={containerStats.returnedContainers}
               icon="refresh-outline"
-              backgroundColor="#e3f2fd"
-              textColor="#0277bd"
+              backgroundColor="#E0C7AC"
+              textColor="#BF9266"
               onPress={() => navigation.navigate('Containers', { filter: 'returned' })}
             />
           </View>
@@ -419,8 +419,8 @@ const StaffHomeScreen = ({ navigation }) => {
               title="Total Rebated" 
               value={`₱${rebateStats.totalRebateAmount.toFixed(2)}`}
               icon="cash-outline"
-              backgroundColor="#fff3e0"
-              textColor="#fb8c00"
+              backgroundColor="#d8cdbaff"
+              textColor="#cc7913ff"
               onPress={() => navigation.navigate('Reports', { 
                 userType: user?.userType,
                 initialFilter: 'rebate',
@@ -432,7 +432,7 @@ const StaffHomeScreen = ({ navigation }) => {
               title="Rebate Count" 
               value={rebateStats.rebateCount}
               icon="receipt-outline"
-              backgroundColor="#e8eaf6"
+              backgroundColor="#c5c8daff"
               textColor="#3f51b5"
               onPress={() => navigation.navigate('Reports', { 
                 userType: user?.userType,
@@ -445,7 +445,7 @@ const StaffHomeScreen = ({ navigation }) => {
         {/* Quick Actions Menu */}
         <View style={styles.quickActionsContainer}>
           <TouchableOpacity 
-            style={[styles.actionButton, {backgroundColor: '#00df82'}]}
+            style={[styles.actionButton, {backgroundColor: '#7e7e7dff'}]}
             onPress={navigateToReports}
           >
             <Ionicons name="document-text-outline" size={24} color="#FFFFFF" />
@@ -453,7 +453,7 @@ const StaffHomeScreen = ({ navigation }) => {
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.actionButton, {backgroundColor: '#FF9800'}]}
+            style={[styles.actionButton, {backgroundColor: '#7e7e7dff'}]}
             onPress={() => navigation.navigate('StaffScanner', { action: 'rebate' })}
           >
             <Ionicons name="cash-outline" size={24} color="#FFFFFF" />
@@ -461,7 +461,7 @@ const StaffHomeScreen = ({ navigation }) => {
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.actionButton, {backgroundColor: '#2196F3'}]}
+            style={[styles.actionButton, {backgroundColor: '#7e7e7dff'}]}
             onPress={() => navigation.navigate('StaffScanner', { action: 'return' })}
           >
             <Ionicons name="refresh-outline" size={24} color="#FFFFFF" />
@@ -496,7 +496,7 @@ const StaffHomeScreen = ({ navigation }) => {
           ) : (
             <View style={[styles.activityPlaceholder, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
               <RegularText style={{ color: theme.text, textAlign: 'center' }}>
-                Your recent container activity will appear here.
+                Your recent cup activity will appear here.
               </RegularText>
             </View>
           )}
@@ -520,8 +520,9 @@ const styles = StyleSheet.create({
   },
   headerLetter: {
     fontSize: 26,
-    fontFamily: 'Blanka',
+    fontFamily: 'Arial',
     lineHeight: 30,
+    fontWeight: '550',
   },
   scrollContent: {
     padding: 16,
@@ -572,7 +573,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 14,
-    color: '#00df82',
+    color: '#677324',
   },
   cardsContainer: {
     flexDirection: 'row',

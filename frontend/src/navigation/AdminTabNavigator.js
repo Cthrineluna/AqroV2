@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+
 // Screens
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
@@ -61,10 +62,10 @@ const AdminTabNavigator = () => {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Users') {
               iconName = focused ? 'people' : 'people-outline';
-            } else if (route.name === 'Containers') {
-              iconName = focused ? 'logo-dropbox' : 'cube-outline';
-            } else if (route.name === 'Restaurants') {
-              iconName = focused ? 'restaurant' : 'restaurant-outline';
+            } else if (route.name === 'Cup Containers') {
+              iconName = focused ? 'cafe' : 'cafe-outline';
+            } else if (route.name === 'Coffee Shop') {
+              iconName = focused ? 'storefront' : 'storefront-outline';
             } else if (route.name === 'Approvals') {
               iconName = focused ? 'checkmark-done-circle' : 'checkmark-done-circle-outline';
             } else if (route.name === 'Menu') {
@@ -82,10 +83,10 @@ const AdminTabNavigator = () => {
         />
         <Tab.Screen name="Users" component={AdminUsersScreen} />
         <Tab.Screen 
-          name="Containers" 
+          name="Cup Containers" 
           component={AdminContainerScreen} 
         />
-         <Tab.Screen name="Restaurants" component={AdminRestaurantsScreen} />
+         <Tab.Screen name="Coffee Shop" component={AdminRestaurantsScreen} />
         <Tab.Screen name="Approvals" component={AdminApprovalScreen} />
         <Tab.Screen 
           name="Menu" 

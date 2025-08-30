@@ -65,7 +65,7 @@ const CenterNextButton = ({ onNextClick, flatListIndex, dataLength, x }) => {
     const backgroundColor = interpolateColor(
       x.value,
       [0, SCREEN_WIDTH, 2 * SCREEN_WIDTH],
-      ['#25AF90', '#2591AF', '#AF7725'], // Match with the textColor in OnboardingScreen
+      ['#543310', '#543310', '#543310'], // Match with the textColor in OnboardingScreen
     );
 
     return {
@@ -105,7 +105,7 @@ const CenterNextButton = ({ onNextClick, flatListIndex, dataLength, x }) => {
         const backgroundColor = interpolateColor(
           x.value,
           [0, SCREEN_WIDTH, 2 * SCREEN_WIDTH],
-          ['#25AF90', '#2591AF', '#AF7725'],
+          ['#543310', '#543310', '#543310'],
         );
 
         const index = Math.round(x.value / SCREEN_WIDTH);

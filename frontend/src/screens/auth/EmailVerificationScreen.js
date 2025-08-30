@@ -142,7 +142,7 @@ const EmailVerificationScreen = ({ navigation, route }) => {
             <Image 
               source={isDark 
                 ? require('../../../assets/images/aqro-logo-dark.png') 
-                : require('../../../assets/images/aqro-logo.png')}
+                : require('../../../assets/images/aqro-light.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -243,8 +243,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   logo: {
-    width: 180,
-    height: 180,
+    width: 250,
+    height: 250,
   },
   titleContainer: {
     marginBottom: 30,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#00df82',
+    borderLeftColor: '#677324',
   },
   messageText: {
     fontSize: 14,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   verifyButton: {
-    backgroundColor: '#00df82',
+    backgroundColor: '#677324',
     borderRadius: 30,
     paddingVertical: 15,
     alignItems: 'center',
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   resendButtonText: {
-    color: '#00df82',
+    color: '#677324',
     fontSize: 16,
   },
 });

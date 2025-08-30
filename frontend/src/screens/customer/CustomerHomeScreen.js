@@ -256,10 +256,10 @@ const CustomerHomeScreen = ({ navigation }) => {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
         <View style={{ flexDirection: 'row' }}>
-          <Text style={[styles.headerLetter, { color: theme.text }]}>A</Text>
-          <Text style={[styles.headerLetter, { color: theme.primary }]}>Q</Text>
-          <Text style={[styles.headerLetter, { color: theme.primary }]}>R</Text>
-          <Text style={[styles.headerLetter, { color: theme.text }]}>O</Text>
+          <Text style={[styles.headerLetter, { color: '#1f3118' }]}>A</Text>
+          <Text style={[styles.headerLetter, { color: '#1f3118' }]}>Q</Text>
+          <Text style={[styles.headerLetter, { color: '#1f3118'}]}>R</Text>
+          <Text style={[styles.headerLetter, { color: '#1f3118' }]}>O</Text>
         </View>
         {/* <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="settings-outline" size={24} color={theme.text} />
@@ -282,8 +282,8 @@ const CustomerHomeScreen = ({ navigation }) => {
             <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
               Hello, {user?.firstName || 'User'}!
             </SemiBoldText>
-            <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
-              Ready to close the loop?
+            <RegularText style={[styles.subGreetings, { color: '#525D13' }]}>
+              Brewed and ready to make a difference today?
             </RegularText> 
           </View>
           <TouchableOpacity
@@ -308,9 +308,9 @@ const CustomerHomeScreen = ({ navigation }) => {
             <ContainerCard 
               title="Active" 
               value={containerStats.activeContainers}
-              icon="cube-outline"
-              backgroundColor="#e8f5e9"
-              textColor="#2e7d32"
+              icon="cafe-outline"
+              backgroundColor="#BBC191"
+              textColor="#677325"
               onPress={() => navigation.navigate('Containers', { filter: 'active' })}
             />
             
@@ -318,8 +318,8 @@ const CustomerHomeScreen = ({ navigation }) => {
               title="Returned" 
               value={containerStats.returnedContainers}
               icon="refresh-outline"
-              backgroundColor="#e3f2fd"
-              textColor="#0277bd"
+              backgroundColor="#E0C7AC"
+              textColor="#5A3E29"
               onPress={() => navigation.navigate('Containers', { filter: 'returned' })}
             />
             
@@ -327,8 +327,8 @@ const CustomerHomeScreen = ({ navigation }) => {
               title="Total Rebate" 
               value={`₱${containerStats.totalRebate.toFixed(2)}`}
               icon="cash-outline"
-              backgroundColor="#fffde7"
-              textColor="#f57f17"
+              backgroundColor="#EBC684"
+              textColor="#7C663E"
               onPress={() => navigation.navigate('Activities', { filter: 'rebate' })}
             />
           </View>
@@ -340,7 +340,7 @@ const CustomerHomeScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('Scanner')}
         >
           <Ionicons name="qr-code-outline" size={28} color="#FFFFFF" style={styles.scanIcon} />
-          <BoldText style={styles.scanButtonText}>Scan Container</BoldText>
+          <BoldText style={styles.scanButtonText}>Scan Cups</BoldText>
         </TouchableOpacity>
         
         
@@ -403,8 +403,9 @@ const styles = StyleSheet.create({
   },
   headerLetter: {
     fontSize: 26,
-    fontFamily: 'Blanka',
+    fontFamily: 'Arial',
     lineHeight: 30,
+    fontWeight: '550',
   },
   scrollContent: {
     padding: 16,
@@ -457,7 +458,7 @@ const styles = StyleSheet.create({
 
   viewAllText: {
     fontSize: 14,
-    color: '#00df82',
+    color: '#677324',
   },
   cardsContainer: {
     flexDirection: 'row',
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   scanButton: {
-    backgroundColor: '#00df82',
+    backgroundColor: '#677324',
     borderRadius: 30,
     padding: 16,
     flexDirection: 'row',

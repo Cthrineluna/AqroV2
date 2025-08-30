@@ -59,7 +59,7 @@ const LandingScreen = ({ navigation }) => {
         <Image 
           source={isDark 
             ? require('../../../assets/images/aqro-logo-dark.png') 
-            : require('../../../assets/images/aqro-logo.png')} 
+            : require('../../../assets/images/aqro-light.png')} 
           style={styles.logo} 
           resizeMode="contain" 
         />
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 20, // Reduce from 30 if needed
-    paddingBottom: 20,
+    paddingBottom: 30,
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -134,8 +134,9 @@ const styles = StyleSheet.create({
     marginTop: height * 0.1,
   },
   logo: {
-    width: 240,
-    height: 240,
+    width: 300,
+    height: 300,
+    
   },
   headingContainer: {
     alignItems: 'center',
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
   },
   signupLinkText: {
     fontSize: 14,
-    color: '#00df82',
+    color: '#525D13',
   }
 });
 

@@ -35,7 +35,7 @@ const CustomerTabNavigator = () => {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: theme.background,
+            backgroundColor: '#BBC191',
             borderTopColor: 'transparent', 
             height: Platform.OS === 'android' ? 60 : 80,
             paddingBottom: 10,
@@ -44,7 +44,7 @@ const CustomerTabNavigator = () => {
             shadowOpacity: 0, 
             borderTopWidth: 0,
           },
-          tabBarActiveTintColor: theme.primary,
+          tabBarActiveTintColor: '#677324',
           tabBarInactiveTintColor: theme.text + '80', 
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
@@ -52,7 +52,7 @@ const CustomerTabNavigator = () => {
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Containers') {
-              iconName = focused ? 'logo-dropbox' : 'cube-outline';
+              iconName = focused ? 'cafe' : 'cafe-outline';
             } else if (route.name === 'Activities') {
               iconName = focused ? 'newspaper' : 'newspaper-outline';
             } else if (route.name === 'Menu') {

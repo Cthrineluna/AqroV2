@@ -63,7 +63,7 @@ const RebateSection = ({ container, theme }) => {
 useEffect(() => {
     const fetchRestaurantRebates = async () => {
       if (!container || !container.containerTypeId) {
-        console.error('Container or Container Type is missing');
+        console.error('Cup container or Container Type is missing');
         setIsLoading(false);
         return;
       }
@@ -89,14 +89,14 @@ useEffect(() => {
           const rebatesWithNames = response.data
             .filter(mapping => mapping.restaurantId) // Filter out null restaurantIds
             .map(mapping => ({
-              restaurantName: mapping.restaurantId?.name || 'Unknown Restaurant',
+              restaurantName: mapping.restaurantId?.name || 'Unknown coffee shop',
               rebateValue: mapping.rebateValue
             }));
     
           setRestaurantRebates(rebatesWithNames);
         }
       } catch (error) {
-        console.error('Error fetching restaurant rebates:', error);
+        console.error('Error fetching coffee shop rebates:', error);
       } finally {
         setIsLoading(false);
       }
@@ -126,7 +126,7 @@ useEffect(() => {
     return (
       <View style={[styles.detailRow, { flexDirection: 'column' }]}>
         <RegularText style={[styles.detailLabel, { opacity: 0.7 }]}>
-          Restaurant Rebates
+          Coffee Shop Rebates
         </RegularText>
         <RegularText style={[styles.detailLabel, { width: '100%', textAlign: 'center' }]}>
           Loading rebates...
@@ -158,7 +158,7 @@ useEffect(() => {
         onPress={toggleExpand}
       >
         <RegularText style={[styles.detailLabel, { opacity: 0.7 }]}>
-          Restaurant Rebates
+          Coffee Shop Rebates
         </RegularText>
         <Ionicons 
           name={isExpanded ? "chevron-up" : "chevron-down"} 
@@ -282,7 +282,7 @@ const ContainerItem = ({ container, onPress }) => {
               {statusMessage}
             </RegularText>
             <RegularText style={{ color: theme.text, fontSize: 12, opacity: 0.7 }}>
-              Restaurant: {restaurantName}
+              Coffee Shop: {restaurantName}
             </RegularText>
             <RegularText style={{ color: theme.text, fontSize: 12, opacity: 0.7 }}>
               Customer: {customerName}
@@ -433,7 +433,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
     >
       <View style={styles.modalHeader}>
         <BoldText style={{ fontSize: 20, color: theme.text }}>
-          Container Details
+          Cup Details
         </BoldText>
         <TouchableOpacity onPress={closeModal}>
           <Ionicons name="close-circle-outline" size={28} color={theme.text} />
@@ -461,7 +461,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
         </View>
         
         <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Container Code:</RegularText>
+          <RegularText style={styles.detailLabel}>Cup code:</RegularText>
           <RegularText style={{ color: theme.text, fontSize: 12 }}>{container.qrCode}</RegularText>
         </View>
 
@@ -473,7 +473,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
         <RebateSection container={container} theme={theme} />
         
         <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Restaurant:</RegularText>
+          <RegularText style={styles.detailLabel}>Coffee Shop:</RegularText>
           <RegularText style={{ color: theme.text }}>{restaurantName}</RegularText>
         </View>
         
@@ -527,7 +527,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
         <View style={[styles.qrModalContainer, { backgroundColor: theme.card }]}>
           <View style={styles.qrModalHeader}>
             <BoldText style={{ fontSize: 20, color: theme.text }}>
-              Container QR Code
+              Cup QR Code
             </BoldText>
             <TouchableOpacity onPress={() => setShowQRModal(false)}>
               <Ionicons name="close" size={24} color={theme.text} />
@@ -541,7 +541,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
               resizeMode="contain" 
             />
             <MediumText style={{ color: theme.text, marginTop: 16, textAlign: 'center', marginBottom: 16 }}>
-              Scan this QR code to use the container
+              Scan this QR code to use the cup 
             </MediumText>
           </View>
         
@@ -591,7 +591,7 @@ const ActionModal = ({ visible, container, onClose, onEdit, onDelete }) => {
         >
           <View style={styles.actionModalHeader}>
             <BoldText style={{ fontSize: 18, color: theme.text }}>
-              Container Actions
+              Cup Actions
             </BoldText>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={theme.text} />
@@ -607,7 +607,7 @@ const ActionModal = ({ visible, container, onClose, onEdit, onDelete }) => {
           >
             <Ionicons name="create-outline" size={24} color={theme.primary} />
             <MediumText style={{ marginLeft: 12, color: theme.text }}>
-              Edit Container
+              Edit Cup
             </MediumText>
           </TouchableOpacity>
           
@@ -620,7 +620,7 @@ const ActionModal = ({ visible, container, onClose, onEdit, onDelete }) => {
           >
             <Ionicons name="trash-outline" size={24} color="#d32f2f" />
             <MediumText style={{ marginLeft: 12, color: theme.text }}>
-              Delete Container
+              Delete Cup
             </MediumText>
           </TouchableOpacity>
         </View>
@@ -652,7 +652,7 @@ const FilterModal = ({ visible, onClose, restaurants, containerTypes, selectedRe
         <View style={[styles.filterModalContainer, { backgroundColor: theme.background }]}>
           <View style={styles.filterModalHeader}>
             <BoldText style={{ fontSize: 20, color: theme.text }}>
-              Filter Containers
+              Filter Cup
             </BoldText>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={theme.text} />
@@ -661,14 +661,14 @@ const FilterModal = ({ visible, onClose, restaurants, containerTypes, selectedRe
           
           <View style={styles.filterSection}>
             <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-              Filter by Restaurant
+              Filter by Coffee Shop
             </MediumText>
             
             <View style={[styles.searchInputContainer, { backgroundColor: theme?.input || '#F5F5F5' }]}>
               <Ionicons name="search" size={20} color={theme.text} />
               <TextInput
                 style={[styles.searchInput, { color: theme.text }]}
-                placeholder="Search restaurants..."
+                placeholder="Search coffee shop..."
                 placeholderTextColor={theme?.textMuted || '#888888'}
                 value={restaurantSearchQuery}
                 onChangeText={setRestaurantSearchQuery}
@@ -689,7 +689,7 @@ const FilterModal = ({ visible, onClose, restaurants, containerTypes, selectedRe
                 onPress={() => onSelectRestaurant(null)}
               >
                 <MediumText style={{ color: !selectedRestaurant ? theme.primary : theme.text }}>
-                  All Restaurants
+                  All Coffee Shop
                 </MediumText>
                 {!selectedRestaurant && (
                   <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
@@ -726,14 +726,14 @@ const FilterModal = ({ visible, onClose, restaurants, containerTypes, selectedRe
           
           <View style={styles.filterSection}>
             <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-              Filter by Container Type
+              Filter by Cup Size
             </MediumText>
             
             <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
               <Ionicons name="search" size={20} color={theme.text} />
               <TextInput
                 style={[styles.searchInput, { color: theme.text }]}
-                placeholder="Search container types..."
+                placeholder="Search cup size..."
                 placeholderTextColor={theme?.textMuted || '#888888'}
                 value={containerTypeSearchQuery}
                 onChangeText={setContainerTypeSearchQuery}
@@ -754,7 +754,7 @@ const FilterModal = ({ visible, onClose, restaurants, containerTypes, selectedRe
                 onPress={() => onSelectContainerType(null)}
               >
                 <MediumText style={{ color: !selectedContainerType ? theme.primary : theme.text }}>
-                  All Container Types
+                  All Cup Size
                 </MediumText>
                 {!selectedContainerType && (
                   <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
@@ -889,7 +889,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
   
  const handleSave = async () => {
     if (!selectedContainerType) {
-      Alert.alert('Error', 'Container Type is required');
+      Alert.alert('Error', 'Cup container Type is required');
       return;
     }
 
@@ -943,8 +943,8 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
       }
 
       Alert.alert('Success', container?._id 
-        ? 'Container updated' 
-        : `${quantity} containers created successfully`);
+        ? 'Cup updated' 
+        : `${quantity} Cup created successfully`);
 
       
       onClose();
@@ -952,7 +952,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
 
     } catch (error) {
       console.error('Save error:', error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to save container');
+      Alert.alert('Error', error.response?.data?.message || 'Failed to save cup');
     } finally {
       setIsGenerating(false);
     }
@@ -991,7 +991,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
         <View style={[styles.qrModalContainer, { backgroundColor: theme.card }]}>
           <View style={styles.qrModalHeader}>
             <BoldText style={{ fontSize: 20, color: theme.text }}>
-              Container QR Code
+              Cup QR Code
             </BoldText>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={theme.text} />
@@ -1010,7 +1010,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
               <ActivityIndicator size="large" color={theme.primary} />
             )}
             <MediumText style={{ color: theme.text, marginTop: 16, textAlign: 'center' }}>
-              Scan this QR code to use the container
+              Scan this QR code to use the cup 
             </MediumText>
           </View>
           
@@ -1036,7 +1036,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
         <View style={[styles.editModalContainer, { backgroundColor: theme.background }]}>
           <View style={styles.editModalHeader}>
             <BoldText style={{ fontSize: 20, color: theme.text }}>
-              {container ? 'Edit Container' : 'Add Container'}
+              {container ? 'Edit Cup' : 'Add Cup'}
             </BoldText>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={theme.text} />
@@ -1044,7 +1044,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
           </View>
           
           <ScrollView style={styles.editModalBody}>
-            <View style={styles.formGroup}>
+            {/* <View style={styles.formGroup}>
               <MediumText style={{ color: theme.text, marginBottom: 8 }}>Assigned User (Optional)</MediumText>
               <TouchableOpacity
                 style={[styles.dropdown, { backgroundColor: theme.input }]}
@@ -1138,81 +1138,16 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
             </ScrollView>
                 </View>
               )}
-            </View>
-
+            </View> */}
 
             <View style={styles.formGroup}>
-              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Status</MediumText>
-              <TouchableOpacity
-                style={[styles.dropdown, { backgroundColor: theme.input }]}
-                onPress={() => setShowStatusDropdown(!showStatusDropdown)}
-              >
-                <RegularText style={{ color: theme.text }}>
-                  {statusOptions.find(option => option.value === status)?.label || 'Select Status'}
-                </RegularText>
-                <Ionicons 
-                  name={showStatusDropdown ? "chevron-up" : "chevron-down"} 
-                  size={20} 
-                  color={theme.text} 
-                />
-              </TouchableOpacity>
-
-              {showStatusDropdown && (
-                 <View style={[styles.dropdownMenu, { backgroundColor: theme.card }]}>
-            <ScrollView 
-              style={{ maxHeight: 200 }}
-              nestedScrollEnabled={true}
-            >
-              {statusOptions.map(option => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.dropdownItem, 
-                    { 
-                      backgroundColor: status === option.value 
-                        ? theme.primary + '20' 
-                        : 'transparent' 
-                    }
-                  ]}
-                  onPress={() => {
-                    setStatus(option.value);
-                    setShowStatusDropdown(false);
-                  }}
-                >
-                      <RegularText style={{ 
-                        color: status === option.value ? theme.primary : theme.text 
-                      }}>
-                        {option.label}
-                      </RegularText>
-                      {status === option.value && (
-                        <Ionicons name="checkmark" size={20} color={theme.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-            
-            <View style={styles.formGroup}>
-              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Uses Count</MediumText>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme?.input || '#F5F5F5', color: theme.text }]}
-                placeholder="Enter uses count"
-                placeholderTextColor={theme?.textMuted || '#888888'}
-                value={usesCount.toString()}
-                onChangeText={(text) => setUsesCount(text.replace(/[^0-9]/g, ''))}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.formGroup}>
-              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Restaurant (Optional)</MediumText>
+              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Coffee Shop</MediumText>
               <TouchableOpacity
                 style={[styles.dropdown, { backgroundColor: theme.input }]}
                 onPress={() => setShowRestaurantSearch(!showRestaurantSearch)}
               >
                 <RegularText style={{ color: theme.text }}>
-                  {selectedRestaurant?.name || 'Select Restaurant'}
+                  {selectedRestaurant?.name || 'Select coffee shop'}
                 </RegularText>
                 <Ionicons 
                   name={showRestaurantSearch ? "chevron-up" : "chevron-down"} 
@@ -1227,7 +1162,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                     <Ionicons name="search" size={20} color={theme.text} />
                     <TextInput
                       style={[styles.searchInput, { color: theme.text }]}
-                      placeholder="Search restaurants..."
+                      placeholder="Search coffee shop..."
                       placeholderTextColor={theme?.textMuted || '#888888'}
                       value={restaurantSearchQuery}
                       onChangeText={setRestaurantSearchQuery}
@@ -1301,15 +1236,82 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                 </View>
               )}
             </View>
+
+
+            <View style={styles.formGroup}>
+              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Status</MediumText>
+              <TouchableOpacity
+                style={[styles.dropdown, { backgroundColor: theme.input }]}
+                onPress={() => setShowStatusDropdown(!showStatusDropdown)}
+              >
+                <RegularText style={{ color: theme.text }}>
+                  {statusOptions.find(option => option.value === status)?.label || 'Select Status'}
+                </RegularText>
+                <Ionicons 
+                  name={showStatusDropdown ? "chevron-up" : "chevron-down"} 
+                  size={20} 
+                  color={theme.text} 
+                />
+              </TouchableOpacity>
+
+              {showStatusDropdown && (
+                 <View style={[styles.dropdownMenu, { backgroundColor: theme.card }]}>
+            <ScrollView 
+              style={{ maxHeight: 200 }}
+              nestedScrollEnabled={true}
+            >
+              {statusOptions.map(option => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.dropdownItem, 
+                    { 
+                      backgroundColor: status === option.value 
+                        ? theme.primary + '20' 
+                        : 'transparent' 
+                    }
+                  ]}
+                  onPress={() => {
+                    setStatus(option.value);
+                    setShowStatusDropdown(false);
+                  }}
+                >
+                      <RegularText style={{ 
+                        color: status === option.value ? theme.primary : theme.text 
+                      }}>
+                        {option.label}
+                      </RegularText>
+                      {status === option.value && (
+                        <Ionicons name="checkmark" size={20} color={theme.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
             
             <View style={styles.formGroup}>
-              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Container Type</MediumText>
+              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Uses Count</MediumText>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme?.input || '#F5F5F5', color: theme.text }]}
+                placeholder="Enter uses count"
+                placeholderTextColor={theme?.textMuted || '#888888'}
+                value={usesCount.toString()}
+                onChangeText={(text) => setUsesCount(text.replace(/[^0-9]/g, ''))}
+                keyboardType="numeric"
+              />
+            </View>
+
+            
+            <View style={styles.formGroup}>
+              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Cup size</MediumText>
               <TouchableOpacity
                 style={[styles.dropdown, { backgroundColor: theme.input }]}
                 onPress={() => setShowContainerTypeSearch(!showContainerTypeSearch)}
               >
                 <RegularText style={{ color: theme.text }}>
-                  {selectedContainerType?.name || 'Select Container Type'}
+                  {selectedContainerType?.name || 'Select Cup Size'}
                 </RegularText>
                 <Ionicons 
                   name={showContainerTypeSearch ? "chevron-up" : "chevron-down"} 
@@ -1324,7 +1326,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                     <Ionicons name="search" size={20} color={theme.text} />
                     <TextInput
                       style={[styles.searchInput, { color: theme.text }]}
-                      placeholder="Search container types..."
+                      placeholder="Search cup size..."
                       placeholderTextColor={theme?.textMuted || '#888888'}
                       value={containerTypeSearchQuery}
                       onChangeText={setContainerTypeSearchQuery}
@@ -1476,7 +1478,7 @@ const AdminContainersScreen = ({ navigation, route }) => {
         <View style={[styles.qrModalContainer, { backgroundColor: theme.card }]}>
           <View style={styles.qrModalHeader}>
             <BoldText style={{ fontSize: 20, color: theme.text }}>
-              New Container QR Code
+              New Cup QR Code
             </BoldText>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={theme.text} />
@@ -1490,7 +1492,7 @@ const AdminContainersScreen = ({ navigation, route }) => {
               resizeMode="contain" 
             />
             <MediumText style={{ color: theme.text, marginTop: 16, textAlign: 'center' }}>
-              Scan this QR code to use the container
+              Scan this QR code to use the cup 
             </MediumText>
           </View>
           
@@ -1548,8 +1550,8 @@ const AdminContainersScreen = ({ navigation, route }) => {
         applyFilters(response.data);
       }
     } catch (error) {
-      console.error('Error fetching containers:', error);
-      Alert.alert('Error', 'Failed to load containers');
+      console.error('Error fetching cup containers:', error);
+      Alert.alert('Error', 'Failed to load cup containers');
     }
   };
 
@@ -1565,7 +1567,7 @@ const AdminContainersScreen = ({ navigation, route }) => {
         setRestaurants(response.data);
       }
     } catch (error) {
-      console.error('Error fetching restaurants:', error);
+      console.error('Error fetching coffee shop:', error);
     }
   };
 
@@ -1587,8 +1589,8 @@ const AdminContainersScreen = ({ navigation, route }) => {
         setContainerTypes(response.data);
       }
     } catch (error) {
-      console.error('Error fetching container types:', error);
-      Alert.alert('Error', 'Failed to load container types. Please try again.');
+      console.error('Error fetching cup size:', error);
+      Alert.alert('Error', 'Failed to load cup size. Please try again.');
     }
   };
 
@@ -1818,8 +1820,8 @@ const AdminContainersScreen = ({ navigation, route }) => {
 
   const handleDeleteContainer = (container) => {
     Alert.alert(
-      'Delete Container',
-      'Are you sure you want to delete this container?',
+      'Delete cup ',
+      'Are you sure you want to delete this cup?',
       [
         {
           text: 'Cancel',
@@ -1844,10 +1846,10 @@ const AdminContainersScreen = ({ navigation, route }) => {
       });
       
       fetchAllContainers();
-      Alert.alert('Success', 'Container deleted successfully');
+      Alert.alert('Success', 'Cup deleted successfully');
     } catch (error) {
-      console.error('Error deleting container:', error);
-      Alert.alert('Error', 'Failed to delete container');
+      console.error('Error deleting cup:', error);
+      Alert.alert('Error', 'Failed to delete cup');
     }
   };
 
@@ -1959,7 +1961,7 @@ const AdminContainersScreen = ({ navigation, route }) => {
     <Ionicons name="arrow-back" size={24} color={theme.text} />
   </TouchableOpacity>
   <BoldText style={[styles.headerTitle, { color: theme.text }]}>
-    {userId ? 'User Containers' : 'All Containers'}
+    {userId ? 'User Cup' : 'All Cup'}
   </BoldText>
   <View style={{ flexDirection: 'row' }}>
   <TouchableOpacity onPress={() => setEditModalVisible(true)}>
@@ -2045,7 +2047,7 @@ const AdminContainersScreen = ({ navigation, route }) => {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             theme={theme}
-            placeholder="Search by type, QR code, customer or restaurant..."
+            placeholder="Search by size, QR code, customer or coffee shop..."
           />
           
           {renderSortButtons()}
@@ -2062,8 +2064,8 @@ const AdminContainersScreen = ({ navigation, route }) => {
               <Ionicons name="cube-outline" size={48} color={theme.text} style={{ opacity: 0.4 }} />
               <RegularText style={{ color: theme.text, textAlign: 'center', marginTop: 12 }}>
                 {containers.length === 0 
-                  ? "No containers found." 
-                  : "No containers match the current filters."}
+                  ? "No cup found." 
+                  : "No cup match the current filters."}
               </RegularText>
             </View>
           ) : (

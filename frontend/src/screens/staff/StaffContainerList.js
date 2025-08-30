@@ -82,11 +82,11 @@ const ContainerItem = ({ container, onPress }) => {
   const getContainerIcon = (status) => {
     switch (status) {
       case 'available':
-        return { name: 'cafe-outline', color: '#9c27b0' };
+        return { name: 'cafe-outline', color: '#7C663E' };
       case 'active':
-        return { name: 'cube-outline', color: '#2e7d32' };
+        return { name: 'cube-outline', color: '#677325' };
       case 'returned':
-        return { name: 'archive-outline', color: '#0277bd' }; 
+        return { name: 'archive-outline', color: '#BF9266' }; 
       case 'lost':
         return { name: 'help-circle-outline', color: '#ff9800' };
       case 'damaged':
@@ -101,11 +101,11 @@ const ContainerItem = ({ container, onPress }) => {
   const getContainerBackground = (status) => {
     switch (status) {
       case 'available':
-        return '#f3e5f5';
+        return '#EBC684';
       case 'active':
-        return '#e8f5e9';
+        return '#BBC191';
       case 'returned':
-        return '#e3f2fd';
+        return '#E0C7AC';
       case 'lost':
         return '#fff3e0';
       case 'damaged':
@@ -209,9 +209,9 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
   const getContainerBackground = (status) => {
     switch (status) {
       case 'available':
-        return '#f3e5f5';
+        return '#EBC684';
       case 'active':
-        return '#e8f5e9';
+        return '#BBC191';
       case 'returned':
         return '#e3f2fd';
       case 'lost':
@@ -741,8 +741,8 @@ const StaffContainersList = ({ navigation, route }) => {
               title="Available" 
               value={containerStats.availableContainers}
               icon="cafe-outline"
-              backgroundColor="#f3e5f5"
-              textColor="#9c27b0"
+              backgroundColor="#EBC684"
+              textColor="#7C663E"
               onPress={() => handleFilterChange('available')}
               isSelected={activeFilter === 'available'}
             />
@@ -751,8 +751,8 @@ const StaffContainersList = ({ navigation, route }) => {
               title="Active" 
               value={containerStats.activeContainers}
               icon="cube-outline"
-              backgroundColor="#e8f5e9"
-              textColor="#2e7d32"
+              backgroundColor="#BBC191"
+              textColor="#677325"
               onPress={() => handleFilterChange('active')}
               isSelected={activeFilter === 'active'}
             />
@@ -761,8 +761,8 @@ const StaffContainersList = ({ navigation, route }) => {
               title="Returned" 
               value={containerStats.returnedContainers}
               icon="refresh-outline"
-              backgroundColor="#e3f2fd"
-              textColor="#0277bd"
+              backgroundColor="#E0C7AC"
+              textColor="#5A3E29"
               onPress={() => handleFilterChange('returned')}
               isSelected={activeFilter === 'returned'}
             />
@@ -771,8 +771,8 @@ const StaffContainersList = ({ navigation, route }) => {
               title="Lost" 
               value={containerStats.lostContainers}
               icon="help-circle-outline"
-              backgroundColor="#fff3e0"
-              textColor="#ff9800"
+              backgroundColor="#c3b49aff"
+              textColor="#885f22ff"
               onPress={() => handleFilterChange('lost')}
               isSelected={activeFilter === 'lost'}
             />
@@ -781,8 +781,8 @@ const StaffContainersList = ({ navigation, route }) => {
               title="Damaged" 
               value={containerStats.damagedContainers}
               icon="alert-circle-outline"
-              backgroundColor="#ffebee"
-              textColor="#d32f2f"
+              backgroundColor="#b2040466"
+              textColor="#B20404"
               onPress={() => handleFilterChange('damaged')}
               isSelected={activeFilter === 'damaged'}
             />
@@ -906,7 +906,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selectedCard: {
-    borderColor: '#00df82',
+    borderColor: '#677324',
     borderWidth: 2,
   },
   cardContent: {
@@ -973,7 +973,7 @@ const styles = StyleSheet.create({
   scanButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#00df82',
+    backgroundColor: '#677324',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -993,7 +993,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#00df82',
+    backgroundColor: '#677324',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

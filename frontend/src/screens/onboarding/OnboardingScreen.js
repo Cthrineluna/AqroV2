@@ -26,25 +26,28 @@ const onboardingData = [
     id: 1,
     title: 'Scan with aQRo',
     description: 'Scan, save, and make a difference with our simple QR code solution. Join our community in making sustainable choices easier.',
-    backgroundColor: '#C5E8D5', // Light green
-    textColor: '#25AF90',
-    animationSource: require('../../../assets/animations/scan.json')
+    backgroundColor: '#F6D18F', // Light green
+    textColor: '#543310',
+    mediaType: 'image',
+    imageSource: require('../../../assets/images/scan.png'),
   },
   {
     id: 2,
     title: 'Save With aQRo',
     description: 'Save time, money, and resources with our innovative QR system. Track your savings and see the impact of your sustainable choices.',
-    backgroundColor: '#C5E1E8', // Light blue
-    textColor: '#2591AF',
-    animationSource: require('../../../assets/animations/save.json')
+    backgroundColor: '#F3DAAD', // Light blue
+    textColor: '#543310',
+    mediaType: 'image',
+    imageSource: require('../../../assets/images/save.png'),
   },
   {
     id: 3,
     title: 'Sustain With aQRo',
     description: 'Join our mission to create a cleaner planet. Reusable containers have never been easier or more rewarding. Start making a difference today!',
-    backgroundColor: '#E8D5C5', // Light orange/brown
-    textColor: '#AF7725',
-    animationSource: require('../../../assets/animations/sustain.json'),
+    backgroundColor: '#EBC684', // Light orange/brown
+    textColor: '#543310',
+    mediaType: 'image',
+    imageSource: require('../../../assets/images/sustain.png'),
   },
 ];
 
@@ -362,6 +365,10 @@ const OnboardingScreen = ({ navigation, onComplete, skipSplash = false }) => {
     </Animated.View>
   );
 };
+
+
+    
+  
 
 const styles = StyleSheet.create({
   container: {
