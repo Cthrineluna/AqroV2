@@ -1014,7 +1014,7 @@ const renderFilterBadges = () => {
   onPress={() => setSelectedContainerTypes([])}
 >
   <MediumText style={{ color: selectedContainerTypes.length === 0 ? theme.primary : theme.text }}>
-    All cup type
+    All Cup Type
   </MediumText>
   {selectedContainerTypes.length === 0 && (
     <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
