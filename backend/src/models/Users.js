@@ -23,6 +23,13 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  //added
+  phoneNumber: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  //added
   userType: {
     type: String,
     enum: ['customer', 'staff', 'admin'],

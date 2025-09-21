@@ -28,8 +28,38 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
 import SearchComponent from '../../components/SearchComponent';
 
-
 const { width, height } = Dimensions.get('window');
+
+//added
+const getDerivedStatus = (c) => {
+  const max = c?.containerTypeId?.maxUses ?? 0;
+  const used = c?.usesCount ?? 0;
+  return (c?.status === 'active' && max - used <= 0) ? 'expired' : (c?.status || 'unknown');
+};
+
+const computeStatsFromList = (list = []) => {
+  const stats = {
+    availableContainers: 0,
+    activeContainers: 0,
+    returnedContainers: 0,
+    lostContainers: 0,
+    damagedContainers: 0,
+    expiredContainers: 0,
+  };
+  for (const c of list) {
+    const s = getDerivedStatus(c);
+    if (s === 'available') stats.availableContainers++;
+    else if (s === 'active') stats.activeContainers++;
+    else if (s === 'returned') stats.returnedContainers++;
+    else if (s === 'lost') stats.lostContainers++;
+    else if (s === 'damaged') stats.damagedContainers++;
+    else if (s === 'expired') stats.expiredContainers++;
+  }
+  return stats;
+};
+
+//added
+
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress, isSelected }) => {
   const { theme } = useTheme();
@@ -58,16 +88,22 @@ const ContainerItem = ({ container, onPress }) => {
   const { theme } = useTheme();
   const estimatedUsesLeft = container.containerTypeId.maxUses - container.usesCount; 
   
+  //added
+  const derivedStatus = getDerivedStatus(container);
+  //added
+
   const customerName = container.customerId ? 
     `${container.customerId.firstName} ${container.customerId.lastName}` : 
     'Unregistered';
     
   const statusMessage = (() => {
-    switch (container.status) {
+    switch (derivedStatus) {
       case 'available':
         return 'Available';
       case 'active':
-        return `${estimatedUsesLeft} uses left`;
+        return `${estimatedUsesLeft} uses left`; //added
+      case 'expired': //added
+        return 'Expired';
       case 'returned':
         return 'Returned';
       case 'lost':
@@ -91,12 +127,14 @@ const ContainerItem = ({ container, onPress }) => {
         return { name: 'help-circle-outline', color: '#ff9800' };
       case 'damaged':
         return { name: 'alert-circle-outline', color: '#d32f2f' }; 
+      case 'expired': //added
+        return { name: 'time-outline', color: '#6d4c41' };
       default:
         return { name: 'help-outline', color: '#9e9e9e' }; 
     }
   };
   
-  const { name, color } = getContainerIcon(container.status);
+  const { name, color } = getContainerIcon(derivedStatus); //added
   
   const getContainerBackground = (status) => {
     switch (status) {
@@ -110,12 +148,14 @@ const ContainerItem = ({ container, onPress }) => {
         return '#fff3e0';
       case 'damaged':
         return '#ffebee'; 
+      case 'expired':   
+        return '#efebe9';
       default:
         return '#e0e0e0'; 
     }
   };
   
-  const backgroundColor = getContainerBackground(container.status);
+  const backgroundColor = getContainerBackground(derivedStatus);
   
   return (
     <TouchableOpacity 
@@ -152,6 +192,10 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
   const { theme } = useTheme();
   const estimatedUsesLeft = container?.containerTypeId?.maxUses - (container?.usesCount || 0);
   
+  //added
+  const derivedStatus = getDerivedStatus(container);
+  //added
+
   if (!container) return null;
   
   const registrationDate = container.registrationDate 
@@ -171,7 +215,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
     'N/A';
   
   const statusMessage = (() => {
-    switch (container.status) {
+    switch (derivedStatus) {
       case 'available':
         return 'Available';
       case 'active':
@@ -199,12 +243,14 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         return { name: 'help-circle-outline', color: '#ff9800' };
       case 'damaged':
         return { name: 'alert-circle-outline', color: '#d32f2f' }; 
+      case 'expired':   
+        return { name: 'time-outline',  color: '#6d4c41' }; //added
       default:
         return { name: 'help-outline', color: '#9e9e9e' }; 
     }
   };
     
-  const { name, color } = getContainerIcon(container.status);
+  const { name, color } = getContainerIcon(derivedStatus);
 
   const getContainerBackground = (status) => {
     switch (status) {
@@ -218,12 +264,14 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         return '#fff3e0';
       case 'damaged':
         return '#ffebee'; 
+      case 'expired':   
+        return '#efebe9';
       default:
         return '#e0e0e0'; 
     }
   };
     
-  const backgroundColor = getContainerBackground(container.status);
+  const backgroundColor = getContainerBackground(derivedStatus);
 
   const getStatusTextColor = (status) => {
     switch (status) {
@@ -237,12 +285,14 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
         return '#ff9800'; 
       case 'damaged':
         return '#d32f2f'; 
+      case 'expired':   
+        return '#6d4c41';
       default:
         return '#757575'; 
     }
   };
     
-  const statusTextColor = getStatusTextColor(container.status);
+  const statusTextColor = getStatusTextColor(derivedStatus);
     
   return (
     <Animated.View 
@@ -264,7 +314,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
     >
       <View style={styles.modalHeader}>
         <BoldText style={{ fontSize: 20, color: theme.text }}>
-          Container Details
+          Cup Details
         </BoldText>
         <TouchableOpacity onPress={closeModal}>
           <Ionicons name="close-circle-outline" size={28} color={theme.text} />
@@ -285,14 +335,16 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
           {container.containerTypeId.name}
         </BoldText>
         
+        {/* added */}
         <View style={styles.statusChip}>
           <RegularText style={{ color: statusTextColor, fontSize: 16 }}>
-            {container.status.toUpperCase()}
+            {derivedStatus.toUpperCase()} 
           </RegularText>
         </View>
+
         
         <View style={styles.detailRow}>
-          <RegularText style={styles.detailLabel}>Container Code:</RegularText>
+          <RegularText style={styles.detailLabel}>Cup Code:</RegularText>
           <RegularText style={{ color: theme.text, fontSize: 12 }}>{container.qrCode}</RegularText>
         </View>
         
@@ -329,7 +381,7 @@ const ContainerDetailModal = ({ container, animation, closeModal }) => {
           <RegularText style={{ color: theme.text }}>{container.usesCount}</RegularText>
         </View>
         
-        {container.status === 'active' && (
+        {derivedStatus === 'active' &&  estimatedUsesLeft > 0 &&(
           <View style={styles.detailRow}>
             <RegularText style={styles.detailLabel}>Uses Left:</RegularText>
             <RegularText style={{ color: theme.text }}>{estimatedUsesLeft}</RegularText>
@@ -350,7 +402,8 @@ const StaffContainersList = ({ navigation, route }) => {
     activeContainers: 0,
     returnedContainers: 0,
     lostContainers: 0,
-    damagedContainers: 0
+    damagedContainers: 0,
+    expiredContainers: 0
   });
   const [containers, setContainers] = useState([]);
   const [selectedContainer, setSelectedContainer] = useState(null);
@@ -416,7 +469,7 @@ const StaffContainersList = ({ navigation, route }) => {
         setRestaurantName(response.data.name);
       }
     } catch (error) {
-      console.error('Error fetching restaurant details:', error);
+      console.error('Error fetching coffee shop details:', error);
     }
   };
   
@@ -468,10 +521,16 @@ const StaffContainersList = ({ navigation, route }) => {
         );
         
         setContainers(containersWithRebates);
+
+        //added
+       const stats = computeStatsFromList(containersWithRebates);
+         setContainerStats(stats);
+
+        //added
         applyFilter(activeFilter, containersWithRebates);
       }
     } catch (error) {
-      console.error('Error fetching restaurant containers:', error);
+      console.error('Error fetching coffee shop cups:', error);
     }
   };
 
@@ -482,6 +541,7 @@ const StaffContainersList = ({ navigation, route }) => {
     { id: 'returned', label: 'Returned' },
     { id: 'lost', label: 'Lost' },
     { id: 'damaged', label: 'Damaged' },
+    { id: 'expired', label: 'Expired' }, //added
   ];
   const handleSearch = (query) => {
     if (!query.trim()) {
@@ -491,7 +551,7 @@ const StaffContainersList = ({ navigation, route }) => {
   
     const filtered = activeFilter === 'all' 
       ? containers 
-      : containers.filter(item => item.status === activeFilter);
+      : containers.filter(item => getDerivedStatus(item) === activeFilter);
   
     const results = filtered.filter(container => {
       const containerTypeName = container.containerTypeId?.name?.toLowerCase() || '';
@@ -591,9 +651,15 @@ const StaffContainersList = ({ navigation, route }) => {
       return;
     }
     
-    let filtered = filter === 'all' 
-      ? containerList 
-      : containerList.filter(item => item.status === filter);
+    // let filtered = filter === 'all' 
+    //   ? containerList 
+    //   : containerList.filter(item => item.status === filter);
+
+    //added
+    let filtered = filter === 'all'
+        ? containerList
+        : containerList.filter(item => getDerivedStatus(item) === filter);
+    //added
       
     // Apply current sort to filtered results
     filtered = [...filtered].sort((a, b) => {
@@ -708,7 +774,7 @@ const StaffContainersList = ({ navigation, route }) => {
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <BoldText style={[styles.headerTitle, { color: theme.text }]}>
-        {restaurantName || "Restaurant"} Containers
+        {restaurantName || "Restaurant"} Cups
       </BoldText>
         <View style={{ width: 24 }} />
       </View>
@@ -786,13 +852,23 @@ const StaffContainersList = ({ navigation, route }) => {
               onPress={() => handleFilterChange('damaged')}
               isSelected={activeFilter === 'damaged'}
             />
+
+            <ContainerCard 
+              title="Expired" 
+              value={containerStats.expiredContainers}
+              icon="time-outline"
+              backgroundColor="#b0aeacff"
+              textColor="#6d4c41"
+              onPress={() => handleFilterChange('expired')}
+              isSelected={activeFilter === 'expired'}
+            />
           </View>
         </View>
         
         {/* Containers List */}
         <View style={styles.section}>
           <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
-            {filteredContainers.length} {activeFilter === 'all' ? '' : activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Containers Found
+            {filteredContainers.length} {activeFilter === 'all' ? '' : activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Cups Found
           </SemiBoldText>
 
           {/* <FilterTabs 
@@ -816,8 +892,8 @@ const StaffContainersList = ({ navigation, route }) => {
               <Ionicons name="cube-outline" size={48} color={theme.text} style={{ opacity: 0.4 }} />
               <RegularText style={{ color: theme.text, textAlign: 'center', marginTop: 12 }}>
                 {containers.length === 0 
-                  ? "No containers found for this restaurant." 
-                  : "No containers match the selected filter."}
+                  ? "No cups found for this coffee shop." 
+                  : "No cups match the selected filter."}
               </RegularText>
             </View>
           ) : (

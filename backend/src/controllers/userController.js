@@ -1,5 +1,12 @@
 const User = require('../models/Users');
 
+//added
+function isStrongPassword(password) {
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+  return strongPasswordRegex.test(password);
+}
+//added
+
 exports.getUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -18,14 +25,22 @@ exports.getUserProfile = async (req, res) => {
 
 exports.updateUserProfile = async (req, res) => {
     try {
-      const userId = req.user.id;
-      const { firstName, lastName, email, password, profilePicture } = req.body;
+      const userId = req.user.id;                                   //added
+      const { firstName, lastName, email, password, profilePicture,phoneNumber } = req.body;
       
+      //added
+      const phPhoneRegex = /^(?:\+639|09)\d{9}$/;
+        if (typeof phoneNumber !== 'undefined' && phoneNumber && !phPhoneRegex.test(phoneNumber.trim())) {
+          return res.status(400).json({ message: 'Enter a valid PH mobile number (0917xxxxxxx or +63917xxxxxxx)' });
+        }
+      //added
+
       // Prepare update object
       const updateData = { 
         firstName, 
         lastName,
-        profilePicture
+        profilePicture,
+        phoneNumber //added
       };
       
       // Only add email if it was provided and changed
@@ -68,6 +83,14 @@ exports.updateUserProfile = async (req, res) => {
       const userId = req.user.id;
       const { currentPassword, newPassword } = req.body;
       
+      //added
+      if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        message: 'Password must include uppercase, lowercase, number, special character, and be at least 8 characters long'
+      });
+    }
+    //added
+
       // Find the user
       const user = await User.findById(userId);
       if (!user) {
@@ -124,6 +147,15 @@ exports.createUser = async (req, res) => {
   try {
     const { email, password, firstName, lastName, userType } = req.body;
 
+    //added
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    if (!strongPasswordRegex.test(password)) {
+      return res.status(400).json({ 
+        message: 'Password must include uppercase, lowercase, number, special character, and be at least 8 characters long'
+      });
+    }
+    //added
+    
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {

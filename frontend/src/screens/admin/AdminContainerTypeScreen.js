@@ -78,8 +78,8 @@ const AdminContainerTypeScreen = ({ navigation }) => {
       });
       setContainerTypes(response.data);
     } catch (error) {
-      console.error('Error fetching container types:', error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to fetch container types');
+      console.error('Error fetching cup types:', error.response?.data || error.message);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to fetch cup types');
     } finally {
       setRefreshing(false);
     }
@@ -97,8 +97,8 @@ const AdminContainerTypeScreen = ({ navigation }) => {
       });
       setRestaurants(response.data);
     } catch (error) {
-      console.error('Error fetching restaurants:', error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to fetch restaurants');
+      console.error('Error fetching coffee shop:', error.response?.data || error.message);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to fetch coffee shop');
     }
   };
 
@@ -290,8 +290,8 @@ const AdminContainerTypeScreen = ({ navigation }) => {
       setModalVisible(false);
       setSelectedContainerType(null);
     } catch (error) {
-      console.error('Error saving container type:', error.response?.data || error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to save container type');
+      console.error('Error saving cup type:', error.response?.data || error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to save cup type');
     }
   };
 
@@ -299,7 +299,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
   const handleDeleteContainerType = async (containerTypeId) => {
     Alert.alert(
       'Confirm Deletion',
-      'Are you sure you want to delete this container type?',
+      'Are you sure you want to delete this cup type?',
       [
         {
           text: 'Cancel',
@@ -322,8 +322,8 @@ const AdminContainerTypeScreen = ({ navigation }) => {
               fetchContainerTypes();
               setActionModalVisible(false);
             } catch (error) {
-              console.error('Error deleting container type:', error);
-              Alert.alert('Error', 'Failed to delete container type');
+              console.error('Error deleting cup type:', error);
+              Alert.alert('Error', 'Failed to delete cup type');
             }
           }
         }
@@ -454,7 +454,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                 color={theme?.text || '#000000'} 
               />
               <RegularText style={{ marginLeft: 10, color: theme?.text || '#000000' }}>
-                Edit Container Type
+                Edit Cup Type
               </RegularText>
             </TouchableOpacity>
 
@@ -471,7 +471,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                 color="red" 
               />
               <RegularText style={{ marginLeft: 10, color: 'red' }}>
-                Delete Container Type
+                Delete Cup Type
               </RegularText>
             </TouchableOpacity>
           </View>
@@ -531,7 +531,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
               <RegularText style={{ color: newRebateRestaurant ? theme?.text : theme?.textMuted || '#888888' }}>
                 {newRebateRestaurant 
                   ? restaurants.find(r => r._id === newRebateRestaurant)?.name 
-                  : "Select a restaurant"}
+                  : "Select a coffee shop"}
               </RegularText>
             </TouchableOpacity>
             
@@ -574,7 +574,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                   }}
                   style={[styles.iosPicker, { color: theme?.text || '#000000' }]}
                 >
-                  <Picker.Item label="Select a restaurant" value="" />
+                  <Picker.Item label="Select a coffee shop" value="" />
                   {restaurants
                     .filter(r => !localContainerType.rebates.some(rebate => rebate.restaurantId === r._id))
                     .map(restaurant => (
@@ -608,7 +608,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
               setLocalError('');
             }}
           >
-            <Picker.Item label="Select a restaurant" value="" />
+            <Picker.Item label="Select a coffee shop" value="" />
             {restaurants
               .filter(r => !localContainerType.rebates.some(rebate => rebate.restaurantId === r._id))
               .map(restaurant => (
@@ -636,7 +636,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
     
     const handleAddRebate = () => {
       if (!newRebateRestaurant) {
-        setLocalError('Please select a restaurant');
+        setLocalError('Please select a coffee shop');
         return;
       }
   
@@ -651,7 +651,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
       );
   
       if (existingIndex >= 0) {
-        setLocalError('Rebate already exists for this restaurant');
+        setLocalError('Rebate already exists for this coffee shop');
         return;
       }
   
@@ -751,7 +751,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                 styles.modalTitle, 
                 { color: theme?.text || '#000000' }
               ]}>
-                {selectedContainerType ? 'Edit Container Type' : 'Create New Container Type'}
+                {selectedContainerType ? 'Edit Cup Type' : 'Create New Cup Type'}
               </SemiBoldText>
               
               {/* Scrollable Content */}
@@ -885,7 +885,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                   onPress={() => setIsRebateSectionOpen(!isRebateSectionOpen)}
                 >
                   <SemiBoldText style={{ color: theme?.text || '#000000' }}>
-                    Restaurant Rebate Values
+                    Coffee Shop Rebate Values
                   </SemiBoldText>
                   <Ionicons 
                     name={isRebateSectionOpen ? 'chevron-up' : 'chevron-down'} 
@@ -947,7 +947,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                     >
                       <Ionicons name="add" size={20} color="white" />
                       <RegularText style={{ color: 'white', marginLeft: 5 }}>
-                        Add Restaurant Rebate
+                        Add Coffee Shop Rebate
                       </RegularText>
                     </TouchableOpacity>
                   </View>
@@ -1007,7 +1007,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                     marginBottom: 15,
                     color: theme?.text || '#000000'
                   }}>
-                    Add Restaurant Rebate
+                    Add Coffee Shop Rebate
                   </SemiBoldText>
   
                   {localError && (
@@ -1099,7 +1099,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
                 styles.headerTitle, 
                 { color: theme?.text || '#000000' }
               ]}>
-                Container Types
+                Cup Types
               </SemiBoldText>
               
               <TouchableOpacity 
@@ -1138,7 +1138,7 @@ const AdminContainerTypeScreen = ({ navigation }) => {
               marginTop: 10,
               textAlign: 'center'
             }}>
-              No container types found.{'\n'}
+              No cup types found.{'\n'}
               Pull down to refresh or add a new one.
             </RegularText>
           </View>

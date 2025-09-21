@@ -32,6 +32,29 @@ import { PieChart } from 'react-native-chart-kit';
 
 const { width, height } = Dimensions.get('window');
 
+//added
+// derived helpers
+const getDerivedStatus = (c) => {
+  const max = c?.containerTypeId?.maxUses ?? 0;
+  const used = c?.usesCount ?? 0;
+  return (c?.status === 'active' && max - used <= 0)
+    ? 'expired'
+    : (c?.status || 'unknown');
+};
+
+const computeStatsFromList = (list = []) => {
+  const stats = { availableContainers: 0, activeContainers: 0, returnedContainers: 0, expiredContainers: 0 };
+  for (const c of list) {
+    const s = getDerivedStatus(c);
+    if (s === 'available') stats.availableContainers++;
+    else if (s === 'active') stats.activeContainers++;
+    else if (s === 'returned') stats.returnedContainers++;
+    else if (s === 'expired') stats.expiredContainers++;
+  }
+  return stats;
+};
+//added
+
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress }) => {
   const { theme } = useTheme();
   
@@ -64,15 +87,15 @@ const ActivityItem = ({ activity, onPress }) => {
         return {
           icon: 'add-circle-outline',
           color: '#4CAF50',
-          title: 'Container Registered',
-          description: `Container registered by ${customerName}`
+          title: 'Cup Registered',
+          description: `Cup registered by ${customerName}`
         };
       case 'return':
         return {
           icon: 'repeat-outline',
           color: '#2196F3',
-          title: 'Container Returned',
-          description: `Container returned by ${customerName}`
+          title: 'Cup Returned',
+          description: `Cup returned by ${customerName}`
         };
       case 'rebate':
         return {
@@ -86,14 +109,14 @@ const ActivityItem = ({ activity, onPress }) => {
           icon: 'sync-outline',
           color: '#9C27B0',
           title: 'Status Changed',
-          description: activity.notes || 'Container status updated'
+          description: activity.notes || 'Cup status updated'
         };
       default:
         return {
           icon: 'ellipsis-horizontal-outline',
           color: '#757575',
           title: 'Activity',
-          description: 'Container activity recorded'
+          description: 'Cup activity recorded'
         };
     }
   };
@@ -214,7 +237,7 @@ const StaffHomeScreen = ({ navigation }) => {
         setContainerStats(response.data);
       }
     } catch (error) {
-      console.error('Error fetching restaurant container stats:', error);
+      console.error('Error fetching restaurant cup stats:', error);
     }
   };
   
@@ -225,11 +248,22 @@ const StaffHomeScreen = ({ navigation }) => {
     setNavBarColor();
   }, [theme.background]);
 
+  // useEffect(() => {
+  //   fetchContainerStats();
+  //   fetchRebateStats();
+  //   fetchRecentActivities(); 
+  // }, []);
+
+  //added
   useEffect(() => {
-    fetchContainerStats();
-    fetchRebateStats();
-    fetchRecentActivities(); 
-  }, []);
+  (async () => {
+    await fetchContainerStats();      // server numbers
+    await fetchRebateStats();
+    await fetchRecentActivities();
+    await fetchContainersForDerivedStats(); // <-- derived last so it wins
+  })();
+}, []);
+//added
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -238,6 +272,7 @@ const StaffHomeScreen = ({ navigation }) => {
       fetchRebateStats(), 
       fetchRecentActivities()
     ]);
+    await fetchContainersForDerivedStats(); //added
     setRefreshing(false);
   };
 
@@ -261,6 +296,31 @@ const StaffHomeScreen = ({ navigation }) => {
     }
   };
 
+  //added
+  const fetchContainersForDerivedStats = async () => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    if (!token || !user?.restaurantId) return;
+
+    const res = await axios.get(
+      getApiUrl(`/containers/restaurant/${user.restaurantId}`),
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const stats = computeStatsFromList(res.data || []);
+    // Only update the counts we care about; keep state shape the same
+    setContainerStats(prev => ({
+      ...prev,
+      availableContainers: stats.availableContainers,
+      activeContainers: stats.activeContainers,      // <-- will drop when items become expired
+      returnedContainers: stats.returnedContainers,
+      // (you can use stats.expiredContainers later if you show it on this screen)
+    }));
+  } catch (err) {
+    console.error('Error fetching containers for derived stats:', err);
+  }
+};
+//added
 
   const containerChartData = [
     {
@@ -343,10 +403,10 @@ const StaffHomeScreen = ({ navigation }) => {
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
-            onPress={() => navigation.navigate('Containers')}
+            onPress={() => navigation.navigate('Cups')}
           >
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
-              Containers
+              Cups
             </SemiBoldText>
             <Ionicons name="chevron-forward" style={styles.arrow} size={20} color={theme.text} />
           </TouchableOpacity>
@@ -354,7 +414,7 @@ const StaffHomeScreen = ({ navigation }) => {
            {/* Container Status Pie Chart */}
            <View style={[styles.chartContainer, { backgroundColor: theme.card }]}>
             <SemiBoldText style={[styles.chartTitle, { color: theme.text }]}>
-              Container Status Overview
+              Cup Status Overview
             </SemiBoldText>
             {(containerStats.availableContainers > 0 || 
               containerStats.activeContainers > 0 || 
@@ -380,7 +440,7 @@ const StaffHomeScreen = ({ navigation }) => {
               <View style={styles.noDataContainer}>
                 <Ionicons name="pie-chart-outline" size={40} color={theme.text} style={{opacity: 0.3}} />
                 <RegularText style={{color: theme.text, opacity: 0.5, marginTop: 10}}>
-                  No container data available
+                  No cup data available
                 </RegularText>
               </View>
             )}
@@ -393,7 +453,7 @@ const StaffHomeScreen = ({ navigation }) => {
               icon="cafe-outline"
               backgroundColor="#EBC684"
               textColor="#7C663E"
-              onPress={() => navigation.navigate('Containers', { filter: 'available' })}
+              onPress={() => navigation.navigate('Cups', { filter: 'available' })}
             />
             
             <ContainerCard 
@@ -402,7 +462,7 @@ const StaffHomeScreen = ({ navigation }) => {
               icon="cube-outline"
               backgroundColor="#BBC191"
               textColor="#677325"
-              onPress={() => navigation.navigate('Containers', { filter: 'active' })}
+              onPress={() => navigation.navigate('Cups', { filter: 'active' })}
             />
             
             <ContainerCard 
@@ -411,7 +471,7 @@ const StaffHomeScreen = ({ navigation }) => {
               icon="refresh-outline"
               backgroundColor="#E0C7AC"
               textColor="#BF9266"
-              onPress={() => navigation.navigate('Containers', { filter: 'returned' })}
+              onPress={() => navigation.navigate('Cups', { filter: 'returned' })}
             />
           </View>
           <View style={[styles.cardsContainer, {marginTop: 10}]}>
@@ -522,7 +582,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontFamily: 'Arial',
     lineHeight: 30,
-    fontWeight: '550',
+    fontWeight: 'semibold',
   },
   scrollContent: {
     padding: 16,

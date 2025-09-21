@@ -405,7 +405,7 @@ const AdminApprovalScreen = ({ navigation }) => {
             {item.email}
           </RegularText>
           <MediumText style={styles.restaurant}>
-            Restaurant: {item.restaurantId?.name || 'N/A'}
+            Coffee Shop: {item.restaurantId?.name || 'N/A'}
           </MediumText>
           <RegularText style={[styles.date, { color: theme.primary }]}>
             Registered: {formatDate(item.createdAt)}
@@ -692,7 +692,7 @@ const AdminApprovalScreen = ({ navigation }) => {
                   color: isPermanentRejection ? theme.danger : theme.text 
                 }]}>
                   {isPermanentRejection 
-                    ? 'WARNING: This action will permanently remove the staff member and their restaurant from the system. This cannot be undone.'
+                    ? 'WARNING: This action will permanently remove the staff member and their coffee from the system. This cannot be undone.'
                     : 'Please provide a reason why the documents need to be revised.'}
                 </RegularText>
                 

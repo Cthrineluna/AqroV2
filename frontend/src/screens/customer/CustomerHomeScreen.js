@@ -32,6 +32,27 @@ import RestaurantCarousel from '../../components/RestaurantCarousel';
 
 const { width, height } = Dimensions.get('window');
 
+//added
+const getDerivedStatus = (c) => {
+  const max = c?.containerTypeId?.maxUses ?? 0;
+  const used = c?.usesCount ?? 0;
+  return (c?.status === 'active' && max - used <= 0)
+    ? 'expired'
+    : (c?.status || 'unknown');
+};
+
+const computeStatsFromList = (list = []) => {
+  const stats = { activeContainers: 0, returnedContainers: 0, expiredContainers: 0 };
+  for (const c of list) {
+    const s = getDerivedStatus(c);
+    if (s === 'active') stats.activeContainers++;
+    else if (s === 'returned') stats.returnedContainers++;
+    else if (s === 'expired') stats.expiredContainers++;
+  }
+  return stats;
+};
+//added
+
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress }) => {
   const { theme } = useTheme();
   
@@ -162,9 +183,20 @@ const CustomerHomeScreen = ({ navigation }) => {
         }
       );
       
+      // if (response.data) {
+      //   setContainerStats(response.data);
+      // }
+
+      //added
       if (response.data) {
-        setContainerStats(response.data);
-      }
+          setContainerStats(prev => ({
+            ...prev,
+            totalRebate: response.data.totalRebate ?? prev.totalRebate,
+            // leave activeContainers/returnedContainers to be set by fetchContainersForDerivedStats
+          }));
+        }
+      //added
+
     } catch (error) {
       console.error('Error fetching container stats:', error);
       // dummy data
@@ -203,6 +235,31 @@ const CustomerHomeScreen = ({ navigation }) => {
     }
   };
 
+  //added
+const fetchContainersForDerivedStats = async () => {
+  try {
+    const token = await AsyncStorage.getItem('aqro_token');
+    if (!token) return;
+
+    const res = await axios.get(
+      getApiUrl('/containers'),
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const stats = computeStatsFromList(res.data || []);
+    // keep totalRebate from /containers/stats; only override counts we derive here
+    setContainerStats(prev => ({
+      ...prev,
+      activeContainers: stats.activeContainers,
+      returnedContainers: stats.returnedContainers,
+      // you can also keep stats.expiredContainers if you later show it on Home
+    }));
+  } catch (err) {
+    console.error('Error fetching containers for derived stats:', err);
+  }
+};
+//added
+
   const handleRestaurantPress = (restaurant) => {
     navigation.navigate('RestaurantDetail', { restaurantId: restaurant._id });
   };
@@ -238,11 +295,12 @@ const CustomerHomeScreen = ({ navigation }) => {
     fetchContainerStats();
     fetchRecentActivities(); 
     fetchRestaurants();
+    fetchContainersForDerivedStats(); 
   }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchContainerStats(), fetchRecentActivities()]);
+    await Promise.all([fetchContainerStats(), fetchRecentActivities(), fetchContainersForDerivedStats(),]);
     setRefreshing(false);
   };
 
@@ -283,7 +341,7 @@ const CustomerHomeScreen = ({ navigation }) => {
               Hello, {user?.firstName || 'User'}!
             </SemiBoldText>
             <RegularText style={[styles.subGreetings, { color: '#525D13' }]}>
-              Brewed and ready to make a difference today?
+              Brewed and ready today?
             </RegularText> 
           </View>
           <TouchableOpacity
@@ -296,10 +354,10 @@ const CustomerHomeScreen = ({ navigation }) => {
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.sectionHeader}
-            onPress={() => navigation.navigate('Containers')}
+            onPress={() => navigation.navigate('Cups')}
           >
             <SemiBoldText style={[styles.sectionTitle, { color: theme.text }]}>
-              Containers
+              Cups
             </SemiBoldText>
             <Ionicons name="chevron-forward" style={styles.arrow} size={20} color={theme.text} />
           </TouchableOpacity>
@@ -311,7 +369,7 @@ const CustomerHomeScreen = ({ navigation }) => {
               icon="cafe-outline"
               backgroundColor="#BBC191"
               textColor="#677325"
-              onPress={() => navigation.navigate('Containers', { filter: 'active' })}
+              onPress={() => navigation.navigate('Cups', { filter: 'active' })}
             />
             
             <ContainerCard 
@@ -320,7 +378,7 @@ const CustomerHomeScreen = ({ navigation }) => {
               icon="refresh-outline"
               backgroundColor="#E0C7AC"
               textColor="#5A3E29"
-              onPress={() => navigation.navigate('Containers', { filter: 'returned' })}
+              onPress={() => navigation.navigate('Cups', { filter: 'returned' })}
             />
             
             <ContainerCard 
@@ -379,7 +437,7 @@ const CustomerHomeScreen = ({ navigation }) => {
           ) : (
             <View style={[styles.activityPlaceholder, { backgroundColor: isDark ? '#333' : '#f5f5f5' }]}>
               <RegularText style={{ color: theme.text, textAlign: 'center' }}>
-                Your recent container activity will appear here.
+                Your recent cup activity will appear here.
               </RegularText>
             </View>
           )}

@@ -223,7 +223,7 @@ const handleFilterChange = (filter) => {
   // View User Containers
   const handleViewContainers = (userId) => {
     setActionModalVisible(false);
-    navigation.navigate('Containers', {
+    navigation.navigate('Cups', {
       userId: userId,  // Make sure this is the selected user's ID
       userName: `${selectedUser.firstName} ${selectedUser.lastName}`
     });
@@ -706,7 +706,7 @@ const handleToggleLock = async (userId, isLocked) => {
                 color={theme?.primary || '#007BFF'} 
               />
               <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
-                View Containers
+                View Cups
               </RegularText>
             </TouchableOpacity>
           )}

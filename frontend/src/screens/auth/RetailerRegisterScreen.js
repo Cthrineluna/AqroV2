@@ -126,12 +126,12 @@ const pickImage = async () => {
 
     if (!result.canceled) {
       const imageAsset = result.assets[0];
-      console.log('Selected restaurant logo:', imageAsset);
+      console.log('Selected coffee shop logo:', imageAsset);
       
       // Add file size validation
       const fileSizeInMB = imageAsset.fileSize / (1024 * 1024);
       if (fileSizeInMB > 2) {
-        setError('Restaurant logo image size must be less than 2MB');
+        setError('Coffee Shop logo image size must be less than 2MB');
         return;
       }
       
@@ -158,7 +158,7 @@ const pickImage = async () => {
     }
 
     if (!restaurantName.trim() || !address.trim() || !city.trim() || !contactNumber.trim()) {
-      setError('All restaurant information fields are required');
+      setError('All coffee shop information fields are required');
       return false;
     }
     if (!isValidPhoneNumber(contactNumber)) {
@@ -181,10 +181,17 @@ const pickImage = async () => {
       return false;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       setError('Password must be at least 6 characters');
       return false;
     }
+//added
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    if (!strongPasswordRegex.test(password)) {
+    setError('Password must include uppercase, lowercase, number, and special character');
+    return;
+  }
+//added
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -330,7 +337,7 @@ const pickImage = async () => {
             </View>
 
             <View style={styles.heading}>
-              <BoldText style={[styles.headingTitle, {color: theme.text}]}>Restaurant Registration</BoldText>
+              <BoldText style={[styles.headingTitle, {color: theme.text}]}>Coffee Shop Registration</BoldText>
               <MediumText style={[styles.subtitle, {color: theme.text}]}>Create your staff account</MediumText>
             </View>
             
@@ -432,15 +439,15 @@ const pickImage = async () => {
 
             {/* Restaurant Information Section */}
             <View style={[styles.section, { backgroundColor: theme.card}]}>
-              <BoldText style={[styles.sectionTitle, {color: theme.text}]}>Restaurant Information</BoldText>
+              <BoldText style={[styles.sectionTitle, {color: theme.text}]}>Coffee Shop Information</BoldText>
               
               <View style={styles.formInput}>
-                <MediumText style={styles.inputLabel}>RESTAURANT NAME</MediumText>
+                <MediumText style={styles.inputLabel}>COFFEE SHOP NAME</MediumText>
                 <TextInput
                   style={[styles.input, {color: theme.text, borderColor: theme.border}]}
                   value={restaurantName}
                   onChangeText={setRestaurantName}
-                  placeholder="Enter restaurant name"
+                  placeholder="Enter coffee shop name"
                   placeholderTextColor="#9e9e9e"
                 />
               </View>
@@ -451,7 +458,7 @@ const pickImage = async () => {
                   style={[styles.input, {color: theme.text, borderColor: theme.border}]}
                   value={address}
                   onChangeText={setAddress}
-                  placeholder="Enter restaurant address"
+                  placeholder="Enter coffee shop address"
                   placeholderTextColor="#9e9e9e"
                 />
               </View>
@@ -486,7 +493,7 @@ const pickImage = async () => {
 </View>
 
         <View style={styles.formInput}>
-          <MediumText style={styles.inputLabel}>RESTAURANT LOGO (OPTIONAL)</MediumText>
+          <MediumText style={styles.inputLabel}>COFFEE SHOP LOGO (OPTIONAL)</MediumText>
           <TouchableOpacity 
             style={[styles.uploadButton, {borderColor: theme.border}]}
             onPress={pickImage}
@@ -561,7 +568,7 @@ const pickImage = async () => {
                     <BoldText style={styles.loadingText}>Creating Account...</BoldText>
                   </View>
                 ) : (
-                  <BoldText style={styles.registerButtonText}>REGISTER RESTAURANT</BoldText>
+                  <BoldText style={styles.registerButtonText}>REGISTER COFFEE SHOP</BoldText>
                 )}
               </TouchableOpacity>
               

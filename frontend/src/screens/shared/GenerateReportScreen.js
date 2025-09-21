@@ -114,7 +114,7 @@ const [selectedQuarter, setSelectedQuarter] = useState(1);
   const getLogoBase64 = async () => {
     try {
       // Import the logo directly in your component
-      const logoAsset = require('../../../assets/images/aqro-logo.png');
+      const logoAsset = require('../../../assets/images/aqro-light.png');
       
       // Load the asset
       const asset = Asset.fromModule(logoAsset);
@@ -150,7 +150,7 @@ const processRestaurantLogo = async (base64Logo) => {
     
     return `data:image/jpeg;base64,${manipResult.base64}`;
   } catch (error) {
-    console.error('Error processing restaurant logo:', error);
+    console.error('Error processing coffee shop logo:', error);
     return null;
   }
 };
@@ -183,7 +183,7 @@ const generatePdfReport = async () => {
     let reportTitle = `${reportType} Report`;
     
     // Determine restaurant information
-    let restaurantName = "All Restaurants";
+    let restaurantName = "All Coffee Shop";
     let restaurantLogo = null;
     
  if (isStaff && restaurants.length === 1) {
@@ -208,7 +208,7 @@ const generatePdfReport = async () => {
         restaurantName = `${restaurantFirstNames.join(', ')} and ${lastItem}`;
       }
     } else if (selectedRestaurants.length > 5) {
-      restaurantName = `${selectedRestaurants.length} Selected Restaurants`;
+      restaurantName = `${selectedRestaurants.length} Selected Coffee Shop`;
     }
     
     
@@ -702,7 +702,7 @@ const fetchStaffRestaurant = async () => {
       setSelectedRestaurants([response.data]);
     }
   } catch (error) {
-    console.error('Error fetching staff restaurant:', error);
+    console.error('Error fetching staff coffee shop:', error);
   }
 };
 
@@ -735,7 +735,7 @@ const fetchStaffRestaurant = async () => {
         setRestaurants(response.data);
       }
     } catch (error) {
-      console.error('Error fetching restaurants:', error);
+      console.error('Error fetching coffee shop:', error);
     }
   };
   
@@ -778,8 +778,8 @@ const fetchStaffRestaurant = async () => {
         setContainerTypes(response.data);
       }
     } catch (error) {
-      console.error('Error fetching container types:', error);
-      Alert.alert('Error', 'Failed to load container types. Please try again.');
+      console.error('Error fetching cup types:', error);
+      Alert.alert('Error', 'Failed to load cup types. Please try again.');
     }
   };
   
@@ -1306,11 +1306,11 @@ const renderFilterBadges = () => {
                     </MediumText>
                     {isAdmin && (
                         <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1.5, fontSize: 10  }]}>
-                        Restaurant
+                        Coffee Shop
                         </MediumText>
                     )}
                     <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1.5, fontSize: 10 }]}>
-                      Container
+                      Cup
                     </MediumText>
                     <MediumText style={[styles.tableHeaderCell, { color: theme.text, flex: 1., fontSize: 10 }]}>
                         Activity
@@ -1846,14 +1846,14 @@ const renderFilterBadges = () => {
               {/* Container Type Section */}
               <View style={styles.filterSection}>
   <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-    Filter by Cup Size
+    Filter by Cup type
   </MediumText>
   
   <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
     <Ionicons name="search" size={20} color={theme.text} />
     <TextInput
       style={[styles.searchInput, { color: theme.text }]}
-      placeholder="Search cup size..."
+      placeholder="Search cup type..."
       placeholderTextColor={theme.text}
       value={containerTypeSearchQuery}
       onChangeText={setContainerTypeSearchQuery}
@@ -1882,7 +1882,7 @@ const renderFilterBadges = () => {
           ? theme.primary 
           : theme.text 
       }}>
-        All Cup Size
+        All Cup type
       </MediumText>
       {selectedContainerTypes.length === 0 && (
         <Ionicons name="checkmark-circle" size={20} color={theme.primary} />

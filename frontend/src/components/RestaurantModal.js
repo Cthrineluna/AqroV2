@@ -870,7 +870,7 @@ const RestaurantModal = ({
           ]}>
             <ActivityIndicator size="large" color={theme?.primary || '#007BFF'} />
             <RegularText style={{marginTop: 10, color: theme?.text || '#000000'}}>
-              Updating restaurant...
+              Updating coffee shop...
             </RegularText>
           </View>
         </View>

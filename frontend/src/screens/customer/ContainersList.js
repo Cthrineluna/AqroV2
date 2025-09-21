@@ -33,6 +33,36 @@ import SearchComponent from '../../components/SearchComponent';
 
 const { width, height } = Dimensions.get('window');
 
+//added
+// Derived status: if active and usesLeft <= 0, treat as "expired"
+const getDerivedStatus = (c) => {
+  const max = c?.containerTypeId?.maxUses ?? 0;
+  const used = c?.usesCount ?? 0;
+  return (c?.status === 'active' && max - used <= 0)
+    ? 'expired'
+    : (c?.status || 'unknown');
+};
+
+const computeStatsFromList = (list = []) => {
+  const stats = {
+    activeContainers: 0,
+    returnedContainers: 0,
+    lostContainers: 0,
+    damagedContainers: 0,
+    expiredContainers: 0,
+  };
+  for (const c of list) {
+    const s = getDerivedStatus(c);
+    if (s === 'active') stats.activeContainers++;
+    else if (s === 'returned') stats.returnedContainers++;
+    else if (s === 'lost') stats.lostContainers++;
+    else if (s === 'damaged') stats.damagedContainers++;
+    else if (s === 'expired') stats.expiredContainers++;
+  }
+  return stats;
+};
+
+//added
 
 
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress, isSelected }) => {
@@ -61,18 +91,25 @@ const ContainerCard = ({ title, value, icon, backgroundColor, textColor, onPress
 const ContainerItem = ({ container, onPress }) => {
   const { theme } = useTheme();
   const estimatedUsesLeft = container.containerTypeId.maxUses - container.usesCount; 
+  
+  //added
+  const derivedStatus = getDerivedStatus(container);
+  //added
+  
   const statusMessage = (() => {
-    switch (container.status) {
-      case 'active':
-        return `${estimatedUsesLeft} uses left`;
-      case 'returned':
-        return 'Returned';
-      case 'lost':
-        return 'Lost';
-      case 'damaged':
-        return 'Damaged';
-      default:
-        return 'Unknown status'; 
+    switch (derivedStatus) {
+    case 'active':
+      return `${estimatedUsesLeft} uses left`;
+    case 'expired':
+      return 'Expired'; //added
+    case 'returned':
+      return 'Returned';
+    case 'lost':
+      return 'Lost';
+    case 'damaged':
+      return 'Damaged';
+    default:
+      return 'Unknown status';
     }
   })();
 
@@ -80,6 +117,8 @@ const ContainerItem = ({ container, onPress }) => {
     switch (status) {
       case 'active':
         return { name: 'cube-outline', color: '#2e7d32' };
+      case 'expired':
+        return { name: 'time-outline', color: '#6d4c41' }; //added
       case 'returned':
         return { name: 'archive-outline', color: '#0277bd' }; 
       case 'lost':
@@ -91,12 +130,14 @@ const ContainerItem = ({ container, onPress }) => {
     }
   };
   
-  const { name, color } = getContainerIcon(container.status);
+  const { name, color } = getContainerIcon(derivedStatus); //added
   
   const getContainerBackground = (status) => {
     switch (status) {
       case 'active':
         return '#e8f5e9';
+      case 'expired': //added
+        return '#efebe9';
       case 'returned':
         return '#e3f2fd';
       case 'lost':
@@ -108,7 +149,7 @@ const ContainerItem = ({ container, onPress }) => {
     }
   };
   
-  const backgroundColor = getContainerBackground(container.status);
+  const backgroundColor = getContainerBackground(derivedStatus); //added
   
   return (
     <TouchableOpacity 
@@ -152,7 +193,7 @@ const RebateSection = ({ container, theme }) => {
   useEffect(() => {
     const fetchRestaurantRebates = async () => {
       if (!container || !container.containerTypeId) {
-        console.error('Container or Container Type is missing');
+        console.error('Cup or Cup Type is missing');
         setIsLoading(false);
         return;
       }
@@ -179,14 +220,14 @@ const RebateSection = ({ container, theme }) => {
           const rebatesWithNames = response.data
             .filter(mapping => mapping.restaurantId) // Only include mappings with restaurantId
             .map(mapping => ({
-              restaurantName: mapping.restaurantId?.name || 'Unknown Restaurant',
+              restaurantName: mapping.restaurantId?.name || 'Unknown Coffee Shop',
               rebateValue: mapping.rebateValue
             }));
     
           setRestaurantRebates(rebatesWithNames);
         }
       } catch (error) {
-        console.error('Error fetching restaurant rebates:', error);
+        console.error('Error fetching coffee shop rebates:', error);
       } finally {
         setIsLoading(false);
       }
@@ -292,6 +333,8 @@ const ContainerDetailModal = ({ container, animation, closeModal, fetchContainer
   const { theme } = useTheme();
   const estimatedUsesLeft = container?.containerTypeId?.maxUses - (container?.usesCount || 0);
   
+  const derivedStatus = getDerivedStatus(container); //added
+
   if (!container) return null;
   
   const registrationDate = container.registrationDate 
@@ -323,7 +366,7 @@ const handleMarkStatus = async (containerId, status) => {
   // Show confirmation alert first
   Alert.alert(
     `Mark as ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-    `Are you sure you want to mark this container as ${status}?`,
+    `Are you sure you want to mark this cup as ${status}?`,
     [
       {
         text: 'Cancel',
@@ -337,10 +380,10 @@ const handleMarkStatus = async (containerId, status) => {
           try {
             await markContainerStatus(containerId, status);
             await fetchContainers();
-            Alert.alert('Success', `Container marked as ${status} successfully`);
+            Alert.alert('Success', `Cup marked as ${status} successfully`);
           } catch (error) {
-            console.error('Error marking container status:', error);
-            Alert.alert('Error', error.message || 'Failed to mark container status');
+            console.error('Error marking cup status:', error);
+            Alert.alert('Error', error.message || 'Failed to mark cup status');
           }
         },
       },
@@ -352,6 +395,8 @@ const handleMarkStatus = async (containerId, status) => {
     switch (status) {
       case 'active':
         return { name: 'cube-outline', color: '#2e7d32' };
+      case 'expired': //added
+        return { name: 'time-outline', color: '#6d4c41' };
       case 'returned':
         return { name: 'archive-outline', color: '#0277bd' }; 
       case 'lost':
@@ -363,12 +408,14 @@ const handleMarkStatus = async (containerId, status) => {
     }
   };
     
-  const { name, color } = getContainerIcon(container.status);
+  const { name, color } = getContainerIcon(derivedStatus); //added
 
   const getContainerBackground = (status) => {
     switch (status) {
       case 'active':
         return '#e8f5e9';
+      case 'expired': //added
+        return '#efebe9';
       case 'returned':
         return '#e3f2fd';
       case 'lost':
@@ -380,12 +427,14 @@ const handleMarkStatus = async (containerId, status) => {
     }
   };
     
-  const backgroundColor = getContainerBackground(container.status);
+  const backgroundColor = getContainerBackground(derivedStatus);
 
   const getStatusTextColor = (status) => {
     switch (status) {
       case 'active':
         return '#2e7d32'; 
+      case 'expired':
+        return '#6d4c41';
       case 'returned':
         return '#0277bd'; 
       case 'lost':
@@ -397,7 +446,7 @@ const handleMarkStatus = async (containerId, status) => {
     }
   };
     
-  const statusTextColor = getStatusTextColor(container.status);
+  const statusTextColor = getStatusTextColor(derivedStatus);
     
   return (
     <Animated.View 
@@ -419,7 +468,7 @@ const handleMarkStatus = async (containerId, status) => {
     >
       <View style={styles.modalHeader}>
         <BoldText style={{ fontSize: 20, color: theme.text }}>
-          Container Details
+          Cup Details
         </BoldText>
         <TouchableOpacity onPress={closeModal}>
           <Ionicons name="close-circle-outline" size={28} color={theme.text} />
@@ -442,12 +491,12 @@ const handleMarkStatus = async (containerId, status) => {
           
           <View style={styles.statusChip}>
             <RegularText style={{ color: statusTextColor, fontSize: 16 }}>
-              {container.status.toUpperCase()}
+              {derivedStatus.toUpperCase()}
             </RegularText>
           </View>
           
           <View style={styles.detailRow}>
-            <RegularText style={styles.detailLabel}>Container Code:</RegularText>
+            <RegularText style={styles.detailLabel}>Cup Code:</RegularText>
             <RegularText style={{ color: theme.text, fontSize: 12 }}>{container.qrCode}</RegularText>
           </View>
 
@@ -455,7 +504,7 @@ const handleMarkStatus = async (containerId, status) => {
           
           {container.restaurantId && (
             <View style={styles.detailRow}>
-              <RegularText style={styles.detailLabel}>Restaurant:</RegularText>
+              <RegularText style={styles.detailLabel}>Coffee Shop:</RegularText>
               <RegularText style={{ color: theme.text }}>{container.restaurantId.name}</RegularText>
             </View>
           )}
@@ -488,7 +537,7 @@ const handleMarkStatus = async (containerId, status) => {
               <RegularText style={{ color: theme.text }}>{estimatedUsesLeft}</RegularText>
             </View>
           )}
-          {container.status === 'active' && (
+          {derivedStatus === 'active' && (
   <View style={styles.statusButtonsContainer}>
     <TouchableOpacity 
       style={[styles.statusButton, { backgroundColor: '#ffebee' }]}
@@ -520,7 +569,8 @@ const ContainersList = ({ navigation, route }) => {
   const [containerStats, setContainerStats] = useState({
     activeContainers: 0,
     returnedContainers: 0,
-    totalRebate: 0
+    totalRebate: 0,
+    expiredContainers: 0,
   });
   const [containers, setContainers] = useState([]);
   const [selectedContainer, setSelectedContainer] = useState(null);
@@ -558,11 +608,16 @@ const ContainersList = ({ navigation, route }) => {
         }
       );
       
-      if (response.data) {
-        setContainerStats(response.data);
-      }
+      //added
+        if (response.data) {
+      setContainerStats(prev => ({
+        ...prev,
+        totalRebate: response.data.totalRebate ?? prev.totalRebate
+      }));
+    }
+
     } catch (error) {
-      console.error('Error fetching container stats:', error);
+      console.error('Error fetching cup stats:', error);
     }
   };
 
@@ -582,13 +637,23 @@ const ContainersList = ({ navigation, route }) => {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
-      
+       //added
       if (response.data) {
-        setContainers(response.data);
-        applyFilter(activeFilter, response.data); 
+        const list = response.data; // or your mapped list if you fetch per-item rebates
+        setContainers(list);
+
+        const derived = computeStatsFromList(list);
+        setContainerStats(prev => ({ ...prev, ...derived })); // keep totalRebate from stats
+
+        applyFilter(activeFilter, list);
       }
+
+      //added
+      const derived = computeStatsFromList(response.data);
+      setContainerStats(prev => ({ ...prev, ...derived })); // keeps totalRebate from /stats
+
     } catch (error) {
-      console.error('Error fetching containers:', error);
+      console.error('Error fetching cups:', error);
     }
   };
 
@@ -598,6 +663,8 @@ const ContainersList = ({ navigation, route }) => {
     { id: 'returned', label: 'Returned' },
     { id: 'lost', label: 'Lost' },
     { id: 'damaged', label: 'Damaged' },
+    { id: 'expired', label: 'Expired' },
+
   ];
   
   const handleSearch = (query) => {
@@ -610,7 +677,7 @@ const ContainersList = ({ navigation, route }) => {
 
     const filtered = activeFilter === 'all' 
       ? containers 
-      : containers.filter(item => item.status === activeFilter);
+      : containers.filter(item => getDerivedStatus(item) === activeFilter);
 
     const results = filtered.filter(container => {
       const containerTypeName = container.containerTypeId.name.toLowerCase();
@@ -715,7 +782,7 @@ const ContainersList = ({ navigation, route }) => {
     
     let filtered = filter === 'all' 
       ? containerList 
-      : containerList.filter(item => item.status === filter);
+      : containerList.filter(item => getDerivedStatus(item) === filter);
       
     // Apply current sort to filtered results
     filtered = [...filtered].sort((a, b) => {
@@ -898,6 +965,18 @@ const ContainersList = ({ navigation, route }) => {
               isSelected={activeFilter === 'damaged'}
             />
             
+            {/* added */}
+            <ContainerCard 
+              title="Expired" 
+              value={containerStats.expiredContainers}
+              icon="time-outline"
+              backgroundColor="#b0aeacff"
+              textColor="#6d4c41"
+              onPress={() => handleFilterChange('expired')}
+              isSelected={activeFilter === 'expired'}
+            />
+
+            
             <ContainerCard 
               title="Total Rebate" 
               value={`₱${containerStats.totalRebate.toFixed(2)}`}
@@ -915,8 +994,8 @@ const ContainersList = ({ navigation, route }) => {
             {searchQuery.trim() 
               ? `${filteredContainers.length} Search Results Found` 
               : activeFilter === 'all'
-                ? `${filteredContainers.length} Containers Found`
-                : `${filteredContainers.length} ${filterOptions.find(option => option.id === activeFilter)?.label} Containers Found`}
+                ? `${filteredContainers.length} Cups Found`
+                : `${filteredContainers.length} ${filterOptions.find(option => option.id === activeFilter)?.label} Cups Found`}
           </SemiBoldText>
 
           {/* <FilterTabs 
@@ -931,7 +1010,7 @@ const ContainersList = ({ navigation, route }) => {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             theme={theme}
-            placeholder="Search by type, QR code, or restaurant..."
+            placeholder="Search by type, QR code, or coffee shop..."
           />
           
           {renderSortButtons()}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -28,6 +28,51 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { getApiUrl } from '../../services/apiConfig';
 import RestaurantModal from '../../components/RestaurantModal';
 
+  //added
+export const ProfileItem = React.memo(function ProfileItem({
+  label,
+  value,
+  editable,
+  field,
+  isEditing,
+  theme,
+  isDark,
+  onChange,
+}) {
+  return (
+    <View style={styles.profileItem}>
+      <RegularText style={{ color: theme?.text || '#000', opacity: 0.7 }}>
+        {label || ''}
+      </RegularText>
+
+      {isEditing && editable ? (
+        <TextInput
+          style={[
+            styles.input,
+            {
+              color: theme?.text || '#000',
+              borderColor: theme?.border || '#ccc',
+              backgroundColor: isDark ? '#2c2c2c' : '#f5f5f5',
+            },
+          ]}
+          // keep it controlled & stable
+          value={value ?? ''}
+          onChangeText={(text) => onChange(field, text)}  // ← uses prop
+          placeholderTextColor={(theme?.text || '#000') + '60'}
+          blurOnSubmit={false}  // don't drop keyboard
+          returnKeyType="done"
+        />
+      ) : (
+        <SemiBoldText style={{ color: theme?.text || '#000' }}>
+          {value || ''}
+        </SemiBoldText>
+      )}
+    </View>
+  );
+});
+
+//added
+
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
   const { user, updateUserInfo } = useAuth();
@@ -38,7 +83,8 @@ const ProfileScreen = ({ navigation }) => {
     firstName: '',
     lastName: '',
     email: '',
-    profilePicture: null
+    profilePicture: null,
+    phoneNumber:'' //added
   });
 
   const [restaurant, setRestaurant] = useState(null);
@@ -83,11 +129,11 @@ const ProfileScreen = ({ navigation }) => {
         }
       );
       setRestaurant(response.data);
-      Alert.alert('Success', 'Restaurant updated successfully');
+      Alert.alert('Success', 'Coffee Shop updated successfully');
       setRestaurantModalVisible(false);
     } catch (error) {
-      console.error('Error updating restaurant:', error);
-      Alert.alert('Error', 'Failed to update restaurant');
+      console.error('Error updating coffee shop:', error);
+      Alert.alert('Error', 'Failed to update coffee shop');
     } finally {
       setIsRestaurantLoading(false);
     }
@@ -99,17 +145,34 @@ const ProfileScreen = ({ navigation }) => {
     }
   }, [theme]);
 
-  useEffect(() => {
-    if (user) {
+  // useEffect(() => {
+  //   if (user) {
+  //     setUserData({
+  //       firstName: user.firstName || '',
+  //       lastName: user.lastName || '',
+  //       email: user.email || '',
+  //       profilePicture: user.profilePicture || null,
+  //       phoneNumber: user.phoneNumber || '' //added
+  //     });
+  //   }
+  //   fetchUserData();
+  // }, [user]);
+
+    //added
+    useEffect(() => {
+      if (!user) return;
       setUserData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        profilePicture: user.profilePicture || null
+        profilePicture: user.profilePicture || null,
+        phoneNumber: user.phoneNumber || '',
       });
-    }
-    fetchUserData();
-  }, [user]);
+      if (!isEditing) {
+        fetchUserData();
+      }
+    }, [user, isEditing]); 
+  //added
 
   const fetchUserData = async () => {
     try {
@@ -133,7 +196,8 @@ const ProfileScreen = ({ navigation }) => {
           firstName: response.data.firstName || '',
           lastName: response.data.lastName || '',
           email: response.data.email || '',
-          profilePicture: response.data.profilePicture || null
+          profilePicture: response.data.profilePicture || null,
+          phoneNumber: response.data.phoneNumber || ''   //added
         });
       }
     } catch (error) {
@@ -143,12 +207,18 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const handleInputChange = (field, value) => {
-    setUserData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  // const handleInputChange = (field, value) => {
+  //   setUserData(prev => ({
+  //     ...prev,
+  //     [field]: value
+  //   }));
+  // };
+
+  //added
+  const handleInputChange = useCallback((field, value) => {
+    setUserData(prev => ({ ...prev, [field]: value }));
+  } , []);
+//added
 
   const pickImage = async () => {
     try {
@@ -273,31 +343,32 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const ProfileItem = ({ label, value, editable, field }) => {
-    return (
-      <View style={styles.profileItem}>
-        <RegularText style={{ color: theme ? theme.text : '#000', opacity: 0.7 }}>
-          {label || ''}
-        </RegularText>
-        {isEditing && editable ? (
-          <TextInput
-            style={[styles.input, { 
-              color: theme ? theme.text : '#000',
-              borderColor: theme ? theme.border : '#ccc',
-              backgroundColor: isDark ? '#2c2c2c' : '#f5f5f5' 
-            }]}
-            value={value || ''}
-            onChangeText={(text) => handleInputChange(field, text)}
-            placeholderTextColor={theme ? theme.text + '60' : '#00000060'}
-          />
-        ) : (
-          <SemiBoldText style={{ color: theme ? theme.text : '#000' }}>
-            {value || ''}
-          </SemiBoldText>
-        )}
-      </View>
-    );
-  };
+  // const ProfileItem = ({ label, value, editable, field }) => {
+  //   return (
+  //     <View style={styles.profileItem}>
+  //       <RegularText style={{ color: theme ? theme.text : '#000', opacity: 0.7 }}>
+  //         {label || ''}
+  //       </RegularText>
+  //       {isEditing && editable ? (
+  //         <TextInput
+  //           style={[styles.input, { 
+  //             color: theme ? theme.text : '#000',
+  //             borderColor: theme ? theme.border : '#ccc',
+  //             backgroundColor: isDark ? '#2c2c2c' : '#f5f5f5' 
+  //           }]}
+  //           value={value || ''}
+  //           onChangeText={(text) => handleInputChange(field, text)}
+  //           placeholderTextColor={theme ? theme.text + '60' : '#00000060'}
+  //         />
+  //       ) : (
+  //         <SemiBoldText style={{ color: theme ? theme.text : '#000' }}>
+  //           {value || ''}
+  //         </SemiBoldText>
+  //       )}
+  //     </View>
+  //   );
+  // };
+
 
   // Show loading state if theme is not loaded yet
   if (!themeLoaded) {
@@ -326,7 +397,9 @@ const ProfileScreen = ({ navigation }) => {
         <View style={{width: 24}} />
       </View>
       
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="always" //added
+      >
         {isLoading ? (
           <ActivityIndicator size="large" color={theme.primary} style={styles.loader} />
         ) : (
@@ -371,18 +444,42 @@ const ProfileScreen = ({ navigation }) => {
                 value={userData.firstName} 
                 editable={true}
                 field="firstName"
+                isEditing={isEditing}
+                theme={theme}
+                isDark={isDark}
+                onChange={handleInputChange}
+
               />
               <ProfileItem 
                 label="Last Name" 
                 value={userData.lastName} 
                 editable={true}
                 field="lastName"
+                isEditing={isEditing}
+                theme={theme}
+                isDark={isDark}
+                onChange={handleInputChange}
               />
               <ProfileItem 
                 label="Email" 
                 value={userData.email} 
                 editable={true}
                 field="email"
+                isEditing={isEditing}
+                theme={theme}
+                isDark={isDark}
+                onChange={handleInputChange}
+              />
+              {/* added */}
+              <ProfileItem 
+                label="Phone Number" 
+                value={userData.phoneNumber} 
+                editable={true}
+                field="phoneNumber"
+                isEditing={isEditing}
+                theme={theme}
+                isDark={isDark}
+                onChange={handleInputChange}
               />
             </View>
             

@@ -52,8 +52,8 @@ const StaffTabNavigator = () => {
 
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'Cup Containers') {
-              iconName = focused ? 'logo-dropbox' : 'cube-outline';
+            } else if (route.name === 'Cups') {
+              iconName = focused ? 'cafe' : 'cafe-outline';
             } else if (route.name === 'Scanner') {
               iconName = focused ? 'qr-code' : 'qr-code-outline';
             } else if (route.name === 'Activities') {
@@ -67,7 +67,7 @@ const StaffTabNavigator = () => {
         })}
       >
         <Tab.Screen name="Home" component={StaffHomeScreen} />
-        <Tab.Screen name="Cup Containers" component={StaffContainerList} />
+        <Tab.Screen name="Cups" component={StaffContainerList} />
         <Tab.Screen 
           name="Scanner" 
           component={StaffScannerScreen} 

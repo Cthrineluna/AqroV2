@@ -37,6 +37,16 @@ import SearchComponent from '../../components/SearchComponent';
 
 const { width, height } = Dimensions.get('window');
 
+//added
+  const getDerivedStatus = (container) => {
+  const max = container?.containerTypeId?.maxUses ?? 0;
+  const used = container?.usesCount ?? 0;
+  const usesLeft = max - used;
+  if (container?.status === 'active' && usesLeft <= 0) return 'expired';
+  return container?.status || 'unknown';
+};
+  //added
+
 const ContainerCard = ({ title, value, icon, backgroundColor, textColor }) => {
   const { theme } = useTheme();
   
@@ -199,8 +209,14 @@ useEffect(() => {
 
 const ContainerItem = ({ container, onPress }) => {
   const { theme } = useTheme();
-  const estimatedUsesLeft = container.containerTypeId.maxUses - container.usesCount; 
-  
+  //added
+  const estimatedUsesLeft = Math.max(0,
+     (container?.containerTypeId?.maxUses ?? 0) - (container?.usesCount ?? 0)
+  );
+  //added
+
+  const derivedStatus = getDerivedStatus(container); //added
+
   const customerName = container.customerId ? 
     `${container.customerId.firstName} ${container.customerId.lastName}` : 
     'Unregistered';
@@ -210,11 +226,15 @@ const ContainerItem = ({ container, onPress }) => {
     'Unassigned';
     
   const statusMessage = (() => {
-    switch (container.status) {
+    switch (derivedStatus) { //added
       case 'available':
         return 'Available';
       case 'active':
-        return `${estimatedUsesLeft} uses left`;
+        return estimatedUsesLeft > 0
+          ? `${estimatedUsesLeft} uses left`
+          : 'Expired';
+      case 'expired':
+         return 'Expired';
       case 'returned':
         return 'Returned';
       case 'lost':
@@ -237,13 +257,15 @@ const ContainerItem = ({ container, onPress }) => {
       case 'lost':
         return { name: 'help-circle-outline', color: '#ff9800' };
       case 'damaged':
-        return { name: 'alert-circle-outline', color: '#d32f2f' }; 
+        return { name: 'alert-circle-outline', color: '#d32f2f' };
+      case 'expired':
+        return { name: 'time-outline', color: '#6d4c41' }; // added
       default:
-        return { name: 'help-outline', color: '#9e9e9e' }; 
+        return { name: 'help-circle-outline', color: '#9e9e9e' }; 
     }
   };
   
-  const { name, color } = getContainerIcon(container.status);
+  const { name, color } = getContainerIcon(derivedStatus); //added
   
   const getContainerBackground = (status) => {
     switch (status) {
@@ -257,12 +279,14 @@ const ContainerItem = ({ container, onPress }) => {
         return '#fff3e0';
       case 'damaged':
         return '#ffebee'; 
+      case 'expired': //added
+        return '#efebe9';
       default:
         return '#e0e0e0'; 
     }
   };
   
-  const backgroundColor = getContainerBackground(container.status);
+  const backgroundColor = getContainerBackground(derivedStatus);//added
   
   return (
     <TouchableOpacity 
@@ -302,6 +326,8 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
   const estimatedUsesLeft = container?.containerTypeId?.maxUses - (container?.usesCount || 0);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+
+  const derivedStatus = getDerivedStatus(container); //added
   
   if (!container) return null;
 
@@ -328,13 +354,17 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
   const restaurantName = container.restaurantId ?
     container.restaurantId.name :
     'Unassigned';
-  
+
   const statusMessage = (() => {
-    switch (container.status) {
+    switch (derivedStatus) {
       case 'available':
         return 'Available';
       case 'active':
-        return `${estimatedUsesLeft} uses left`;
+        return estimatedUsesLeft > 0
+          ? `${estimatedUsesLeft} uses left` //added
+          : 'Expired';
+      case 'expired': //added
+         return 'Expired';
       case 'returned':
         return 'Returned';
       case 'lost':
@@ -357,13 +387,15 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
       case 'lost':
         return { name: 'help-circle-outline', color: '#ff9800' };
       case 'damaged':
-        return { name: 'alert-circle-outline', color: '#d32f2f' }; 
+        return { name: 'alert-circle-outline', color: '#d32f2f' };
+      case 'expired':   
+        return { name: 'time-outline', color: '#6d4c41' }; // added
       default:
         return { name: 'help-outline', color: '#9e9e9e' }; 
     }
   };
     
-  const { name, color } = getContainerIcon(container.status);
+  const { name, color } = getContainerIcon(derivedStatus);
 
   const getContainerBackground = (status) => {
     switch (status) {
@@ -377,12 +409,14 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
         return '#fff3e0';
       case 'damaged':
         return '#ffebee'; 
+      case 'expired':   
+        return '#efebe9'; // added
       default:
         return '#e0e0e0'; 
     }
   };
     
-  const backgroundColor = getContainerBackground(container.status);
+  const backgroundColor = getContainerBackground(derivedStatus);
 
   const getStatusTextColor = (status) => {
     switch (status) {
@@ -396,12 +430,14 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
         return '#ff9800'; 
       case 'damaged':
         return '#d32f2f'; 
+      case 'expired':   
+        return '#6d4c41'; //added
       default:
         return '#757575'; 
     }
   };
     
-  const statusTextColor = getStatusTextColor(container.status);
+  const statusTextColor = getStatusTextColor(derivedStatus); //added
   const handleViewQR = async () => {
     try {
       const baseUrl = getApiUrl('').replace('/api', '');
@@ -456,7 +492,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
         
         <View style={styles.statusChip}>
           <RegularText style={{ color: statusTextColor, fontSize: 16 }}>
-            {container.status.toUpperCase()}
+            {derivedStatus.toUpperCase()}
           </RegularText>
         </View>
         
@@ -509,8 +545,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
           </View>
         )}
 
-
-        <View style={styles.actionButtonsContainer}>
+  <View style={styles.actionButtonsContainer}>
             <TouchableOpacity 
             style={[styles.actionButton, { backgroundColor: '#2196F3' }]}
             onPress={handleViewQR}
@@ -568,6 +603,7 @@ const ContainerDetailModal = ({ container, animation, closeModal, editContainer,
     </Animated.View>
   );
 };
+
 
 const ActionModal = ({ visible, container, onClose, onEdit, onDelete }) => {
   const { theme } = useTheme();
@@ -726,14 +762,14 @@ const FilterModal = ({ visible, onClose, restaurants, containerTypes, selectedRe
           
           <View style={styles.filterSection}>
             <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-              Filter by Cup Size
+              Filter by Cup type
             </MediumText>
             
             <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
               <Ionicons name="search" size={20} color={theme.text} />
               <TextInput
                 style={[styles.searchInput, { color: theme.text }]}
-                placeholder="Search cup size..."
+                placeholder="Search cup type..."
                 placeholderTextColor={theme?.textMuted || '#888888'}
                 value={containerTypeSearchQuery}
                 onChangeText={setContainerTypeSearchQuery}
@@ -754,7 +790,7 @@ const FilterModal = ({ visible, onClose, restaurants, containerTypes, selectedRe
                 onPress={() => onSelectContainerType(null)}
               >
                 <MediumText style={{ color: !selectedContainerType ? theme.primary : theme.text }}>
-                  All Cup Size
+                  All Cup type
                 </MediumText>
                 {!selectedContainerType && (
                   <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
@@ -1141,7 +1177,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
             </View> */}
 
             <View style={styles.formGroup}>
-              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Coffee Shop</MediumText>
+              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Coffee Shop(optional)</MediumText>
               <TouchableOpacity
                 style={[styles.dropdown, { backgroundColor: theme.input }]}
                 onPress={() => setShowRestaurantSearch(!showRestaurantSearch)}
@@ -1305,13 +1341,13 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
 
             
             <View style={styles.formGroup}>
-              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Cup size</MediumText>
+              <MediumText style={{ color: theme.text, marginBottom: 8 }}>Cup type</MediumText>
               <TouchableOpacity
                 style={[styles.dropdown, { backgroundColor: theme.input }]}
                 onPress={() => setShowContainerTypeSearch(!showContainerTypeSearch)}
               >
                 <RegularText style={{ color: theme.text }}>
-                  {selectedContainerType?.name || 'Select Cup Size'}
+                  {selectedContainerType?.name || 'Select Cup type'}
                 </RegularText>
                 <Ionicons 
                   name={showContainerTypeSearch ? "chevron-up" : "chevron-down"} 
@@ -1326,7 +1362,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                     <Ionicons name="search" size={20} color={theme.text} />
                     <TextInput
                       style={[styles.searchInput, { color: theme.text }]}
-                      placeholder="Search cup size..."
+                      placeholder="Search cup type..."
                       placeholderTextColor={theme?.textMuted || '#888888'}
                       value={containerTypeSearchQuery}
                       onChangeText={setContainerTypeSearchQuery}
@@ -1372,6 +1408,7 @@ const EditContainerModal = ({ visible, container, onClose, onSave, restaurants, 
                   </ScrollView>
                 </View>
               )}
+              
             </View>
            {!container?._id && (
             <View style={styles.formGroup}>
@@ -1530,6 +1567,7 @@ const AdminContainersScreen = ({ navigation, route }) => {
     { id: 'returned', label: 'Returned' },
     { id: 'lost', label: 'Lost' },
     { id: 'damaged', label: 'Damaged' },
+    { id: 'expired', label: 'Expired' }, //added
   ];
 
   const fetchAllContainers = async () => {
@@ -1589,8 +1627,8 @@ const AdminContainersScreen = ({ navigation, route }) => {
         setContainerTypes(response.data);
       }
     } catch (error) {
-      console.error('Error fetching cup size:', error);
-      Alert.alert('Error', 'Failed to load cup size. Please try again.');
+      console.error('Error fetching cup type:', error);
+      Alert.alert('Error', 'Failed to load cup type. Please try again.');
     }
   };
 
@@ -1679,10 +1717,16 @@ const AdminContainersScreen = ({ navigation, route }) => {
       );
     }
     // Apply status filter
-    if (activeFilter !== 'all') {
-      filtered = filtered.filter(item => item.status === activeFilter);
-    }
+    // if (activeFilter !== 'all') {
+    //   filtered = filtered.filter(item => item.status === activeFilter);
+    // }
     
+    //added//
+    if (activeFilter !== 'all') {
+      filtered = filtered.filter(item => getDerivedStatus(item) === activeFilter);
+    }
+    //added
+
     // Apply restaurant filter
     if (selectedRestaurant) {
       filtered = filtered.filter(item => 

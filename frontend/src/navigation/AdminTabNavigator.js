@@ -44,7 +44,7 @@ const AdminTabNavigator = () => {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: theme.background,
+            backgroundColor: '#BBC191',
             borderTopColor: 'transparent', 
             height: Platform.OS === 'android' ? 60 : 80,
             paddingBottom: 10,
@@ -53,7 +53,7 @@ const AdminTabNavigator = () => {
             shadowOpacity: 0, 
             borderTopWidth: 0,
           },
-          tabBarActiveTintColor: theme.primary,
+          tabBarActiveTintColor: '#677324',
           tabBarInactiveTintColor: theme.text + '80', 
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
@@ -62,7 +62,7 @@ const AdminTabNavigator = () => {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Users') {
               iconName = focused ? 'people' : 'people-outline';
-            } else if (route.name === 'Cup Containers') {
+            } else if (route.name === 'Cups') {
               iconName = focused ? 'cafe' : 'cafe-outline';
             } else if (route.name === 'Coffee Shop') {
               iconName = focused ? 'storefront' : 'storefront-outline';
@@ -83,7 +83,7 @@ const AdminTabNavigator = () => {
         />
         <Tab.Screen name="Users" component={AdminUsersScreen} />
         <Tab.Screen 
-          name="Cup Containers" 
+          name="Cups" 
           component={AdminContainerScreen} 
         />
          <Tab.Screen name="Coffee Shop" component={AdminRestaurantsScreen} />

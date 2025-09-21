@@ -6,6 +6,15 @@ const emailService = require('../services/emailService');
 const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
 const ContainerType = require('../models/ContainerType');
 
+//added
+// 🔑 Strong password helper function
+function isStrongPassword(password) {
+  // Must include at least 1 lowercase, 1 uppercase, 1 digit, 1 special char, min 8 chars
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+  return strongPasswordRegex.test(password);
+}
+//added
+
 const calculateLockoutDuration = (attempts) => {
   // Progressive lockout durations in milliseconds
   const durations = {
@@ -92,6 +101,14 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { email, token, newPassword } = req.body;
+
+    //added
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        message: 'Password must include uppercase, lowercase, number, special character, and be at least 8 characters long'
+      });
+    }
+    //added
     
     // Find user by email and check token validity
     const user = await User.findOne({
@@ -121,8 +138,16 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.register = async (req, res) => {
-  try {
-    const { email, password, firstName, lastName, userType } = req.body;
+  try {                                                     //added
+    const { email, password, firstName, lastName, userType, phoneNumber} = req.body;
+
+    //added
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message: 'Password must include uppercase, lowercase, number, special character, and be at least 8 characters long'
+      });
+    }
+    //added
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -139,6 +164,7 @@ exports.register = async (req, res) => {
       password,
       firstName,
       lastName,
+      phoneNumber, //added
       userType: userType || 'customer',
       verificationToken,
       verificationTokenExpires: Date.now() + 3600000, // 1 hour
@@ -421,6 +447,14 @@ exports.registerStaff = async (req, res, next) => {
       restaurantName, address, city, contactNumber, description,
       restaurantLogo // This will now be a base64 string instead of a file
     } = req.body;
+
+    //added
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message: 'Password must include uppercase, lowercase, number, special character, and be at least 8 characters long'
+      });
+    }
+    //added
 
     // Validate required fields
     const requiredFields = {

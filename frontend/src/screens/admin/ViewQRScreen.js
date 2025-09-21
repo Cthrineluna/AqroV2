@@ -16,7 +16,7 @@ const ViewQRScreen = ({ route }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.content}>
         <BoldText style={[styles.title, { color: theme.text }]}>
-          Container QR Code
+          Cup QR Code
         </BoldText>
         <Image 
   source={{ uri: qrCodeUrl }} 

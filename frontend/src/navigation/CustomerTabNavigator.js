@@ -51,7 +51,7 @@ const CustomerTabNavigator = () => {
 
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'Containers') {
+            } else if (route.name === 'Cups') {
               iconName = focused ? 'cafe' : 'cafe-outline';
             } else if (route.name === 'Activities') {
               iconName = focused ? 'newspaper' : 'newspaper-outline';
@@ -64,7 +64,7 @@ const CustomerTabNavigator = () => {
         })}
       >
         <Tab.Screen name="Home" component={CustomerHomeScreen} />
-        <Tab.Screen name="Containers" component={ContainersList} />
+        <Tab.Screen name="Cups" component={ContainersList} />
         <Tab.Screen name="Activities" component={ActivityListScreen} />
         <Tab.Screen 
           name="Menu" 

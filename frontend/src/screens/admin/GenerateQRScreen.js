@@ -48,8 +48,8 @@ const GenerateQRScreen = ({ navigation }) => {
         setSelectedType(response.data[0]._id);
       }
     } catch (error) {
-      console.error('Error fetching container types:', error);
-      Alert.alert('Error', 'Failed to load container types');
+      console.error('Error fetching cup types:', error);
+      Alert.alert('Error', 'Failed to load cup types');
     }
   };
   const fetchRestaurants = async () => {
@@ -64,8 +64,8 @@ const GenerateQRScreen = ({ navigation }) => {
         setSelectedRestaurant(response.data[0]._id);
       }
     } catch (error) {
-      console.error('Error fetching restaurants:', error);
-      Alert.alert('Error', 'Failed to load restaurants');
+      console.error('Error fetching coffee shop:', error);
+      Alert.alert('Error', 'Failed to load coffee shop');
     }
   };
   
@@ -86,7 +86,7 @@ const GenerateQRScreen = ({ navigation }) => {
       const baseUrl = getApiUrl('').replace('/api', '');
       setQrCodeUrl(`${baseUrl}${response.data.qrCodeUrl}`);
       
-      Alert.alert('Success', 'Container QR code generated successfully!');
+      Alert.alert('Success', 'Cup QR code generated successfully!');
     } catch (error) {
       console.error('Error generating QR code:', error);
       Alert.alert('Error', 'Failed to generate QR code');
@@ -99,11 +99,11 @@ const GenerateQRScreen = ({ navigation }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <BoldText style={[styles.title, { color: theme.text }]}>
-          Generate Container QR Code
+          Generate Cup QR Code
         </BoldText>
         <View style={styles.formSection}>
           <SemiBoldText style={[styles.label, { color: theme.text }]}>
-            Restaurant
+            Coffee Shop
           </SemiBoldText>
           
           <View style={[styles.pickerContainer, { borderColor: theme.border }]}>
@@ -124,7 +124,7 @@ const GenerateQRScreen = ({ navigation }) => {
         </View>
         <View style={styles.formSection}>
           <SemiBoldText style={[styles.label, { color: theme.text }]}>
-            Container Type
+            Cup Type
           </SemiBoldText>
           
           <View style={[styles.pickerContainer, { borderColor: theme.border }]}>
@@ -162,7 +162,7 @@ const GenerateQRScreen = ({ navigation }) => {
               resizeMode="contain" 
             />
             <RegularText style={{ color: theme.text }}>
-              Scan this QR Code to use the container
+              Scan this QR Code to use the cup
             </RegularText>
           </View>
         ) : null}

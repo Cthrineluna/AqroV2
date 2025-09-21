@@ -27,6 +27,26 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator } from 'react-native';
 
+//added
+const formatPHPhoneNumber = (text) => {
+  // Remove all non-digits
+  let cleaned = text.replace(/\D/g, '');
+
+  // If starts with '639', prepend '+'
+  if (cleaned.startsWith('639')) {
+    return '+'.concat(cleaned);
+  }
+
+  // If starts with '9', prepend '0'
+  if (cleaned.startsWith('9')) {
+    return '0'.concat(cleaned);
+  }
+
+  // Default return
+  return cleaned;
+};
+//added
+
 const RegisterScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -41,6 +61,9 @@ const RegisterScreen = ({ navigation }) => {
   const { checkAuthState } = useAuth();
   const { theme, isDark } = useTheme();
   const iconColor = isDark ? '#00df82' : theme.text;
+  //added
+  const [phoneNumber, setPhoneNumber] = useState('');
+
   
 
   const togglePasswordVisibility = () => {
@@ -64,12 +87,21 @@ const RegisterScreen = ({ navigation }) => {
       setError('Please enter a valid email address');
       return;
     }
-  
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-  
+
+//added
+    if (password.length < 8) {
+    setError('Password must be at least 8 characters');
+    return;
+  }
+
+  // ✅ Strong password regex: at least one lowercase, one uppercase, one number, one special char
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+  if (!strongPasswordRegex.test(password)) {
+    setError('Password must include uppercase, lowercase, number, and special character');
+    return;
+  }
+//added
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -78,7 +110,7 @@ const RegisterScreen = ({ navigation }) => {
     setLoading(true);
   
     try {
-      const userData = { firstName, lastName, email, password, userType: 'customer' };
+      const userData = { firstName, lastName, email, password, userType: 'customer' ,phoneNumber};
   
       const response = await register(userData);
       
@@ -205,6 +237,30 @@ const RegisterScreen = ({ navigation }) => {
                   />
                 </View>
               </View>
+
+              {/* added */}
+              {/* Phone Number Input */}
+              <View style={styles.formInput}>
+                <View style={styles.inputContainer}>
+                  <MediumText style={styles.inputLabel}>CONTACT NUMBER (PH)</MediumText>
+                  <TextInput
+                    style={[styles.input, {color: theme.text}]}
+                    value={phoneNumber}
+                    onChangeText={(text) => {
+                      const formatted = formatPHPhoneNumber(text);
+                      setPhoneNumber(formatted);
+                      setError('');
+                    }}
+                    placeholder="09XXXXXXXXX"
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    placeholderTextColor="#9e9e9e"
+                  />
+                </View>
+              </View>
+
+              {/* added */}
+
 
               {/* Password Input */}
               <View style={styles.formInput}>

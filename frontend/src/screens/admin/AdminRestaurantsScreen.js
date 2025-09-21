@@ -18,7 +18,6 @@ import {
   Dimensions,
   ActivityIndicator,
   TouchableWithoutFeedback
-
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,7 +55,9 @@ const AdminRestaurantsScreen = ({ navigation }) => {
   const [staffLoading, setStaffLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredRestaurants, setFilteredRestaurants] = useState([]);
-  
+  const [userModalVisible, setUserModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -239,7 +240,7 @@ const handleSaveRestaurant = async (restaurantData) => {
     
     // Handle logo upload
     if (restaurantData.logo) {
-      if (restaurantData.logo.startsWith('data:image')) {
+      if (restaurantData.logo.startsWith('file:')) {
         formData.append('logo', restaurantData.logo);
       } else if (restaurantData.logo.startsWith('file:')) {
         const filename = restaurantData.logo.split('/').pop();
@@ -254,7 +255,7 @@ const handleSaveRestaurant = async (restaurantData) => {
       }
     }
     if (restaurantData.banner) {
-      if (restaurantData.banner.startsWith('data:image')) {
+      if (restaurantData.banner.startsWith('file:')) {
         formData.append('banner', restaurantData.banner);
       } else if (restaurantData.banner.startsWith('file:')) {
         const filename = restaurantData.banner.split('/').pop();
@@ -343,6 +344,46 @@ const handleSaveRestaurant = async (restaurantData) => {
     );
   };
 
+  //SaveUsers
+const handleSaveUser = async (userData) => {
+  try {
+    const storedToken = await AsyncStorage.getItem('aqro_token');
+    const headers = { 
+      Authorization: `Bearer ${storedToken}`, 
+      'Content-Type': 'application/json' 
+    };
+
+    const payload = {
+      firstName: userData.firstName,
+      lastName:  userData.lastName,
+      email:     userData.email,
+      userType:  'staff',                     // force staff
+      profileImage: userData.profileImage || null,
+      ...(selectedUser ? {} : { password: userData.password }) // only on create
+    };
+
+    if (selectedUser) {
+      await axios.put(`${getApiUrl()}/admin/users/${selectedUser._id}`, payload, { headers });
+      Alert.alert('Success', 'Staff updated.');
+    } else {
+      await axios.post(`${getApiUrl()}/admin/users`, payload, { headers });
+      Alert.alert('Success', 'Staff created.');
+    }
+
+    if (selectedRestaurant?._id) {
+      await fetchStaffForRestaurant(selectedRestaurant._id);
+    }
+    await fetchAvailableStaff();
+
+    setUserModalVisible(false);
+    setSelectedUser(null);
+  } catch (error) {
+    console.log('handleSaveUser error', error?.response?.data || error?.message);
+    Alert.alert('Error', error?.response?.data?.message || 'Failed to save staff');
+  }
+};
+
+
   // Handle viewing containers or other related items
   const handleViewContainers = (restaurantId) => {
     setActionModalVisible(false);
@@ -372,7 +413,6 @@ const handleSaveRestaurant = async (restaurantData) => {
       console.error("Error:", error);
     }
   };
-  
 
   // Helper function for email validation
   const isValidEmail = (email) => {
@@ -525,57 +565,109 @@ const handleSaveRestaurant = async (restaurantData) => {
     ];
 
     // Pick Logo Image
-    const pickLogoImage = async () => {
-      try {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission required', 'We need camera roll permissions to upload images');
-          return;
-        }
+    // const pickLogoImage = async () => {
+    //   try {
+    //     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    //     if (status !== 'granted') {
+    //       Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+    //       return;
+    //     }
     
-        let result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 0.7,
-          base64: true,
-        });
+    //     let result = await ImagePicker.launchImageLibraryAsync({
+    //       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    //       allowsEditing: true,
+    //       aspect: [1, 1],
+    //       quality: 0.7,
+    //       base64: true,
+    //     });
     
-        if (!result.canceled) {
-          const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
-          setLocalRestaurant(prev => ({ ...prev, logo: base64Image }));
-        }
-      } catch (error) {
-        console.error('Error picking image:', error);
-        Alert.alert('Error', 'Failed to pick image');
-      }
-    };
+    //     if (!result.canceled) {
+    //       const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+    //       setLocalRestaurant(prev => ({ ...prev, logo: base64Image }));
+    //     }
+    //   } catch (error) {
+    //     console.error('Error picking image:', error);
+    //     Alert.alert('Error', 'Failed to pick image');
+    //   }
+    // };
 
-    const pickBannerImage = async () => {
-      try {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission required', 'We need camera roll permissions to upload images');
-          return;
-        }
+    // const pickBannerImage = async () => {
+    //   try {
+    //     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    //     if (status !== 'granted') {
+    //       Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+    //       return;
+    //     }
     
-        let result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [16, 9], // Better aspect ratio for banners
-          quality: 0.7,
-          base64: true,
-        });
+    //     let result = await ImagePicker.launchImageLibraryAsync({
+    //       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    //       allowsEditing: true,
+    //       aspect: [16, 9], // Better aspect ratio for banners
+    //       quality: 0.7,
+    //       base64: true,
+    //     });
     
-        if (!result.canceled) {
-          const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
-          setLocalRestaurant(prev => ({ ...prev, banner: base64Image }));
-        }
-      } catch (error) {
-        console.error('Error picking banner image:', error);
-        Alert.alert('Error', 'Failed to pick banner image');
-      }
-    };
+    //     if (!result.canceled) {
+    //       const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+    //       setLocalRestaurant(prev => ({ ...prev, banner: base64Image }));
+    //     }
+    //   } catch (error) {
+    //     console.error('Error picking banner image:', error);
+    //     Alert.alert('Error', 'Failed to pick banner image');
+    //   }
+    // };
+
+    //added prompt
+    const pickLogoImage = async () => {
+  try {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+      base64: false,              // ⬅️ stop base64
+    });
+
+    if (!result.canceled) {
+      setLocalRestaurant(prev => ({ ...prev, logo: result.assets[0].uri })); // ⬅️ keep file:// URI
+    }
+  } catch (error) {
+    console.error('Error picking image:', error);
+    Alert.alert('Error', 'Failed to pick image');
+  }
+};
+
+const pickBannerImage = async () => {
+  try {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+      base64: false,              // ⬅️ stop base64
+    });
+
+    if (!result.canceled) {
+      setLocalRestaurant(prev => ({ ...prev, banner: result.assets[0].uri })); // ⬅️ keep file:// URI
+    }
+  } catch (error) {
+    console.error('Error picking banner image:', error);
+    Alert.alert('Error', 'Failed to pick banner image');
+  }
+};
+
 
     const validateForm = () => {
       setLocalError('');
@@ -876,7 +968,7 @@ const handleSaveRestaurant = async (restaurantData) => {
               />
 
               {/* CITY */}
-              {/* <TextInput
+              <TextInput
                 style={inputStyle}
                 placeholder="City"
                 value={localRestaurant.location.city}
@@ -891,7 +983,7 @@ const handleSaveRestaurant = async (restaurantData) => {
                 }}
                 editable={!viewOnly}
                 placeholderTextColor={theme?.textMuted || '#888888'}
-              /> */}
+              />
 
               {/* Action Buttons */}
               <View style={styles.modalButtonContainer}>
@@ -1000,7 +1092,7 @@ const handleSaveRestaurant = async (restaurantData) => {
                   color={theme?.text || '#000000'} 
                 />
                 <RegularText style={{ marginLeft: 10, color: theme?.text || '#000000' }}>
-                  View Restaurant
+                  View Coffee Shop
                 </RegularText>
               </TouchableOpacity>
 
@@ -1036,24 +1128,7 @@ const handleSaveRestaurant = async (restaurantData) => {
                   color={theme?.primary || '#007BFF'} 
                 />
                 <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
-                  Add Staff
-                </RegularText>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.actionModalButton}
-                onPress={() => {
-                  setActionModalVisible(false);
-                  handleViewStaff(restaurantId);
-                }}
-              >
-                <Ionicons 
-                  name="people-outline" 
-                  size={24} 
-                  color={theme?.primary || '#007BFF'} 
-                />
-                <RegularText style={{ marginLeft: 10, color: theme?.primary || '#007BFF' }}>
-                  View Staff
+                  Manage Staff
                 </RegularText>
               </TouchableOpacity>
 
@@ -1079,186 +1154,356 @@ const handleSaveRestaurant = async (restaurantData) => {
       </RNModal>
     );
   };
+ 
+const StaffModal = () => {
+  return (
+    <RNModal
+      animationType="fade"
+      transparent
+      visible={staffModalVisible}
+      onRequestClose={() => setStaffModalVisible(false)}
+    >
+      {/* Dim backdrop to close on tap */}
+      <TouchableWithoutFeedback onPress={() => setStaffModalVisible(false)}>
+        <View style={styles.modalBackdrop} />
+      </TouchableWithoutFeedback>
 
-  const handleSaveUser = async (userData) => {
-  try {
-    const storedToken = await AsyncStorage.getItem('aqro_token');
-  
-    if (selectedUser) {
-      // Update existing user
-      const updateData = {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        profileImage: userData.profileImage
-      };
-        
-      await axios.put(
-        `${getApiUrl()}/admin/users/${selectedUser._id}`, 
-        updateData, 
-        { 
-          headers: { 
-            Authorization: `Bearer ${storedToken}`,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-    } else {
-      // Create new user
-      await axios.post(
-        `${getApiUrl()}/admin/users`, 
-        {
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-          password: userData.password,
-          userType: userData.userType,
-          profileImage: userData.profileImage
-        }, 
-        { 
-          headers: { 
-            Authorization: `Bearer ${storedToken}`,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-    }
-      
-    // Reset form and close modal
-    fetchUsers(); // Refresh the user list
-    setModalVisible(false); // Close the modal
-    setSelectedUser(null); // Reset the selected user
-  } catch (error) {
-    console.error('Error saving user:', error.response?.data || error);
-    Alert.alert('Error', error.response?.data?.message || 'Failed to save user');
-  }
+      {/* Foreground */}
+      <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+        <View style={[styles.staffModalContent, { backgroundColor: theme?.background || '#FFFFFF' }]}>
+          {/* Header */}
+          <View style={styles.staffModalHeader}>
+            <SemiBoldText style={{ color: theme?.text || '#000000' }}>
+              Add Staff – {selectedRestaurant?.name || 'Coffee Shop'}
+            </SemiBoldText>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedUser(null);      // create mode
+                  setUserModalVisible(true);  // open modal
+                }}
+                style={{ marginRight: 8 }}
+              >
+                <Ionicons name="person-add-outline" size={22} color={theme?.primary || '#007BFF'} />
+              </TouchableOpacity>
+
+
+              <TouchableOpacity onPress={() => setStaffModalVisible(false)}>
+                <Ionicons name="close-outline" size={26} color={theme?.text || '#000000'} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Current Staff */}
+          <View style={styles.sectionContainer}>
+            <SemiBoldText style={{ color: theme?.text || '#000000', marginBottom: 10 }}>
+              Current Staff
+            </SemiBoldText>
+
+            {staffLoading ? (
+              <ActivityIndicator size="small" color={theme?.primary || '#007BFF'} />
+            ) : staffList?.length ? (
+              <FlatList
+                data={staffList}
+                keyExtractor={(item) => item._id}
+                showsVerticalScrollIndicator
+                style={{ maxHeight: 220 }}
+                renderItem={({ item }) => (
+                  <View
+                    style={[
+                      styles.staffItem,
+                      {
+                        backgroundColor: theme?.card || '#FFFFFF',
+                        borderColor: theme?.border || '#E0E0E0',
+                      },
+                    ]}
+                  >
+                    <View style={styles.staffInfo}>
+                      <View style={styles.avatarContainer}>
+                        {item.profilePicture ? (
+                          <Image source={{ uri: item.profilePicture }} style={styles.staffAvatar} />
+                        ) : (
+                          <View
+                            style={[
+                              styles.staffInitials,
+                              { backgroundColor: theme?.primary || '#007BFF' },
+                            ]}
+                          >
+                            <RegularText style={styles.initialsText}>
+                              {(item.firstName?.[0] || '').toUpperCase()}
+                              {(item.lastName?.[0] || '').toUpperCase()}
+                            </RegularText>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.staffDetails}>
+                        <SemiBoldText style={{ color: theme?.text || '#000000' }}>
+                          {item.firstName} {item.lastName}
+                        </SemiBoldText>
+                        <RegularText style={{ color: theme?.textMuted || '#666666', fontSize: 12 }}>
+                          {item.email}
+                        </RegularText>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.removeButton,
+                        { backgroundColor: (theme?.danger || '#DC3545') + '20' },
+                      ]}
+                      onPress={() => {
+                        Alert.alert(
+                          'Remove Staff',
+                          `Remove ${item.firstName} ${item.lastName} from this coffee shop?`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Remove',
+                              style: 'destructive',
+                              onPress: () => removeStaffFromRestaurant(item._id, selectedRestaurant._id),
+                            },
+                          ]
+                        );
+                      }}
+                    >
+                      <Ionicons
+                        name="person-remove-outline"
+                        size={16}
+                        color={theme?.danger || '#DC3545'}
+                      />
+                      <RegularText
+                        style={{
+                          marginLeft: 6,
+                          color: theme?.danger || '#DC3545',
+                          fontSize: 12,
+                        }}
+                      >
+                        Remove
+                      </RegularText>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            ) : (
+              <RegularText style={{ color: theme?.textMuted || '#666666', fontStyle: 'italic' }}>
+                No staff assigned to this coffee shop.
+              </RegularText>
+            )}
+          </View>
+
+          {/* Available Staff */}
+          <View style={styles.sectionContainer}>
+            <SemiBoldText style={{ color: theme?.text || '#000000', marginBottom: 10 }}>
+              Available Staff
+            </SemiBoldText>
+
+            {staffLoading ? (
+              <ActivityIndicator size="small" color={theme?.primary || '#007BFF'} />
+            ) : availableStaff?.length ? (
+              <FlatList
+                data={availableStaff}
+                keyExtractor={(item) => item._id}
+                showsVerticalScrollIndicator
+                style={{ maxHeight: 220 }}
+                renderItem={({ item }) => (
+                  <View
+                    style={[
+                      styles.staffItem,
+                      {
+                        backgroundColor: theme?.card || '#FFFFFF',
+                        borderColor: theme?.border || '#E0E0E0',
+                      },
+                    ]}
+                  >
+                    <View style={styles.staffInfo}>
+                      <View style={styles.avatarContainer}>
+                        {item.profilePicture ? (
+                          <Image source={{ uri: item.profilePicture }} style={styles.staffAvatar} />
+                        ) : (
+                          <View
+                            style={[
+                              styles.staffInitials,
+                              { backgroundColor: theme?.primary || '#007BFF' },
+                            ]}
+                          >
+                            <RegularText style={styles.initialsText}>
+                              {(item.firstName?.[0] || '').toUpperCase()}
+                              {(item.lastName?.[0] || '').toUpperCase()}
+                            </RegularText>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.staffDetails}>
+                        <SemiBoldText style={{ color: theme?.text || '#000000' }}>
+                          {item.firstName} {item.lastName}
+                        </SemiBoldText>
+                        <RegularText style={{ color: theme?.textMuted || '#666666', fontSize: 12 }}>
+                          {item.email}
+                        </RegularText>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.assignButton,
+                        { backgroundColor: (theme?.success || '#28A745') + '20' },
+                      ]}
+                      onPress={() => assignStaffToRestaurant(item._id, selectedRestaurant._id)}
+                    >
+                      <Ionicons
+                        name="person-add-outline"
+                        size={16}
+                        color={theme?.success || '#28A745'}
+                      />
+                      <RegularText
+                        style={{
+                          marginLeft: 6,
+                          color: theme?.success || '#28A745',
+                          fontSize: 12,
+                        }}
+                      >
+                        Assign
+                      </RegularText>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            ) : (
+              <RegularText style={{ color: theme?.textMuted || '#666666', fontStyle: 'italic' }}>
+                No available staff to assign.
+              </RegularText>
+            )}
+          </View>
+        </View>
+
+        {/* Loading overlay while fetching/assigning/removing */}
+        {staffLoading && (
+          <View
+            style={[
+              styles.loadingOverlay,
+              { backgroundColor: theme?.modalOverlay || 'rgba(0,0,0,0.5)' },
+            ]}
+            pointerEvents="auto"
+          >
+            <View style={[styles.loadingContainer, { backgroundColor: theme?.card || '#FFFFFF' }]}>
+              <ActivityIndicator size="large" color={theme?.primary || '#007BFF'} />
+              <RegularText style={{ marginTop: 10, color: theme?.text || '#000000' }}>
+                Loading staff…
+              </RegularText>
+            </View>
+          </View>
+        )}
+      </Animated.View>
+    </RNModal>
+  );
 };
 
- const StaffModal = () => {
-  const [localStaff, setLocalStaff] = useState({
-    firstName: selectedStaff?.firstName || '',
-    lastName: selectedStaff?.lastName || '',
-    email: selectedStaff?.email || '',
-    password: selectedStaff ? '' : '',
-    userType: selectedStaff?.userType || 'staff',
-    profileImage: selectedStaff?.profilePicture || null
+const UserModal = () => {
+  const [localUser, setLocalUser] = useState({
+    firstName: selectedUser?.firstName || '',
+    lastName:  selectedUser?.lastName  || '',
+    email:     selectedUser?.email     || '',
+    password:  selectedUser ? '' : '',
+    userType:  'staff', // locked to staff here
+    profileImage: selectedUser?.profilePicture || null,
   });
   const [localError, setLocalError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+  if (modalVisible || actionModalVisible || staffModalVisible || userModalVisible) {
+    fadeIn();
+  }
+}, [modalVisible, actionModalVisible, staffModalVisible, userModalVisible]);
+
+
+  useEffect(() => {
+    setLocalUser({
+      firstName: selectedUser?.firstName || '',
+      lastName:  selectedUser?.lastName  || '',
+      email:     selectedUser?.email     || '',
+      password:  selectedUser ? '' : '',
+      userType:  'staff',
+      profileImage: selectedUser?.profilePicture || null,
+    });
+    setLocalError('');
+    setShowPassword(false);
+  }, [selectedUser, userModalVisible]);
+
+  const pickProfileImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+      });
+      if (!result.canceled) {
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setLocalUser(prev => ({ ...prev, profileImage: base64Image }));
+      }
+    } catch (err) {
+      console.error('pickProfileImage error:', err);
+      Alert.alert('Error', 'Failed to pick profile image');
+    }
+  };
+
   const validateForm = () => {
-    if (!localStaff.firstName.trim()) {
+    if (!localUser.firstName.trim()) {
       setLocalError('First name is required');
       return false;
     }
-    if (!localStaff.lastName.trim()) {
+    if (!localUser.lastName.trim()) {
       setLocalError('Last name is required');
       return false;
     }
-    if (!localStaff.email.trim()) {
+    if (!localUser.email.trim()) {
       setLocalError('Email is required');
       return false;
     }
-    if (!isValidEmail(localStaff.email)) {
+    if (!isValidEmail(localUser.email)) {
       setLocalError('Please enter a valid email address');
       return false;
     }
-
-    // Password validation only for new staff members
-    if (!selectedStaff) {
-      if (!localStaff.password || localStaff.password.trim() === '') {
+    if (!selectedUser) {
+      if (!localUser.password || localUser.password.trim() === '') {
         setLocalError('Password is required for new staff');
         return false;
       }
-      if (localStaff.password.length < 6) {
+      if (localUser.password.length < 6) {
         setLocalError('Password must be at least 6 characters');
         return false;
       }
     }
-
     return true;
   };
-
-  // Pick Profile Image
-  const pickProfileImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Sorry, we need camera roll permissions to make this work!');
-      return;
-    }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      setLocalStaff(prev => ({ ...prev, profileImage: result.assets[0].uri }));
-    }
-  };
-
-  // Handle Saving Staff (Create or Update)
-  const handleSaveStaff = async () => {
-  try {
-    if (validateForm()) {
-      const storedToken = await AsyncStorage.getItem('aqro_token');
-      const dataToSave = {
-        firstName: localStaff.firstName,
-        lastName: localStaff.lastName,
-        email: localStaff.email,
-        profileImage: localStaff.profileImage,
-        userType: localStaff.userType,
-        password: localStaff.password
-      };
-
-      if (selectedStaff) {
-        // Update existing staff
-        await axios.put(
-          `${getApiUrl()}/admin/staff/${selectedStaff._id}`,
-          dataToSave,
-          { headers: { Authorization: `Bearer ${storedToken}` } }
-        );
-      } else {
-        // Create new staff
-        await axios.post(
-          `${getApiUrl()}/admin/staff`,
-          dataToSave,
-          { headers: { Authorization: `Bearer ${storedToken}` } }
-        );
-        console.log('Staff successfully added!');  // Success message in console
-      }
-
-      // Fetch updated staff for restaurant and available staff
-      fetchStaffForRestaurant(selectedRestaurant._id);  // Refresh staff list
-      setStaffModalVisible(false);  // Close the staff modal
-      setSelectedStaff(null);  // Reset selected staff
-    }
-  } catch (error) {
-    console.error('Error saving staff:', error);
-    Alert.alert('Error', 'Failed to save staff');
-  }
-};
 
   return (
     <RNModal
       animationType="fade"
-      transparent={true}
-      visible={staffModalVisible}
-      onRequestClose={() => setStaffModalVisible(false)}
+      transparent
+      visible={userModalVisible}
+      onRequestClose={() => fadeOut(() => setUserModalVisible(false))}
     >
       <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
         <View style={[styles.modalContent, { backgroundColor: theme?.background || '#FFFFFF' }]}>
           {/* Title */}
           <SemiBoldText style={[styles.modalTitle, { color: theme?.text || '#000000' }]}>
-            {selectedStaff ? 'Edit Staff' : 'Add Staff'}
+            {selectedUser ? 'Edit Staff' : 'Create New Staff'}
           </SemiBoldText>
 
           {/* Profile Image Picker */}
           <TouchableOpacity style={styles.profileImagePickerContainer} onPress={pickProfileImage}>
-            {localStaff.profileImage ? (
-              <Image source={{ uri: localStaff.profileImage }} style={styles.profileImagePicker} />
+            {localUser.profileImage ? (
+              <Image source={{ uri: localUser.profileImage }} style={styles.profileImagePicker} />
             ) : (
               <View style={[styles.profileImagePlaceholder, { backgroundColor: theme?.primary || '#007BFF' }]}>
                 <Ionicons name="camera" size={24} color="white" />
@@ -1266,93 +1511,78 @@ const handleSaveRestaurant = async (restaurantData) => {
             )}
           </TouchableOpacity>
 
-          {/* Error Message */}
-          {localError && (
+          {/* Error */}
+          {localError ? (
             <View style={styles.errorContainer}>
               <RegularText style={styles.errorText}>{localError}</RegularText>
             </View>
-          )}
+          ) : null}
 
-          {/* Input Fields */}
+          {/* Inputs */}
           <TextInput
-            style={[styles.input, { backgroundColor: theme?.input || '#F5F5F5', color: theme?.text || '#000000', borderColor: theme?.border || '#E0E0E0' }]}
+            style={[styles.input, { backgroundColor: theme?.input || '#F5F5F5', color: theme?.text || '#000', borderColor: theme?.border || '#E0E0E0' }]}
             placeholder="First Name"
-            value={localStaff.firstName}
-            onChangeText={text => {
-              setLocalStaff(prev => ({ ...prev, firstName: text }));
-              setLocalError('');
-            }}
-            placeholderTextColor={theme?.textMuted || '#888888'}
+            value={localUser.firstName}
+            onChangeText={(text) => { setLocalUser(p => ({ ...p, firstName: text })); setLocalError(''); }}
+            placeholderTextColor={theme?.textMuted || '#888'}
           />
-
           <TextInput
-            style={[styles.input, { backgroundColor: theme?.input || '#F5F5F5', color: theme?.text || '#000000', borderColor: theme?.border || '#E0E0E0' }]}
+            style={[styles.input, { backgroundColor: theme?.input || '#F5F5F5', color: theme?.text || '#000', borderColor: theme?.border || '#E0E0E0' }]}
             placeholder="Last Name"
-            value={localStaff.lastName}
-            onChangeText={text => {
-              setLocalStaff(prev => ({ ...prev, lastName: text }));
-              setLocalError('');
-            }}
-            placeholderTextColor={theme?.textMuted || '#888888'}
+            value={localUser.lastName}
+            onChangeText={(text) => { setLocalUser(p => ({ ...p, lastName: text })); setLocalError(''); }}
+            placeholderTextColor={theme?.textMuted || '#888'}
           />
-
           <TextInput
-            style={[styles.input, { backgroundColor: theme?.input || '#F5F5F5', color: theme?.text || '#000000', borderColor: theme?.border || '#E0E0E0' }]}
+            style={[styles.input, { backgroundColor: theme?.input || '#F5F5F5', color: theme?.text || '#000', borderColor: theme?.border || '#E0E0E0' }]}
             placeholder="Email"
-            value={localStaff.email}
-            onChangeText={text => {
-              setLocalStaff(prev => ({ ...prev, email: text }));
-              setLocalError('');
-            }}
+            value={localUser.email}
+            onChangeText={(text) => { setLocalUser(p => ({ ...p, email: text })); setLocalError(''); }}
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholderTextColor={theme?.textMuted || '#888888'}
+            placeholderTextColor={theme?.textMuted || '#888'}
           />
 
-          {/* Password Field only for new staff */}
-          {!selectedStaff && (
+          {/* Password only when creating */}
+          {!selectedUser && (
             <>
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={[styles.passwordInput, { backgroundColor: theme?.input || '#F5F5F5', color: theme?.text || '#000000', borderColor: theme?.border || '#E0E0E0', fontSize: 12 }]}
+                  style={[styles.passwordInput, { backgroundColor: theme?.input || '#F5F5F5', color: theme?.text || '#000', borderColor: theme?.border || '#E0E0E0', fontSize: 12 }]}
                   placeholder="Password"
-                  value={localStaff.password}
-                  onChangeText={text => {
-                    setLocalStaff(prev => ({ ...prev, password: text }));
-                    setLocalError('');
-                  }}
+                  value={localUser.password}
+                  onChangeText={(text) => { setLocalUser(p => ({ ...p, password: text })); setLocalError(''); }}
                   secureTextEntry={!showPassword}
-                  placeholderTextColor={theme?.textMuted || '#888888'}
+                  placeholderTextColor={theme?.textMuted || '#888'}
                 />
                 <TouchableOpacity style={styles.passwordVisibilityButton} onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={24} color={theme?.textMuted || '#888888'} />
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={24} color={theme?.textMuted || '#888'} />
                 </TouchableOpacity>
               </View>
-              <RegularText style={[styles.passwordHint, { color: theme?.textMuted || '#888888' }]}>Password must be at least 6 characters</RegularText>
+              <RegularText style={[styles.passwordHint, { color: theme?.textMuted || '#888' }]}>
+                Password must be at least 6 characters
+              </RegularText>
             </>
           )}
 
-          {/* User Type Selection */}
-          {!selectedStaff && (
-            <View style={styles.userTypeRadioContainer}>
-              {['staff'].map(type => (
-                <TouchableOpacity key={type} style={styles.userTypeRadioButton} onPress={() => setLocalStaff(prev => ({ ...prev, userType: type }))}>
-                  <View style={[styles.radioOuterCircle, { borderColor: localStaff.userType === type ? (theme?.primary || '#007BFF') : (theme?.border || '#E0E0E0') }]}>
-                    {localStaff.userType === type && <View style={[styles.radioInnerCircle, { backgroundColor: theme?.primary || '#007BFF' }]} />}
-                  </View>
-                  <RegularText style={{ color: theme?.text || '#000000' }}>{type.charAt(0).toUpperCase() + type.slice(1)}</RegularText>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          {/* Action Buttons */}
+          {/* Actions */}
           <View style={styles.modalButtonContainer}>
-            <TouchableOpacity style={[styles.modalButton, styles.cancelButton, { borderColor: theme?.border || '#E0E0E0' }]} onPress={() => setStaffModalVisible(false)}>
-              <RegularText style={{ color: theme?.text || '#000000' }}>Cancel</RegularText>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton, { borderColor: theme?.border || '#E0E0E0' }]}
+              onPress={() => fadeOut(() => setUserModalVisible(false))}
+            >
+              <RegularText style={{ color: theme?.text || '#000' }}>Cancel</RegularText>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.modalButton, styles.saveButton, { backgroundColor: theme?.primary || '#007BFF' }]} onPress={handleSaveStaff}>
-              <RegularText style={{ color: 'white' }}>{selectedStaff ? 'Update' : 'Create'}</RegularText>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.saveButton, { backgroundColor: theme?.primary || '#007BFF' }]}
+              onPress={() => {
+                if (validateForm()) handleSaveUser(localUser);
+              }}
+            >
+              <RegularText style={{ color: '#fff' }}>
+                {selectedUser ? 'Update' : 'Create'}
+              </RegularText>
             </TouchableOpacity>
           </View>
         </View>
@@ -1441,6 +1671,7 @@ const handleSaveRestaurant = async (restaurantData) => {
       <RestaurantModal />
       <ActionModal />
       <StaffModal /> 
+      <UserModal />
     </SafeAreaView>
   );
 };
@@ -1952,12 +2183,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 15,
-    fontSize: 16,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 5,
   },
   passwordInput: {
     flex: 1,
@@ -2053,23 +2283,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
   },
-  lockBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    flexDirection: 'row',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFF8E1',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    marginTop: 50,
   },
-  lockBadgeText: {
-    marginLeft: 4,
-    color: '#FFA500',
-    fontSize: 12,
-  },
-    
+
 });
 
 export default AdminRestaurantsScreen;
+
+
+

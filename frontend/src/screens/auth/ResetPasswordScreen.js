@@ -82,6 +82,7 @@ const ResetPasswordScreen = ({ navigation, route }) => {
       return false;
     }
 
+
     return true;
   };
 

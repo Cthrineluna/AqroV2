@@ -32,7 +32,7 @@ router.delete('/:restaurantId', protect, authorize('admin'), restaurantControlle
 router.get('/:restaurantId/staff', protect, authorize('admin', 'staff'), restaurantController.getRestaurantStaff);
 
 // Update restaurant
-router.put('/:restaurantId', protect, authorize('admin', 'staff'), upload.fields([
+router.put('/:restaurantId', protect, authorize('admin', 'staff', 'customer'), upload.fields([
     { name: 'logo', maxCount: 1 },
     { name: 'banner', maxCount: 1 },
     { name: 'businessPermit', maxCount: 1 },

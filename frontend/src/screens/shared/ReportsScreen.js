@@ -755,7 +755,7 @@ const renderFilterBadges = () => {
             onPress={() => setActiveReport('rebate')}
           />
           <ReportFilter
-            title="Containers"
+            title="Cups"
             active={activeReport === 'container'}
             onPress={() => setActiveReport('container')}
           />
@@ -781,9 +781,9 @@ const renderFilterBadges = () => {
         
         <View style={[styles.chartContainer, { backgroundColor: theme.card }]}>
           <SemiBoldText style={[styles.chartTitle, { color: theme.text }]}>
-            {activeReport === 'activity' && 'Container Activity Trend'}
+            {activeReport === 'activity' && 'Cup Activity Trend'}
             {activeReport === 'rebate' && 'Rebate Distribution'}
-            {activeReport === 'container' && 'Container Usage by Type'}
+            {activeReport === 'container' && 'Cup Usage by Type'}
           </SemiBoldText>
           
           {loading ? (
@@ -986,14 +986,14 @@ const renderFilterBadges = () => {
               {/* Container Type Section */}
               <View style={styles.filterSection}>
                 <MediumText style={{ fontSize: 16, color: theme.text, marginBottom: 8 }}>
-                  Filter by Cup size
+                  Filter by Cup type
                 </MediumText>
                 
                 <View style={[styles.searchInputContainer, { backgroundColor: theme.input }]}>
                   <Ionicons name="search" size={20} color={theme.text} />
                   <TextInput
                     style={[styles.searchInput, { color: theme.text }]}
-                    placeholder="Search cup size..."
+                    placeholder="Search cup type..."
                     placeholderTextColor={theme.text}
                     value={containerTypeSearchQuery}
                     onChangeText={setContainerTypeSearchQuery}
@@ -1014,7 +1014,7 @@ const renderFilterBadges = () => {
   onPress={() => setSelectedContainerTypes([])}
 >
   <MediumText style={{ color: selectedContainerTypes.length === 0 ? theme.primary : theme.text }}>
-    All cup size
+    All cup type
   </MediumText>
   {selectedContainerTypes.length === 0 && (
     <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
