@@ -7,7 +7,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * Staff Approval Service
  * Handles all staff approval-related API calls
  */
-// Adding a test push comment
 // Get pending staff registrations (for admin)
 export const getPendingStaff = async () => {
   try {
