@@ -12,6 +12,7 @@ import ContainersList from '../screens/customer/ContainersList';
 import ActivityListScreen from '../screens/customer/ActivityListScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import SettingsScreen from '../screens/shared/SettingsScreen';
+import ShopsScreen from '../screens/customer/ShopsScreen';
 
 // Side Menu
 import SideMenu from '../components/SideMenu';
@@ -65,7 +66,8 @@ const CustomerTabNavigator = () => {
       >
         <Tab.Screen name="Home" component={CustomerHomeScreen} />
         <Tab.Screen name="Cups" component={ContainersList} />
-        <Tab.Screen name="Activities" component={ActivityListScreen} />
+  <Tab.Screen name="Activities" component={ActivityListScreen} />
+  <Tab.Screen name="Shops" component={ShopsScreen} />
         <Tab.Screen 
           name="Menu" 
           component={EmptyScreen} 

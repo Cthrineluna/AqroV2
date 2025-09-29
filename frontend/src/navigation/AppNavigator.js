@@ -26,11 +26,13 @@ import ScannerScreen from '../screens/customer/ScannerScreen';
 import SideMenu from '../components/SideMenu';
 import ActivityListScreen from '../screens/customer/ActivityListScreen';
 import RestaurantDetailScreen from '../screens/customer/RestaurantDetailScreen';
+import ShopProductsScreen from '../screens/customer/ShopProductsScreen';
 
 // Staff screens
 import StaffTabNavigator from './StaffTabNavigator';
 import GenerateQRScreen from '../screens/staff/GenerateQRScreen';
 import StaffScannerScreen from '../screens/staff/StaffScannerScreen';
+import ProductForm from '../screens/staff/ProductFormScreen';
 
 // Admin screens
 import AdminTabNavigator from './AdminTabNavigator';
@@ -100,6 +102,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="SideMenu" component={SideMenu} />
           <Stack.Screen name="RestaurantDetail" component={RestaurantDetailScreen} />
+          <Stack.Screen name="ShopProducts" component={ShopProductsScreen} />
         </>
       ) : userType === 'staff' ? (
         // Approved staff flow
@@ -109,6 +112,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="StaffScanner" component={StaffScannerScreen} />
           <Stack.Screen name="GenerateQR" component={GenerateQRScreen} />
+          <Stack.Screen name="ProductForm" component={ProductForm} />
           <Stack.Screen name="Reports" component={ReportsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="GenerateReport" component={GenerateReportScreen} options={{ headerShown: false }} />
         </>

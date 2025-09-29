@@ -11,6 +11,7 @@ import StaffHomeScreen from '../screens/staff/StaffHomeScreen';
 import StaffContainerList from '../screens/staff/StaffContainerList';
 import StaffActivityListScreen from '../screens/staff/StaffActivityListScreen';
 import StaffScannerScreen from '../screens/staff/StaffScannerScreen';
+import ProductsScreen from '../screens/staff/ProductsScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import SettingsScreen from '../screens/shared/SettingsScreen';
 
@@ -56,6 +57,8 @@ const StaffTabNavigator = () => {
               iconName = focused ? 'cafe' : 'cafe-outline';
             } else if (route.name === 'Scanner') {
               iconName = focused ? 'qr-code' : 'qr-code-outline';
+        } else if (route.name === 'Products') {
+          iconName = focused ? 'pricetag' : 'pricetag-outline';
             } else if (route.name === 'Activities') {
               iconName = focused ? 'newspaper' : 'newspaper-outline';
             } else if (route.name === 'Menu') {
@@ -73,6 +76,7 @@ const StaffTabNavigator = () => {
           component={StaffScannerScreen} 
           initialParams={{ action: 'rebate' }} 
         />
+        <Tab.Screen name="Products" component={ProductsScreen} />
 
         <Tab.Screen name="Activities" component={StaffActivityListScreen} />
         <Tab.Screen 
