@@ -195,7 +195,7 @@ const formatLockDuration = (durationMs) => {
             <View style={styles.logoContainer}>
               <Image 
                 source={isDark 
-                  ? require('../../../assets/images/aqro-logo-dark.png') 
+                  ? require('../../../assets/images/aqro-dark.png') 
                   : require('../../../assets/images/aqro-light.png')} 
                 style={styles.logo} 
                 resizeMode="contain" 
