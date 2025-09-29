@@ -184,81 +184,126 @@ const StaffScannerScreen = ({ navigation, route }) => {
       throw error;
     }
   };
+
+  //added
+  const hasRebateRemaining = (container) => {
+  if (!container || !container.containerTypeId) return false;
+  const maxUses = Number(container.containerTypeId.maxUses ?? 0);
+  const used = Number(container.usesCount ?? 0);
+  return maxUses - used > 0;
+};
   
   const processReturn = async (qrCode, token) => {
-    try {
-      // First, get container details by QR code
-      const containerResponse = await axios.get(
-        `${getApiUrl('/containers/details')}`,
-        { 
-          params: { qrCode },
-          headers: { Authorization: `Bearer ${token}` } 
-        }
-      );
-      
-      const container = containerResponse.data;
-      
-      // Check if container exists and has a valid customer
-      if (!container) {
-        throw new Error('Container not found');
+ try {
+    // First, get container details by QR code
+    const containerResponse = await axios.get(
+      `${getApiUrl('/containers/details')}`,
+      {
+        params: { qrCode },
+        headers: { Authorization: `Bearer ${token}` }
       }
-      
-      if (!container.customerId) {
-        throw new Error('This container is not registered to any customer');
-      }
-      
-     if (container.status === 'returned') {
+    );
+
+    const container = containerResponse.data;
+
+    // Check if container exists and has a valid customer
+    if (!container) {
+      throw new Error('Container not found');
+    }
+
+    if (!container.customerId) {
+      throw new Error('This container is not registered to any customer');
+    }
+
+    if (container.status === 'returned') {
       Alert.alert(
         'Already Returned',
         'This container has already been returned.',
-        [{ text: 'OK', onPress: resetScanState }] 
+        [{ text: 'OK', onPress: resetScanState }]
       );
-      return null; 
+      return null;
     }
 
-      
-      // Check if container status is active
-      if (container.status !== 'active') {
-        throw new Error('Only containers with "active" status can be returned');
-      }
-      
-      // Confirm with user
+    // Only active containers can be returned
+    if (container.status !== 'active') {
+      throw new Error('Only containers with "active" status can be returned');
+    }
+
+    // NEW: If cup still has valid rebate/uses -> show stronger confirmation modal
+    if (hasRebateRemaining(container)) {
       return new Promise((resolve, reject) => {
         Alert.alert(
-          'Process Return',
-          `Mark this container as returned?`,
+          'Cup still valid for rebate',
+          'The cup is still valid for rebate. Are you sure you want to process the return?',
           [
-            { 
-              text: 'Cancel', 
+            {
+              text: 'Cancel',
               style: 'cancel',
               onPress: () => {
-                navigation.navigate('StaffTabs', { screen: 'Home' });
-            }
-          },
-            { 
-              text: 'Confirm', 
+                // Close modal and do nothing (per your spec)
+                resetScanState(); // reset scanner state so staff can re-scan if desired
+                resolve(null);
+              }
+            },
+            {
+              text: 'Yes',
               onPress: async () => {
                 try {
-                  // Process the return
                   const returnResponse = await axios.post(
                     `${getApiUrl('/containers/process-return')}`,
                     { containerId: container._id },
                     { headers: { Authorization: `Bearer ${token}` } }
                   );
-                  
                   resolve(returnResponse.data);
                 } catch (error) {
                   reject(error);
                 }
-              } 
+              }
             }
-          ]
+          ],
+          { cancelable: false }
         );
       });
-    } catch (error) {
-      throw error;
     }
-  };
+
+    // If no valid rebate remaining -> proceed with normal return confirmation / flow
+    return new Promise((resolve, reject) => {
+      Alert.alert(
+  'Confirm Return',
+  'The cup is still valid for rebate. Are you sure you want to process the return?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => {
+              // keep the previous behavior (navigate home) or change if you want different UX
+              navigation.navigate('StaffTabs', { screen: 'Home' });
+            }
+          },
+          {
+            text: 'Yes',
+            onPress: async () => {
+              try {
+                const returnResponse = await axios.post(
+                  `${getApiUrl('/containers/process-return')}`,
+                  { containerId: container._id },
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                resolve(returnResponse.data);
+              } catch (error) {
+                reject(error);
+              }
+            }
+          }
+        ],
+        { cancelable: false }
+      );
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
 
   const resetScanState = () => {
     setScanned(false);
