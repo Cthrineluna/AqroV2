@@ -28,23 +28,32 @@ import { useEffect } from 'react';
 import { ActivityIndicator } from 'react-native';
 
 //added
+// place this near the top of the file (replace your existing formatter)
 const formatPHPhoneNumber = (text) => {
-  // Remove all non-digits
-  let cleaned = text.replace(/\D/g, '');
+  // Remove non-digit characters
+  let digits = text.replace(/\D/g, '');
 
-  // If starts with '639', prepend '+'
-  if (cleaned.startsWith('639')) {
-    return '+'.concat(cleaned);
+  // Remove leading 0
+  if (digits.startsWith('0')) {
+    digits = digits.slice(1);
   }
 
-  // If starts with '9', prepend '0'
-  if (cleaned.startsWith('9')) {
-    return '0'.concat(cleaned);
+  // Remove leading 63 if exists
+  if (digits.startsWith('63')) {
+    digits = digits.slice(2);
   }
 
-  // Default return
-  return cleaned;
+  // Limit to 10 digits (PH mobile numbers only)
+  digits = digits.slice(0, 10);
+
+  // Format: 912 345 6789 -> return "+63 912 345 6789" (spaces optional)
+  const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+  if (!match) return '+63 ' + digits;
+
+  const [, part1, part2, part3] = match;
+  return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
 };
+
 //added
 
 const RegisterScreen = ({ navigation }) => {
@@ -74,13 +83,41 @@ const RegisterScreen = ({ navigation }) => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  //added
+const isValidPhoneNumber = (number) => {
+  if (!number) return false;
+
+  // Remove all non-digits
+  let digits = number.replace(/\D/g, '');
+
+  // If it starts with "63", strip it
+  if (digits.startsWith('63')) {
+    digits = digits.slice(2);
+  }
+
+  // If it starts with "0", strip it
+  if (digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+
+  // Must be 10 digits, starting with 9 (PH mobile standard)
+  return /^9\d{9}$/.test(digits);
+};
+//added
+
+
   const handleRegister = async () => {
     setError('');
     
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword || !phoneNumber.trim()) {
       setError('All fields are required');
       return;
     }
+
+    if (!isValidPhoneNumber(phoneNumber)) {
+    setError('Please enter a valid Philippine phone number (e.g., +639123456789)');
+    return;
+  }
   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -241,23 +278,24 @@ const RegisterScreen = ({ navigation }) => {
               {/* added */}
               {/* Phone Number Input */}
               <View style={styles.formInput}>
-                <View style={styles.inputContainer}>
-                  <MediumText style={styles.inputLabel}>CONTACT NUMBER (PH)</MediumText>
-                  <TextInput
-                    style={[styles.input, {color: theme.text}]}
-                    value={phoneNumber}
-                    onChangeText={(text) => {
-                      const formatted = formatPHPhoneNumber(text);
-                      setPhoneNumber(formatted);
-                      setError('');
-                    }}
-                    placeholder="09XXXXXXXXX"
-                    keyboardType="phone-pad"
-                    autoCapitalize="none"
-                    placeholderTextColor="#9e9e9e"
-                  />
-                </View>
+              <View style={styles.inputContainer}>
+                <MediumText style={styles.inputLabel}>CONTACT NUMBER (PH)</MediumText>
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  value={phoneNumber}
+                  onChangeText={(text) => {
+                    const formatted = formatPHPhoneNumber(text);
+                    setPhoneNumber(formatted);
+                    setError(''); // clear any previous phone error while typing
+                  }}
+                  placeholder="+63"
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                  placeholderTextColor="#9e9e9e"
+                />
               </View>
+            </View>
+
 
               {/* added */}
 

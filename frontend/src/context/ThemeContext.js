@@ -15,11 +15,11 @@ export const lightTheme = {
 };
 
 export const darkTheme = {
-  background: '#1F1C19', // Dark roasted beans with a hint of charcoal
+  background: '#160d00ff', // Dark roasted beans with a hint of charcoal
   text: '#F5E9DA',       // Creamy beige for strong readability
-  primary: '#B07B4C',    // Caramel latte accent
+  primary: '#a27854ff',    // Caramel latte accent
   secondary: '#D8B26E',  // Honey-golden for highlights
-  card: '#2A2622',       // Soft mocha, lighter than background
+  card: '#2d271dff',       // Soft mocha, lighter than background
   border: 'rgba(245, 233, 218, 0.12)', // Creamy low-opacity borders
   input: '#2A2622',      // Same as card for uniformity
   danger: '#E45C5C',     // Warm muted red that fits the palette

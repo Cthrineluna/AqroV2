@@ -313,12 +313,12 @@ const fetchContainersForDerivedStats = async () => {
       
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <View style={{ flexDirection: 'row' }}>
-          <Text style={[styles.headerLetter, { color: '#1f3118' }]}>A</Text>
-          <Text style={[styles.headerLetter, { color: '#1f3118' }]}>Q</Text>
-          <Text style={[styles.headerLetter, { color: '#1f3118'}]}>R</Text>
-          <Text style={[styles.headerLetter, { color: '#1f3118' }]}>O</Text>
-        </View>
+          <View style={{ flexDirection: 'row' }}>
+            <Text style={[styles.headerLetter, { color: theme.text }]}>A</Text>
+            <Text style={[styles.headerLetter, { color: theme.primary }]}>Q</Text>
+            <Text style={[styles.headerLetter, { color: theme.primary }]}>R</Text>
+            <Text style={[styles.headerLetter, { color: theme.text }]}>O</Text>
+          </View>
         {/* <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Ionicons name="settings-outline" size={24} color={theme.text} />
         </TouchableOpacity> */}
@@ -330,7 +330,7 @@ const fetchContainersForDerivedStats = async () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#00df82']}
+            colors={['#677324']}
             tintColor={isDark ? '#00df82' : '#2e7d32'}
           />
         }
@@ -340,7 +340,7 @@ const fetchContainersForDerivedStats = async () => {
             <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
               Hello, {user?.firstName || 'User'}!
             </SemiBoldText>
-            <RegularText style={[styles.subGreetings, { color: '#525D13' }]}>
+            <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
               Brewed and ready today?
             </RegularText> 
           </View>
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontFamily: 'Arial',
     lineHeight: 30,
-    fontWeight: '550',
+    fontWeight: 'bold',
   },
   scrollContent: {
     padding: 16,

@@ -30,9 +30,12 @@ exports.updateUserProfile = async (req, res) => {
       
       //added
       const phPhoneRegex = /^(?:\+639|09)\d{9}$/;
-        if (typeof phoneNumber !== 'undefined' && phoneNumber && !phPhoneRegex.test(phoneNumber.trim())) {
+      if (typeof phoneNumber !== 'undefined' && phoneNumber) {
+        const normalized = phoneNumber.replace(/\s+/g, ''); // remove spaces
+        if (!phPhoneRegex.test(normalized)) {
           return res.status(400).json({ message: 'Enter a valid PH mobile number (0917xxxxxxx or +63917xxxxxxx)' });
         }
+      }
       //added
 
       // Prepare update object

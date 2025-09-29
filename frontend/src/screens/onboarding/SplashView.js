@@ -140,7 +140,7 @@ const SplashView = ({ onNextClick }) => {
         <Animated.View style={[styles.qrContainer, { opacity: qrOpacity }]}>
           <Image
             source={isDark 
-              ? require('../../../assets/images/aqro-logo-dark.png') 
+              ? require('../../../assets/images/aqro-dark.png') 
               : require('../../../assets/images/aqro-light.png')}
             style={styles.logo}
             resizeMode="contain"
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 35,
-    fontWeight: '550',
+    fontWeight: 'bold',
     letterSpacing: 1,
     fontFamily: 'Arial',
     includeFontPadding: false,  // Force no extra padding (Android-only)

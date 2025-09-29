@@ -22,7 +22,7 @@ const Tab = createBottomTabNavigator();
 const EmptyScreen = () => <View style={{ flex: 1 }} />;
 
 const StaffTabNavigator = () => {
-  const { theme } = useTheme();
+  const { theme,isDark } = useTheme();
   const { user } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
   
@@ -36,7 +36,7 @@ const StaffTabNavigator = () => {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: '#BBC191',
+            backgroundColor: isDark ? '#677324' : '#BBC191', 
             borderTopColor: 'transparent', 
             height: Platform.OS === 'android' ? 60 : 80,
             paddingBottom: 10,
@@ -45,7 +45,7 @@ const StaffTabNavigator = () => {
             shadowOpacity: 0, 
             borderTopWidth: 0,
           },
-          tabBarActiveTintColor: '#677324',
+          tabBarActiveTintColor: isDark ?  '#e0e8afff':'#677324', 
           tabBarInactiveTintColor: theme.text + '80', 
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;

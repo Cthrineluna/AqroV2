@@ -28,6 +28,44 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { getApiUrl } from '../../services/apiConfig';
 import RestaurantModal from '../../components/RestaurantModal';
 
+
+//added
+// ---- Phone number helpers ----
+const formatPHPhoneNumber = (text) => {
+  let digits = text.replace(/\D/g, '');
+
+  if (digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+  if (digits.startsWith('63')) {
+    digits = digits.slice(2);
+  }
+
+  digits = digits.slice(0, 10);
+
+  const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+  if (!match) return '+63 ' + digits;
+
+  const [, part1, part2, part3] = match;
+  return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
+};
+
+const isValidPhoneNumber = (number) => {
+  if (!number) return false;
+
+  let digits = number.replace(/\D/g, '');
+
+  if (digits.startsWith('63')) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+
+  return /^9\d{9}$/.test(digits); // must be 10 digits starting with 9
+};
+//added
+
   //added
 export const ProfileItem = React.memo(function ProfileItem({
   label,
@@ -70,8 +108,8 @@ export const ProfileItem = React.memo(function ProfileItem({
     </View>
   );
 });
-
 //added
+
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
@@ -79,6 +117,7 @@ const ProfileScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [themeLoaded, setThemeLoaded] = useState(false);
+  const [error, setError] = useState(''); //added
   const [userData, setUserData] = useState({
     firstName: '',
     lastName: '',
@@ -215,9 +254,26 @@ const ProfileScreen = ({ navigation }) => {
   // };
 
   //added
-  const handleInputChange = useCallback((field, value) => {
+const handleInputChange = useCallback((field, value) => {
+  setError('')
+
+  if (field === 'phoneNumber') {
+    const formatted = formatPHPhoneNumber(value);
+    setUserData(prev => ({ ...prev, phoneNumber: formatted }));
+    
+    // Only check validity if 13+ characters typed (e.g., "+63 9xxxxxxxxx")
+    if (formatted.replace(/\D/g, '').length >= 12) {
+      if (!isValidPhoneNumber(formatted)) {
+        console.error("Invalid phone number:", formatted);
+      } else {
+        console.log("Valid phone number:", formatted);
+      }
+    }
+  } else {
     setUserData(prev => ({ ...prev, [field]: value }));
-  } , []);
+  }
+}, []);
+
 //added
 
   const pickImage = async () => {
@@ -295,6 +351,13 @@ const ProfileScreen = ({ navigation }) => {
     try {
       setIsLoading(true);
       const token = await AsyncStorage.getItem('aqro_token');
+
+       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email.trim())) {
+      setError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
       
       if (!token) {
         console.error('No auth token found');
@@ -437,6 +500,10 @@ const ProfileScreen = ({ navigation }) => {
               </RegularText>
             </View>
             
+             {error ? (
+              <RegularText style={{ color: 'red', marginBottom: 10 }}>{error}</RegularText>
+            ) : null}
+            
             {/* Profile Info */}
             <View style={[styles.infoCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <ProfileItem 
@@ -460,6 +527,7 @@ const ProfileScreen = ({ navigation }) => {
                 isDark={isDark}
                 onChange={handleInputChange}
               />
+
               <ProfileItem 
                 label="Email" 
                 value={userData.email} 
@@ -469,19 +537,25 @@ const ProfileScreen = ({ navigation }) => {
                 theme={theme}
                 isDark={isDark}
                 onChange={handleInputChange}
+                placeholder="Enter your email"
               />
+
               {/* added */}
-              <ProfileItem 
-                label="Phone Number" 
-                value={userData.phoneNumber} 
-                editable={true}
-                field="phoneNumber"
-                isEditing={isEditing}
-                theme={theme}
-                isDark={isDark}
-                onChange={handleInputChange}
-              />
+              {(user?.userType || userData?.userType) === 'customer' && (
+                <ProfileItem 
+                  label="Phone Number" 
+                  value={userData.phoneNumber} 
+                  editable={true}
+                  field="phoneNumber"
+                  isEditing={isEditing}
+                  theme={theme}
+                  isDark={isDark}
+                  onChange={handleInputChange}
+                  placeholder="+63" // visible hint
+                />
+              )}
             </View>
+
             
             {/* Buttons */}
             <View style={styles.buttonsContainer}>
@@ -528,7 +602,7 @@ const ProfileScreen = ({ navigation }) => {
       onPress={() => setRestaurantModalVisible(true)}
     >
       <RegularText style={[styles.editButtonText, { color: theme.primary }]}>
-        Edit Restaurant
+        Edit Coffee Shop
       </RegularText>
     </TouchableOpacity>
   </View>

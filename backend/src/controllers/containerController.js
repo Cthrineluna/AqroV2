@@ -6,6 +6,7 @@ const Activity = require('../models/Activity');
 const QRCode = require('qrcode');
 const Restaurant = require('../models/Restaurant');
 const RestaurantContainerRebate = require('../models/RestaurantContainerRebate');
+const axios = require('axios');
 
 exports.deleteContainer = async (req, res) => {
   try {
@@ -444,6 +445,23 @@ exports.registerContainer = async (req, res) => {
     });
     
     await newActivity.save();
+
+    // ✅ Send webhook to n8n
+    try {
+      const user = await mongoose.model('User').findById(customerId);
+      const userEmail = user ? user.email : '';
+      await axios.post(process.env.N8N_WEBHOOK_URL, {
+        event: "register",
+        customerId: customerId,
+        email: userEmail,
+        containerId: container._id,
+        containerType: container.containerTypeId?.name,
+        restaurant: container.restaurantId?.name,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error("Webhook failed (registerContainer):", err.message);
+    }
     
     return res.status(200).json({
       success: true,
@@ -545,6 +563,25 @@ exports.processRebate = async (req, res) => {
     });
     
     await newActivity.save();
+
+    // ✅ Send webhook to n8n
+    try {
+      const user = await mongoose.model('User').findById(customerId);
+      const userEmail = user ? user.email : '';
+      await axios.post(process.env.N8N_WEBHOOK_URL, {
+        event: "rebate",
+        customerId: customerId,
+         email: userEmail,
+        containerId: container._id,
+        containerType: container.containerTypeId?.name,
+        restaurant: restaurant.name,
+        amount,
+        usesCount: container.usesCount,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error("Webhook failed (processRebate):", err.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -683,6 +720,23 @@ exports.processReturn = async (req, res) => {
     });
     
     await newActivity.save();
+
+    // ✅ Send webhook to n8n
+    try {
+      const user = await mongoose.model('User').findById(customerId);
+      const userEmail = user ? user.email : '';
+      await axios.post(process.env.N8N_WEBHOOK_URL, {
+        event: "return",
+        customerId: customerId,
+        email: userEmail,
+        containerId: container._id,
+        containerType: container.containerTypeId?.name,
+        restaurant: restaurant.name,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error("Webhook failed (processReturn):", err.message);
+    }
     
     res.status(200).json({
       success: true,

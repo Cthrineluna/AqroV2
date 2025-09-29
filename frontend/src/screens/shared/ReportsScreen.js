@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontFamily: 'Arial',
     lineHeight: 30,
-    fontWeight: '550',
+    fontWeight: 'bold',
 
   },
   headerTitle: {

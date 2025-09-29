@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API URL - change this to match your backend URL
-const API_URL = 'http://192.168.8.161:5001/api/auth';
+const API_URL = 'http://192.168.1.10:5001/api/auth';
 
 // For local development using Expo on a physical device, 
 // use your computer's IP address instead of localhost
