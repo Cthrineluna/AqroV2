@@ -10,11 +10,11 @@ import * as ImagePicker from 'expo-image-picker';
 const ProductForm = ({ navigation, route }) => {
   const { theme } = useTheme();
   const existing = route.params?.product;
+
   const [name, setName] = useState(existing?.name || '');
   const [description, setDescription] = useState(existing?.description || '');
   const [price, setPrice] = useState(existing?.price ? String(existing.price) : '0');
   const [image, setImage] = useState(existing?.image || '');
-
   const [localImage, setLocalImage] = useState(null); // { uri, name, type }
 
   useEffect(() => {
@@ -24,39 +24,64 @@ const ProductForm = ({ navigation, route }) => {
   const onSave = async () => {
     try {
       const token = await AsyncStorage.getItem('aqro_token');
-      // build form data to support file upload
+      if (!token) {
+        Alert.alert('Not Authorized', 'You must be logged in as staff to add or edit products.');
+        return;
+      }
+
+      const userStr = await AsyncStorage.getItem('aqro_user');
+      const user = JSON.parse(userStr || '{}');
+
+      if (!user.restaurantId) {
+        Alert.alert('Error', 'Your account is not linked to a restaurant.');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('name', name);
       formData.append('description', description);
       formData.append('price', parseFloat(price) || 0);
 
       if (existing) {
-        // PUT with multipart/form-data
+        // update product
         if (localImage) {
           formData.append('image', {
             uri: localImage.uri,
             name: localImage.name,
-            type: localImage.type
+            type: localImage.type,
           });
         }
-        await axios.put(getApiUrl(`/products/${existing._id}`), formData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } });
+
+        await axios.put(getApiUrl(`/products/${existing._id}`), formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
       } else {
-        // staff should have restaurantId in user info; get from profile
-        const userStr = await AsyncStorage.getItem('aqro_user');
-        const user = JSON.parse(userStr || '{}');
+        // create product
         formData.append('restaurantId', user.restaurantId);
+
         if (localImage) {
           formData.append('image', {
             uri: localImage.uri,
             name: localImage.name,
-            type: localImage.type
+            type: localImage.type,
           });
         }
-        await axios.post(getApiUrl('/products'), formData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } });
+
+        await axios.post(getApiUrl('/products'), formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
       }
+
       navigation.navigate('Products');
     } catch (err) {
-      console.error('Save product error:', err);
+      console.error('Save product error:', err.response?.data || err.message);
+      Alert.alert('Save Error', err.response?.data?.message || 'Failed to save product.');
     }
   };
 
@@ -64,10 +89,18 @@ const ProductForm = ({ navigation, route }) => {
     if (!existing) return;
     try {
       const token = await AsyncStorage.getItem('aqro_token');
-      await axios.delete(getApiUrl(`/products/${existing._id}`), { headers: { Authorization: `Bearer ${token}` } });
+      if (!token) {
+        Alert.alert('Not Authorized', 'You must be logged in as staff to delete products.');
+        return;
+      }
+
+      await axios.delete(getApiUrl(`/products/${existing._id}`), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       navigation.navigate('Products');
     } catch (err) {
-      console.error('Delete product error:', err);
+      console.error('Delete product error:', err.response?.data || err.message);
+      Alert.alert('Delete Error', err.response?.data?.message || 'Failed to delete product.');
     }
   };
 
@@ -78,15 +111,19 @@ const ProductForm = ({ navigation, route }) => {
         Alert.alert('Permission required', 'Please allow access to your photos to select a product image');
         return;
       }
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
-      if (!result.cancelled) {
-        const asset = result.assets ? result.assets[0] : result; // expo sdk 48+ returns assets
-        const uri = asset.uri || asset.uri;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.7,
+      });
+
+      if (!result.canceled) {
+        const asset = result.assets ? result.assets[0] : result;
+        const uri = asset.uri;
         const filename = uri.split('/').pop();
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : 'image/jpeg';
+
         setLocalImage({ uri, name: filename, type });
-        // show preview via image uri
         setImage(uri);
       }
     } catch (err) {
@@ -100,26 +137,55 @@ const ProductForm = ({ navigation, route }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.text }]}>{existing ? 'Edit Product' : 'Add Product'}</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          {existing ? 'Edit Product' : 'Add Product'}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <Text style={[styles.label, { color: theme.text }]}>Name</Text>
-        <TextInput value={name} onChangeText={setName} style={[styles.input, { backgroundColor: theme.card, color: theme.text }]} />
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+        />
 
         <Text style={[styles.label, { color: theme.text }]}>Description</Text>
-        <TextInput value={description} onChangeText={setDescription} multiline numberOfLines={4} style={[styles.textarea, { backgroundColor: theme.card, color: theme.text }]} />
+        <TextInput
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+          style={[styles.textarea, { backgroundColor: theme.card, color: theme.text }]}
+        />
 
         <Text style={[styles.label, { color: theme.text }]}>Price</Text>
-        <TextInput value={price} onChangeText={setPrice} keyboardType="numeric" style={[styles.input, { backgroundColor: theme.card, color: theme.text }]} />
+        <TextInput
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="numeric"
+          style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
+        />
 
         <Text style={[styles.label, { color: theme.text }]}>Image</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <TouchableOpacity onPress={pickImage} style={[styles.saveBtn, { paddingVertical: 10, paddingHorizontal: 12, backgroundColor: theme.secondary }]}> 
+          <TouchableOpacity
+            onPress={pickImage}
+            style={[
+              styles.saveBtn,
+              { paddingVertical: 10, paddingHorizontal: 12, backgroundColor: theme.secondary },
+            ]}
+          >
             <Text style={{ color: '#fff' }}>Pick Image</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setLocalImage(null); setImage(''); }} style={[styles.cancelBtn, { paddingVertical: 10, paddingHorizontal: 12 }]}>
+          <TouchableOpacity
+            onPress={() => {
+              setLocalImage(null);
+              setImage('');
+            }}
+            style={[styles.cancelBtn, { paddingVertical: 10, paddingHorizontal: 12 }]}
+          >
             <Text style={{ color: theme.primary }}>Clear</Text>
           </TouchableOpacity>
         </View>
@@ -130,7 +196,10 @@ const ProductForm = ({ navigation, route }) => {
           <Text style={{ color: '#fff' }}>{existing ? 'Update' : 'Add Product'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.cancelBtn, { borderColor: theme.primary }]} onPress={() => navigation.navigate('Products')}>
+        <TouchableOpacity
+          style={[styles.cancelBtn, { borderColor: theme.primary }]}
+          onPress={() => navigation.navigate('Products')}
+        >
           <Text style={{ color: theme.primary }}>Cancel</Text>
         </TouchableOpacity>
 
@@ -155,7 +224,7 @@ const styles = StyleSheet.create({
   preview: { width: '100%', height: 180, borderRadius: 8, marginTop: 12 },
   saveBtn: { marginTop: 16, padding: 14, borderRadius: 8, alignItems: 'center' },
   cancelBtn: { marginTop: 12, padding: 12, borderRadius: 8, alignItems: 'center', borderWidth: 1 },
-  deleteBtn: { marginTop: 12, padding: 12, borderRadius: 8, alignItems: 'center', backgroundColor: '#d32f2f' }
+  deleteBtn: { marginTop: 12, padding: 12, borderRadius: 8, alignItems: 'center', backgroundColor: '#d32f2f' },
 });
 
 export default ProductForm;

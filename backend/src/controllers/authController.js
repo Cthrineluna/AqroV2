@@ -397,7 +397,8 @@ exports.login = async (req, res) => {
             userType: user.userType,
             isEmailVerified: user.isEmailVerified,
             isApproved: false,
-            approvalStatus: 'needs_revision'
+            approvalStatus: 'needs_revision',
+             restaurantId: user.restaurantId
           }
         });
       }
@@ -422,7 +423,8 @@ exports.login = async (req, res) => {
         userType: user.userType,
         isEmailVerified: user.isEmailVerified,
         isApproved: user.isApproved || false,
-        approvalStatus: user.approvalStatus || 'pending'
+        approvalStatus: user.approvalStatus || 'pending',
+        restaurantId: user.restaurantId
       }
     });
   } catch (error) {
