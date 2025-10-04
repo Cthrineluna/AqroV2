@@ -896,3 +896,56 @@ exports.getRestaurantContainers = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Mark container as damaged
+exports.markContainerDamaged = async (req, res) => {
+  try {
+    const { containerId, customerId, containerType, restaurant, email, name } = req.body;
+
+    // Update container status
+    await Container.findByIdAndUpdate(containerId, { status: 'damaged' });
+
+    // Send webhook to n8n
+    await axios.post(process.env.N8N_WEBHOOK_URL, {
+      event: 'damaged',
+      containerId,
+      containerType,
+      customerId,
+      restaurant,
+      email,
+      name,
+      timestamp: new Date()
+    });
+
+    res.status(200).json({ success: true, message: 'Container marked as damaged' });
+  } catch (error) {
+    console.error('Error marking container damaged:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+// Mark container as lost
+exports.markContainerLost = async (req, res) => {
+  try {
+    const { containerId, customerId, containerType, restaurant, email, name } = req.body;
+
+    await Container.findByIdAndUpdate(containerId, { status: 'lost' });
+
+    // Send webhook to n8n
+    await axios.post(process.env.N8N_WEBHOOK_URL, {
+      event: 'lost',
+      containerId,
+      containerType,
+      customerId,
+      restaurant,
+      email,
+      name,
+      timestamp: new Date()
+    });
+
+    res.status(200).json({ success: true, message: 'Container marked as lost' });
+  } catch (error) {
+    console.error('Error marking container lost:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
