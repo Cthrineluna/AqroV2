@@ -40,6 +40,11 @@ exports.markContainerStatus = async (req, res) => {
     const { containerId, status } = req.body;
     const userId = req.user._id;
 
+    if (!containerId || !status) {
+      return res.status(400).json({ 
+        message: 'Missing required fields.' });
+    }
+
     // Validate status
     if (!['damaged', 'lost'].includes(status)) {
       return res.status(400).json({ 
@@ -92,6 +97,35 @@ exports.markContainerStatus = async (req, res) => {
 
     await newActivity.save();
 
+    // 🔔 Send webhook to n8n for automation
+    try {
+      let userEmail = '';
+      let customerId = null;
+
+      // If your container has a customerId field, try to get the user for email
+      if (container.customerId) {
+        const user = await mongoose.model('User').findById(container.customerId);
+        if (user) {
+          userEmail = user.email;
+          customerId = user._id.toString();
+        }
+      }
+
+      await axios.post(process.env.N8N_WEBHOOK_URL, {
+        event: status,
+        customerId: customerId,
+        email: userEmail,
+        containerId: container._id.toString(),
+        containerType: container.containerTypeId?.name || null,
+        restaurant: container.restaurantId?.name || null,
+        timestamp: new Date().toISOString()
+      });
+    
+      console.log(`✅ Webhook sent for ${status} event to n8n`);
+    } catch (webhookErr) {
+      console.error(`❌ Webhook failed for ${status}:`, webhookErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: `Container marked as ${status} successfully`,
@@ -105,6 +139,7 @@ exports.markContainerStatus = async (req, res) => {
     });
   }
 };
+
 // Create a new container (admin only)
 exports.createContainer = async (req, res) => {
   try {
@@ -894,58 +929,5 @@ exports.getRestaurantContainers = async (req, res) => {
   } catch (error) {
     console.error('Error getting restaurant containers:', error);
     res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Mark container as damaged
-exports.markContainerDamaged = async (req, res) => {
-  try {
-    const { containerId, customerId, containerType, restaurant, email, name } = req.body;
-
-    // Update container status
-    await Container.findByIdAndUpdate(containerId, { status: 'damaged' });
-
-    // Send webhook to n8n
-    await axios.post(process.env.N8N_WEBHOOK_URL, {
-      event: 'damaged',
-      containerId,
-      containerType,
-      customerId,
-      restaurant,
-      email,
-      name,
-      timestamp: new Date()
-    });
-
-    res.status(200).json({ success: true, message: 'Container marked as damaged' });
-  } catch (error) {
-    console.error('Error marking container damaged:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-};
-
-// Mark container as lost
-exports.markContainerLost = async (req, res) => {
-  try {
-    const { containerId, customerId, containerType, restaurant, email, name } = req.body;
-
-    await Container.findByIdAndUpdate(containerId, { status: 'lost' });
-
-    // Send webhook to n8n
-    await axios.post(process.env.N8N_WEBHOOK_URL, {
-      event: 'lost',
-      containerId,
-      containerType,
-      customerId,
-      restaurant,
-      email,
-      name,
-      timestamp: new Date()
-    });
-
-    res.status(200).json({ success: true, message: 'Container marked as lost' });
-  } catch (error) {
-    console.error('Error marking container lost:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };

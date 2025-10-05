@@ -114,6 +114,3 @@ router.post(
 );
 module.exports = router;
 
-// New routes for damaged & lost
-router.post('/damaged', containerController.markContainerDamaged);
-router.post('/lost', containerController.markContainerLost);
