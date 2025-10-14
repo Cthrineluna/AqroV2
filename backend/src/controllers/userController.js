@@ -2,7 +2,7 @@ const User = require('../models/Users');
 
 //added
 function isStrongPassword(password) {
-  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
   return strongPasswordRegex.test(password);
 }
 //added
@@ -28,22 +28,22 @@ exports.updateUserProfile = async (req, res) => {
       const userId = req.user.id;                                   //added
       const { firstName, lastName, email, password, profilePicture,phoneNumber } = req.body;
       
-      //added
-      const phPhoneRegex = /^(?:\+639|09)\d{9}$/;
-      if (typeof phoneNumber !== 'undefined' && phoneNumber) {
-        const normalized = phoneNumber.replace(/\s+/g, ''); // remove spaces
-        if (!phPhoneRegex.test(normalized)) {
-          return res.status(400).json({ message: 'Enter a valid PH mobile number (0917xxxxxxx or +63917xxxxxxx)' });
-        }
-      }
-      //added
+      // //added
+      // const phPhoneRegex = /^(?:\+639|09)\d{9}$/;
+      // if (typeof phoneNumber !== 'undefined' && phoneNumber) {
+      //   const normalized = phoneNumber.replace(/\s+/g, ''); // remove spaces
+      //   if (!phPhoneRegex.test(normalized)) {
+      //     return res.status(400).json({ message: 'Enter a valid PH mobile number (0917xxxxxxx or +63917xxxxxxx)' });
+      //   }
+      // }
+      // //added
 
       // Prepare update object
       const updateData = { 
         firstName, 
         lastName,
         profilePicture,
-        phoneNumber //added
+        // phoneNumber //added
       };
       
       // Only add email if it was provided and changed
@@ -151,7 +151,7 @@ exports.createUser = async (req, res) => {
     const { email, password, firstName, lastName, userType } = req.body;
 
     //added
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
     if (!strongPasswordRegex.test(password)) {
       return res.status(400).json({ 
         message: 'Password must include uppercase, lowercase, number, special character, and be at least 8 characters long'

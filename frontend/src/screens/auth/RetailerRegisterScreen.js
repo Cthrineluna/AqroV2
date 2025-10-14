@@ -11,7 +11,8 @@ import {
   Image,
   StatusBar,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Text
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -45,15 +46,86 @@ const RetailerRegisterScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const { theme, isDark } = useTheme();
   const [birRegistration, setBirRegistration] = useState(null);
-
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState('');
+  const [passwordMatchMessage, setPasswordMatchMessage] = useState('');
+  const [passwordsMatch, setPasswordsMatch] = useState(false);
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
-
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
   const isValidPhoneNumber = (number) => {
     const digits = number.replace(/\D/g, '');
     return /^639\d{9}$/.test(digits); 
   };
 
+  //added
+  const validateName = (text, type) => {
+  // Check if text contains invalid characters
+  const hasInvalid = /[^A-Za-z\s]/.test(text);
+  const cleanedText = text.replace(/[^A-Za-z\s]/g, '');
+
+  if (type === 'first') {
+    setFirstName(cleanedText);
+
+    if (hasInvalid) {
+      setFirstNameError('Only letters are allowed in the first name.');
+    } else {
+      setFirstNameError('');
+    }
+
+  } else if (type === 'last') {
+    setLastName(cleanedText);
+
+    if (hasInvalid) {
+      setLastNameError('Only letters are allowed in the last name.');
+    } else {
+      setLastNameError('');
+    }
+  }
+};
+
+//added
+const validatePassword = (text) => {
+  setPassword(text);
+
+  // Regex checks
+  const hasUpper = /[A-Z]/.test(text);
+  const hasLower = /[a-z]/.test(text);
+  const hasNumber = /\d/.test(text);
+  const hasSpecial = /[^A-Za-z0-9]/.test(text);
+  const isLongEnough = text.length >= 8;
+
+  // Combine feedback
+  if (!isLongEnough) {
+    setPasswordMessage('Password must be at least 8 characters.');
+    setPasswordStrength('weak');
+  } else if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+    setPasswordMessage('Password must include uppercase, lowercase, number, and special character.');
+    setPasswordStrength('medium');
+  } else {
+    setPasswordMessage('Strong password!');
+    setPasswordStrength('strong');
+  }
+};
+
+const validateConfirmPassword = (text) => {
+  setConfirmPassword(text);
+
+  if (text.length === 0) {
+    setPasswordMatchMessage('');
+    setPasswordsMatch(false);
+    return;
+  }
+
+  if (text !== password) {
+    setPasswordMatchMessage("Passwords don't match");
+    setPasswordsMatch(false);
+  } else {
+    setPasswordMatchMessage('Passwords match!');
+    setPasswordsMatch(true);
+  }
+};
 
 const pickBirDocument = async () => {
   try {
@@ -182,11 +254,11 @@ const pickImage = async () => {
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 6 characters');
+      setError('Password must be at least 8 characters');
       return false;
     }
 //added
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
     if (!strongPasswordRegex.test(password)) {
     setError('Password must include uppercase, lowercase, number, and special character');
     return;
@@ -356,10 +428,15 @@ const pickImage = async () => {
                 <TextInput
                   style={[styles.input, {color: theme.text, borderColor: theme.border,}]}
                   value={firstName}
-                  onChangeText={setFirstName}
+                  onChangeText={(text) => validateName(text, 'first')}
                   placeholder="Enter your first name"
                   placeholderTextColor="#9e9e9e"
                 />
+                {firstNameError !== '' && (
+                                    <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
+                                      {firstNameError}
+                                    </Text>
+                                  )}
               </View>
 
               <View style={styles.formInput}>
@@ -367,10 +444,16 @@ const pickImage = async () => {
                 <TextInput
                   style={[styles.input, {color: theme.text, borderColor: theme.border}]}
                   value={lastName}
-                  onChangeText={setLastName}
+                  onChangeText={(text) => validateName(text, 'last')}
                   placeholder="Enter your last name"
                   placeholderTextColor="#9e9e9e"
                 />
+                 {/*added*/}
+                                  {lastNameError !== '' && (
+                                    <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
+                                      {lastNameError}
+                                    </Text>
+                                  )}
               </View>
 
               <View style={styles.formInput}>
@@ -392,7 +475,7 @@ const pickImage = async () => {
                   <TextInput
                     style={[styles.input, styles.passwordInput, {color: theme.text}]}
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={validatePassword}
                     placeholder="Enter your password"
                     secureTextEntry={!showPassword}
                     placeholderTextColor="#9e9e9e"
@@ -409,6 +492,23 @@ const pickImage = async () => {
                     />
                   </TouchableOpacity>
                 </View>
+                  {/* ✅ Real-time password feedback */}
+                  {password.length > 0 && (
+                    <RegularText
+                     style={{
+                        marginTop: 5,
+                        fontSize: 12,
+                        color:
+                          passwordStrength === 'strong'
+                            ? 'green'
+                            : passwordStrength === 'medium'
+                            ? 'orange'
+                            : 'red',
+                      }}
+                    >
+                      {passwordMessage}
+                    </RegularText>
+                  )}
               </View>
 
               <View style={styles.formInput}>
@@ -417,7 +517,7 @@ const pickImage = async () => {
                   <TextInput
                     style={[styles.input, styles.passwordInput, {color: theme.text}]}
                     value={confirmPassword}
-                    onChangeText={setConfirmPassword}
+                    onChangeText={validateConfirmPassword}
                     placeholder="Confirm your password"
                     secureTextEntry={!showConfirmPassword}
                     placeholderTextColor="#9e9e9e"
@@ -434,6 +534,18 @@ const pickImage = async () => {
                     />
                   </TouchableOpacity>
                 </View>
+                  {/* Realtime match message */}
+                  {passwordMatchMessage !== '' && (
+                    <RegularText
+                      style={{
+                        marginTop: 5,
+                        fontSize: 12,
+                        color: passwordsMatch ? 'green' : 'red',
+                      }}
+                    >
+                      {passwordMatchMessage}
+                    </RegularText>
+                  )}
               </View>
             </View>
 

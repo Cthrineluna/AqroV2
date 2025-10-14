@@ -29,44 +29,44 @@ import { getApiUrl } from '../../services/apiConfig';
 import RestaurantModal from '../../components/RestaurantModal';
 
 
-//added
-// ---- Phone number helpers ----
-const formatPHPhoneNumber = (text) => {
-  let digits = text.replace(/\D/g, '');
+// //added
+// // ---- Phone number helpers ----
+// const formatPHPhoneNumber = (text) => {
+//   let digits = text.replace(/\D/g, '');
 
-  if (digits.startsWith('0')) {
-    digits = digits.slice(1);
-  }
-  if (digits.startsWith('63')) {
-    digits = digits.slice(2);
-  }
+//   if (digits.startsWith('0')) {
+//     digits = digits.slice(1);
+//   }
+//   if (digits.startsWith('63')) {
+//     digits = digits.slice(2);
+//   }
 
-  digits = digits.slice(0, 10);
+//   digits = digits.slice(0, 10);
 
-  const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-  if (!match) return '+63 ' + digits;
+//   const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+//   if (!match) return '+63 ' + digits;
 
-  const [, part1, part2, part3] = match;
-  return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
-};
+//   const [, part1, part2, part3] = match;
+//   return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
+// };
 
-const isValidPhoneNumber = (number) => {
-  if (!number) return false;
+// const isValidPhoneNumber = (number) => {
+//   if (!number) return false;
 
-  let digits = number.replace(/\D/g, '');
+//   let digits = number.replace(/\D/g, '');
 
-  if (digits.startsWith('63')) {
-    digits = digits.slice(2);
-  }
-  if (digits.startsWith('0')) {
-    digits = digits.slice(1);
-  }
+//   if (digits.startsWith('63')) {
+//     digits = digits.slice(2);
+//   }
+//   if (digits.startsWith('0')) {
+//     digits = digits.slice(1);
+//   }
 
-  return /^9\d{9}$/.test(digits); // must be 10 digits starting with 9
-};
-//added
-
+//   return /^9\d{9}$/.test(digits); // must be 10 digits starting with 9
+// };
+// //added
   //added
+
 export const ProfileItem = React.memo(function ProfileItem({
   label,
   value,
@@ -123,7 +123,7 @@ const ProfileScreen = ({ navigation }) => {
     lastName: '',
     email: '',
     profilePicture: null,
-    phoneNumber:'' //added
+    // phoneNumber:'' //added
   });
 
   const [restaurant, setRestaurant] = useState(null);
@@ -204,8 +204,8 @@ const ProfileScreen = ({ navigation }) => {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        profilePicture: user.profilePicture || null,
-        phoneNumber: user.phoneNumber || '',
+        profilePicture: user.profilePicture || null
+        // phoneNumber: user.phoneNumber || '',
       });
       if (!isEditing) {
         fetchUserData();
@@ -235,8 +235,8 @@ const ProfileScreen = ({ navigation }) => {
           firstName: response.data.firstName || '',
           lastName: response.data.lastName || '',
           email: response.data.email || '',
-          profilePicture: response.data.profilePicture || null,
-          phoneNumber: response.data.phoneNumber || ''   //added
+          profilePicture: response.data.profilePicture || null
+          // phoneNumber: response.data.phoneNumber || ''   //added
         });
       }
     } catch (error) {
@@ -246,35 +246,35 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  // const handleInputChange = (field, value) => {
-  //   setUserData(prev => ({
-  //     ...prev,
-  //     [field]: value
-  //   }));
-  // };
+  const handleInputChange = (field, value) => {
+    setUserData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   //added
-const handleInputChange = useCallback((field, value) => {
-  setError('')
+// const handleInputChange = useCallback((field, value) => {
+//   setError('')
 
-  if (field === 'phoneNumber') {
-    const formatted = formatPHPhoneNumber(value);
-    setUserData(prev => ({ ...prev, phoneNumber: formatted }));
+//   if (field === 'phoneNumber') {
+//     const formatted = formatPHPhoneNumber(value);
+//     setUserData(prev => ({ ...prev, phoneNumber: formatted }));
     
-    // Only check validity if 13+ characters typed (e.g., "+63 9xxxxxxxxx")
-    if (formatted.replace(/\D/g, '').length >= 12) {
-      if (!isValidPhoneNumber(formatted)) {
-        console.error("Invalid phone number:", formatted);
-      } else {
-        console.log("Valid phone number:", formatted);
-      }
-    }
-  } else {
-    setUserData(prev => ({ ...prev, [field]: value }));
-  }
-}, []);
+//     // Only check validity if 13+ characters typed (e.g., "+63 9xxxxxxxxx")
+//     if (formatted.replace(/\D/g, '').length >= 12) {
+//       if (!isValidPhoneNumber(formatted)) {
+//         console.error("Invalid phone number:", formatted);
+//       } else {
+//         console.log("Valid phone number:", formatted);
+//       }
+//     }
+//   } else {
+//     setUserData(prev => ({ ...prev, [field]: value }));
+//   }
+// }, []);
 
-//added
+// //added
 
   const pickImage = async () => {
     try {
@@ -541,7 +541,7 @@ const handleInputChange = useCallback((field, value) => {
               />
 
               {/* added */}
-              {(user?.userType || userData?.userType) === 'customer' && (
+              {/* {(user?.userType || userData?.userType) === 'customer' && (
                 <ProfileItem 
                   label="Phone Number" 
                   value={userData.phoneNumber} 
@@ -554,7 +554,8 @@ const handleInputChange = useCallback((field, value) => {
                   placeholder="+63" // visible hint
                 />
               )}
-            </View>
+              {/* added */}
+            </View> 
 
             
             {/* Buttons */}

@@ -9,7 +9,8 @@ import {
   Platform,
   ScrollView,
   Image,
-  StatusBar
+  StatusBar,
+  Text
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { register } from '../../services/authService';
@@ -27,34 +28,34 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator } from 'react-native';
 
-//added
-// place this near the top of the file (replace your existing formatter)
-const formatPHPhoneNumber = (text) => {
-  // Remove non-digit characters
-  let digits = text.replace(/\D/g, '');
+// //added
+// // place this near the top of the file (replace your existing formatter)
+// const formatPHPhoneNumber = (text) => {
+//   // Remove non-digit characters
+//   let digits = text.replace(/\D/g, '');
 
-  // Remove leading 0
-  if (digits.startsWith('0')) {
-    digits = digits.slice(1);
-  }
+//   // Remove leading 0
+//   if (digits.startsWith('0')) {
+//     digits = digits.slice(1);
+//   }
 
-  // Remove leading 63 if exists
-  if (digits.startsWith('63')) {
-    digits = digits.slice(2);
-  }
+//   // Remove leading 63 if exists
+//   if (digits.startsWith('63')) {
+//     digits = digits.slice(2);
+//   }
 
-  // Limit to 10 digits (PH mobile numbers only)
-  digits = digits.slice(0, 10);
+//   // Limit to 10 digits (PH mobile numbers only)
+//   digits = digits.slice(0, 10);
 
-  // Format: 912 345 6789 -> return "+63 912 345 6789" (spaces optional)
-  const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-  if (!match) return '+63 ' + digits;
+//   // Format: 912 345 6789 -> return "+63 912 345 6789" (spaces optional)
+//   const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+//   if (!match) return '+63 ' + digits;
 
-  const [, part1, part2, part3] = match;
-  return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
-};
+//   const [, part1, part2, part3] = match;
+//   return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
+// };
 
-//added
+// //added
 
 const RegisterScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -71,9 +72,81 @@ const RegisterScreen = ({ navigation }) => {
   const { theme, isDark } = useTheme();
   const iconColor = isDark ? '#00df82' : theme.text;
   //added
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState('');
+  const [passwordMatchMessage, setPasswordMatchMessage] = useState('');
+  const [passwordsMatch, setPasswordsMatch] = useState(false);
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
+  //added
+  //const [phoneNumber, setPhoneNumber] = useState('');
+  //added
+  const validateName = (text, type) => {
+  // Check if text contains invalid characters
+  const hasInvalid = /[^A-Za-z\s]/.test(text);
+  const cleanedText = text.replace(/[^A-Za-z\s]/g, '');
 
-  
+  if (type === 'first') {
+    setFirstName(cleanedText);
+
+    if (hasInvalid) {
+      setFirstNameError('Only letters are allowed in the first name.');
+    } else {
+      setFirstNameError('');
+    }
+
+  } else if (type === 'last') {
+    setLastName(cleanedText);
+
+    if (hasInvalid) {
+      setLastNameError('Only letters are allowed in the last name.');
+    } else {
+      setLastNameError('');
+    }
+  }
+};
+
+  const validatePassword = (text) => {
+  setPassword(text);
+
+  // Regex checks
+  const hasUpper = /[A-Z]/.test(text);
+  const hasLower = /[a-z]/.test(text);
+  const hasNumber = /\d/.test(text);
+  const hasSpecial = /[^A-Za-z0-9]/.test(text);
+  const isLongEnough = text.length >= 8;
+
+  // Combine feedback
+  if (!isLongEnough) {
+    setPasswordMessage('Password must be at least 8 characters.');
+    setPasswordStrength('weak');
+  } else if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+    setPasswordMessage('Password must include uppercase, lowercase, number, and special character.');
+    setPasswordStrength('medium');
+  } else {
+    setPasswordMessage('Strong password!');
+    setPasswordStrength('strong');
+  }
+};
+
+const validateConfirmPassword = (text) => {
+  setConfirmPassword(text);
+
+  if (text.length === 0) {
+    setPasswordMatchMessage('');
+    setPasswordsMatch(false);
+    return;
+  }
+
+  if (text !== password) {
+    setPasswordMatchMessage("Passwords don't match");
+    setPasswordsMatch(false);
+  } else {
+    setPasswordMatchMessage('Passwords match!');
+    setPasswordsMatch(true);
+  }
+};
+
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -84,40 +157,40 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   //added
-const isValidPhoneNumber = (number) => {
-  if (!number) return false;
+// const isValidPhoneNumber = (number) => {
+//   if (!number) return false;
 
-  // Remove all non-digits
-  let digits = number.replace(/\D/g, '');
+//   // Remove all non-digits
+//   let digits = number.replace(/\D/g, '');
 
-  // If it starts with "63", strip it
-  if (digits.startsWith('63')) {
-    digits = digits.slice(2);
-  }
+//   // If it starts with "63", strip it
+//   if (digits.startsWith('63')) {
+//     digits = digits.slice(2);
+//   }
 
-  // If it starts with "0", strip it
-  if (digits.startsWith('0')) {
-    digits = digits.slice(1);
-  }
+//   // If it starts with "0", strip it
+//   if (digits.startsWith('0')) {
+//     digits = digits.slice(1);
+//   }
 
-  // Must be 10 digits, starting with 9 (PH mobile standard)
-  return /^9\d{9}$/.test(digits);
-};
+//   // Must be 10 digits, starting with 9 (PH mobile standard)
+//   return /^9\d{9}$/.test(digits);
+// };
 //added
 
 
   const handleRegister = async () => {
     setError('');
     
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword || !phoneNumber.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword) {
       setError('All fields are required');
       return;
     }
 
-    if (!isValidPhoneNumber(phoneNumber)) {
-    setError('Please enter a valid Philippine phone number (e.g., +639123456789)');
-    return;
-  }
+  //   if (!isValidPhoneNumber(phoneNumber)) {
+  //   setError('Please enter a valid Philippine phone number (e.g., +639123456789)');
+  //   return;
+  // }
   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -132,7 +205,7 @@ const isValidPhoneNumber = (number) => {
   }
 
   // ✅ Strong password regex: at least one lowercase, one uppercase, one number, one special char
-  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
   if (!strongPasswordRegex.test(password)) {
     setError('Password must include uppercase, lowercase, number, and special character');
     return;
@@ -147,7 +220,7 @@ const isValidPhoneNumber = (number) => {
     setLoading(true);
   
     try {
-      const userData = { firstName, lastName, email, password, userType: 'customer' ,phoneNumber};
+      const userData = { firstName, lastName, email, password, userType: 'customer'};
   
       const response = await register(userData);
       
@@ -238,10 +311,16 @@ const isValidPhoneNumber = (number) => {
                   <TextInput
                     style={[styles.input, {color: theme.text}]}
                     value={firstName}
-                    onChangeText={setFirstName}
+                    onChangeText={(text) => validateName(text, 'first')}
                     placeholder="Enter your first name"
                     placeholderTextColor="#9e9e9e"
                   />
+
+              {firstNameError !== '' && (
+                    <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
+                      {firstNameError}
+                    </Text>
+                  )}
                 </View>
               </View>
 
@@ -252,10 +331,17 @@ const isValidPhoneNumber = (number) => {
                   <TextInput
                     style={[styles.input, {color: theme.text}]}
                     value={lastName}
-                    onChangeText={setLastName}
+                    onChangeText={(text) => validateName(text, 'last')}
                     placeholder="Enter your last name"
                     placeholderTextColor="#9e9e9e"
                   />
+              {/*added*/}
+                  {lastNameError !== '' && (
+                    <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
+                      {lastNameError}
+                    </Text>
+                  )}
+
                 </View>
               </View>
 
@@ -277,7 +363,7 @@ const isValidPhoneNumber = (number) => {
 
               {/* added */}
               {/* Phone Number Input */}
-              <View style={styles.formInput}>
+              {/* <View style={styles.formInput}>
               <View style={styles.inputContainer}>
                 <MediumText style={styles.inputLabel}>CONTACT NUMBER (PH)</MediumText>
                 <TextInput
@@ -294,7 +380,7 @@ const isValidPhoneNumber = (number) => {
                   placeholderTextColor="#9e9e9e"
                 />
               </View>
-            </View>
+            </View> */}
 
 
               {/* added */}
@@ -308,7 +394,7 @@ const isValidPhoneNumber = (number) => {
                     <TextInput
                       style={[styles.input, styles.passwordInput, {color: theme.text}]}
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={validatePassword}
                       placeholder="Enter your password"
                       secureTextEntry={!showPassword}
                       placeholderTextColor="#9e9e9e"
@@ -325,6 +411,23 @@ const isValidPhoneNumber = (number) => {
                       />
                     </TouchableOpacity>
                   </View>
+                  {/* ✅ Real-time password feedback */}
+                  {password.length > 0 && (
+                    <RegularText
+                     style={{
+                        marginTop: 5,
+                        fontSize: 12,
+                        color:
+                          passwordStrength === 'strong'
+                            ? 'green'
+                            : passwordStrength === 'medium'
+                            ? 'orange'
+                            : 'red',
+                      }}
+                    >
+                      {passwordMessage}
+                    </RegularText>
+                  )}
                 </View>
               </View>
 
@@ -336,7 +439,7 @@ const isValidPhoneNumber = (number) => {
                     <TextInput
                       style={[styles.input, styles.passwordInput, {color: theme.text}]}
                       value={confirmPassword}
-                      onChangeText={setConfirmPassword}
+                      onChangeText={validateConfirmPassword}
                       placeholder="Confirm your password"
                       secureTextEntry={!showConfirmPassword}
                       placeholderTextColor="#9e9e9e"
@@ -353,6 +456,18 @@ const isValidPhoneNumber = (number) => {
                       />
                     </TouchableOpacity>
                   </View>
+                  {/* Realtime match message */}
+                  {passwordMatchMessage !== '' && (
+                    <RegularText
+                      style={{
+                        marginTop: 5,
+                        fontSize: 12,
+                        color: passwordsMatch ? 'green' : 'red',
+                      }}
+                    >
+                      {passwordMatchMessage}
+                    </RegularText>
+                  )}
                 </View>
               </View>
             </View>

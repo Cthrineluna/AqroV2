@@ -18,7 +18,7 @@ const SplashView = ({ onNextClick }) => {
 
   useEffect(() => {
     if (Platform.OS === 'android') {
-      NavigationBar.setBackgroundColorAsync('#25AF90'); 
+      NavigationBar.setBackgroundColorAsync('#677324'); 
     }
   }, []);
   

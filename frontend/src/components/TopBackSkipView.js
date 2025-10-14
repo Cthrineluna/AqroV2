@@ -13,7 +13,7 @@ const TopBackSkipView = ({
   flatListIndex,
   dataLength,
   x,
-  color = '#25AF90',
+  color = '#677324',
 }) => {
   // Animation for the back button visibility (without color transition)
   const backAnimatedStyle = useAnimatedStyle(() => {

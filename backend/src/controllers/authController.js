@@ -10,7 +10,7 @@ const ContainerType = require('../models/ContainerType');
 // 🔑 Strong password helper function
 function isStrongPassword(password) {
   // Must include at least 1 lowercase, 1 uppercase, 1 digit, 1 special char, min 8 chars
-  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
   return strongPasswordRegex.test(password);
 }
 //added
@@ -138,8 +138,8 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.register = async (req, res) => {
-  try {                                                     //added
-    const { email, password, firstName, lastName, userType, phoneNumber} = req.body;
+  try {                                                     
+    const { email, password, firstName, lastName, userType} = req.body;
 
     //added
     if (!isStrongPassword(password)) {
@@ -164,7 +164,7 @@ exports.register = async (req, res) => {
       password,
       firstName,
       lastName,
-      phoneNumber, //added
+      // phoneNumber, //added
       userType: userType || 'customer',
       verificationToken,
       verificationTokenExpires: Date.now() + 3600000, // 1 hour

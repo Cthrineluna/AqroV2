@@ -289,7 +289,7 @@ const RebateSection = ({ container, theme }) => {
         onPress={toggleExpand}
       >
         <RegularText style={[styles.detailLabel, { opacity: 0.7 }]}>
-          Restaurant Rebates
+          Coffee Shop Rebates
         </RegularText>
         <Ionicons 
           name={isExpanded ? "chevron-up" : "chevron-down"} 

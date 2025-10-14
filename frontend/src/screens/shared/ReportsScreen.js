@@ -705,7 +705,7 @@ const renderFilterBadges = () => {
         <View style={styles.greetings}>
           <View>
             <SemiBoldText style={[styles.greetingsHeader, { color: theme.text }]}>
-              Hello Admin, {user?.firstName || 'User'}!
+              Hello, {user?.firstName || 'User'}!
             </SemiBoldText>
             <RegularText style={[styles.subGreetings, { color: theme.primary }]}>
               Your dashboard is ready!
