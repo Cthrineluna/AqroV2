@@ -37,7 +37,7 @@ const LoginScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const { checkAuthState } = useAuth();
   const { theme, isDark } = useTheme();
-  const iconColor = isDark ? '#00df82' : theme.text;
+  const iconColor = isDark ? '#677325' : theme.text;
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -217,7 +217,7 @@ const formatLockDuration = (durationMs) => {
               <Ionicons 
                 name="mail-outline" 
                 size={18} 
-                color={isDark ? '#00df82' : theme.text} 
+                color={isDark ? '#677325' : theme.text} 
                 style={styles.inputIcon}
               />
               <View style={styles.inputContainer}>
@@ -238,7 +238,7 @@ const formatLockDuration = (durationMs) => {
               <Ionicons 
                 name="lock-closed-outline" 
                 size={18} 
-                color={isDark ? '#00df82' : theme.text} 
+                color={isDark ? '#677325' : theme.text} 
                 style={styles.inputIcon}
               />
               <View style={styles.inputContainer}>
@@ -260,7 +260,7 @@ const formatLockDuration = (durationMs) => {
                     <Ionicons 
                       name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
                       size={18} 
-                      color={isDark ? '#00df82' : theme.text} 
+                      color={isDark ? '#677325' : theme.text} 
                     />
                   </TouchableOpacity>
                 </View>

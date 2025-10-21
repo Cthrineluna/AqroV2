@@ -70,7 +70,7 @@ const RegisterScreen = ({ navigation }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const { checkAuthState } = useAuth();
   const { theme, isDark } = useTheme();
-  const iconColor = isDark ? '#00df82' : theme.text;
+  const iconColor = isDark ? '#677325' : theme.text;
   //added
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordStrength, setPasswordStrength] = useState('');

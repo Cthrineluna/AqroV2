@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.7,
     marginBottom: 4,
-    color: '#00df82',
+    color: '#677325',
   },
   uploadButton: {
     borderWidth: 1,
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   submitButton: {
-    backgroundColor: '#00df82',
+    backgroundColor: '#677325',
     borderRadius: 30,
     paddingVertical: 15,
     width: '100%',

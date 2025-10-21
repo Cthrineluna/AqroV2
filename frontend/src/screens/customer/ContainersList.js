@@ -907,8 +907,8 @@ const ContainersList = ({ navigation, route }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#00df82']}
-            tintColor={isDark ? '#00df82' : '#2e7d32'}
+            colors={['#677325']}
+            tintColor={isDark ? '#677325' : '#2e7d32'}
           />
         }
       >
@@ -1205,7 +1205,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#00df82',
+    backgroundColor: '#677325',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

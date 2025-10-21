@@ -437,7 +437,7 @@ const ProfileScreen = ({ navigation }) => {
   if (!themeLoaded) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: '#fff' }]}>
-        <ActivityIndicator size="large" color="#00df82" style={{ marginTop: 50 }} />
+        <ActivityIndicator size="large" color="#677325" style={{ marginTop: 50 }} />
       </SafeAreaView>
     );
   }

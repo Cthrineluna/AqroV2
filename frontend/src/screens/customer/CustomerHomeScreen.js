@@ -331,7 +331,7 @@ const fetchContainersForDerivedStats = async () => {
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={['#677324']}
-            tintColor={isDark ? '#00df82' : '#2e7d32'}
+            tintColor={isDark ? '#677325' : '#2e7d32'}
           />
         }
       >

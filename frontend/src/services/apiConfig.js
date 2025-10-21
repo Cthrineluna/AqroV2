@@ -1,4 +1,4 @@
-const API_URL = 'http://192.168.18.16:5001/api';
+const API_URL = 'http://192.168.18.20:5001/api';
 
 export const getApiUrl = (endpoint = '') => {
   // Use environment variable if available

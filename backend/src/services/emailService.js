@@ -25,7 +25,7 @@ exports.sendVerificationEmail = async (user, verificationToken) => {
       subject: 'Verify Your Email Address',
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #00df82;">Welcome to AQRO!</h2>
+          <h2 style="color: #677325;">Welcome to AQRO!</h2>
           <p>Hello ${user.firstName},</p>
           <p>Thank you for registering with AQRO! To complete your registration, please verify your email address.</p>
           <p>Your verification code is: <strong style="font-size: 18px;">${verificationToken}</strong></p>
@@ -53,7 +53,7 @@ exports.sendPasswordResetEmail = async (user, resetToken) => {
       subject: 'Reset Your AQRO Password',
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #00df82;">Reset Your Password</h2>
+          <h2 style="color: #677325;">Reset Your Password</h2>
           <p>Hello ${user.firstName},</p>
           <p>You recently requested to reset your password for your AQRO account. Use the code below to reset your password:</p>
           <p>Your password reset code is: <strong style="font-size: 18px;">${resetToken}</strong></p>
@@ -81,7 +81,7 @@ exports.sendConfirmationEmail = async (user) => {
       subject: 'Your Email Has Been Verified!',
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #00df82;">Email Verified Successfully!</h2>
+          <h2 style="color: #677325;">Email Verified Successfully!</h2>
           <p>Hello ${user.firstName},</p>
           <p>Your email address has been successfully verified. You can now enjoy all the features of the AQRO app.</p>
           <p>Thank you for choosing AQRO!</p>
@@ -108,7 +108,7 @@ exports.sendApprovalNotification = async (user) => {
       subject: 'Your AQRO Account Has Been Approved!',
       html: `
         <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #00df82;">Account Approved!</h2>
+          <h2 style="color: #677325;">Account Approved!</h2>
           <p>Hello ${user.firstName},</p>
           <p>Congratulations! Your AQRO account has been approved and is now active.</p>
           <p>You can now log in to the app and start using all the features available to staff members.</p>

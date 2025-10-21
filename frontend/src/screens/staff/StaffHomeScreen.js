@@ -378,8 +378,8 @@ const StaffHomeScreen = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#00df82']}
-            tintColor={isDark ? '#00df82' : '#2e7d32'}
+            colors={['#677325']}
+            tintColor={isDark ? '#677325' : '#2e7d32'}
           />
         }
       >
