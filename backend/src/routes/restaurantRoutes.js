@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const restaurantController = require('../controllers/restaurantController');
+const { getPendingApprovalsCount } = require('../controllers/restaurantController');
 
 
 const storage = multer.memoryStorage();
@@ -38,5 +39,7 @@ router.put('/:restaurantId', protect, authorize('admin', 'staff', 'customer'), u
     { name: 'businessPermit', maxCount: 1 },
     { name: 'birRegistration', maxCount: 1 }
   ]), restaurantController.updateRestaurant);
+
+router.get('/pending-approvals/count', protect, authorize('admin'), getPendingApprovalsCount);
 
 module.exports = router;

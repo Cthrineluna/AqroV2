@@ -418,13 +418,18 @@ const formatChartData = (groupedData, legend, timeFrame) => {
     });
   }
   
+  // Sanitize data to ensure valid numbers
+  data = data.map((val) => (Number.isFinite(val) && !isNaN(val) ? val : 0));
+
   return {
     labels,
-    datasets: [{
-      data,
-      color: () => theme.primary,
-    }],
-    legend: [legend]
+    datasets: [
+      {
+        data,
+        color: () => theme.primary,
+      },
+    ],
+    legend: [legend],
   };
 };
   
@@ -432,15 +437,18 @@ const formatChartData = (groupedData, legend, timeFrame) => {
     const labels = Object.keys(groupedData);
     const data = labels.map(label => groupedData[label]);
     
+    // Sanitize data to ensure valid numbers
+    const safeData = data.map((val) => (Number.isFinite(val) && !isNaN(val) ? val : 0));
+
     return {
       labels,
       datasets: [
         {
-          data,
+          data: safeData,
           color: () => theme.primary,
-        }
+        },
       ],
-      legend: [legend]
+      legend: [legend],
     };
   };
 
@@ -547,34 +555,65 @@ const renderFilterBadges = () => {
   };
 
   const renderChart = () => {
-    if (!reportData) return null;
-    const chartWidth = screenWidth - 32;
-    if (activeReport === 'container') {
-      return (
-        <BarChart
-          data={reportData}
-          width={chartWidth}
-          height={220}
-          chartConfig={chartConfig}
-          style={styles.chart}
-          verticalLabelRotation={0}
-          fromZero
-          showValuesOnTopOfBars
-        />
-      );
-    }
-    
+  if (!reportData || !reportData.datasets || reportData.datasets.length === 0) {
     return (
-      <LineChart
-        data={reportData}
+      <View style={{ alignItems: 'center', padding: 20 }}>
+        <RegularText style={{ color: theme.text }}>
+          No activity data available yet
+        </RegularText>
+      </View>
+    );
+  }
+
+  // Sanitize data
+  const safeData = reportData.datasets[0].data.map((val) =>
+    Number.isFinite(val) && !isNaN(val) ? val : 0
+  );
+
+  const hasData = safeData.some((v) => v > 0);
+  if (!hasData) {
+    return (
+      <View style={{ alignItems: 'center', padding: 20 }}>
+        <RegularText style={{ color: theme.text }}>
+          No activity data available yet
+        </RegularText>
+      </View>
+    );
+  }
+
+  const chartWidth = Math.max(screenWidth - 32, 100); // ensure non-zero width
+  const safeReportData = {
+    ...reportData,
+    datasets: [{ ...reportData.datasets[0], data: safeData }],
+  };
+
+  if (activeReport === 'container') {
+    return (
+      <BarChart
+        data={safeReportData}
         width={chartWidth}
         height={220}
         chartConfig={chartConfig}
-        bezier
         style={styles.chart}
+        fromZero
+        showValuesOnTopOfBars
       />
     );
-  };
+  }
+
+  return (
+    <LineChart
+      data={safeReportData}
+      width={chartWidth}
+      height={220}
+      chartConfig={chartConfig}
+      bezier
+      style={styles.chart}
+      fromZero
+    />
+  );
+};
+
 
   const ReportFilter = ({ title, active, onPress }) => (
     <TouchableOpacity

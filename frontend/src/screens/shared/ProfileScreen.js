@@ -27,6 +27,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getApiUrl } from '../../services/apiConfig';
 import RestaurantModal from '../../components/RestaurantModal';
+import { Modal, TouchableWithoutFeedback, Text } from 'react-native';
 
 
 // //added
@@ -126,6 +127,7 @@ const ProfileScreen = ({ navigation }) => {
     // phoneNumber:'' //added
   });
 
+  const [imageModalVisible, setImageModalVisible] = useState(false);
   const [restaurant, setRestaurant] = useState(null);
   const [restaurantModalVisible, setRestaurantModalVisible] = useState(false);
   const [isRestaurantLoading, setIsRestaurantLoading] = useState(false);
@@ -276,63 +278,54 @@ const ProfileScreen = ({ navigation }) => {
 
 // //added
 
-  const pickImage = async () => {
-    try {
-      Alert.alert('Select Image Option', '', [
-        {
-          text: 'Take Photo',
-          onPress: async () => {
-            const permission = await ImagePicker.requestCameraPermissionsAsync();
-            if (permission.status !== 'granted') {
-              Alert.alert('Permission Denied', 'Camera access is required to take a photo.');
-              return;
-            }
-            let result = await ImagePicker.launchCameraAsync({
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 1,
-            });
-  
-            if (!result.canceled && result.assets.length > 0) {
-              processImage(result.assets[0]);
-            }
-          },
-        },
-        {
-          text: 'Choose from Gallery',
-          onPress: async () => {
-            let result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 1,
-            });
-  
-            if (!result.canceled && result.assets.length > 0) {
-              processImage(result.assets[0]);
-            }
-          },
-        },
-        {
-          text: 'Remove Photo',
-          onPress: () => {
-            setUserData(prev => ({ ...prev, profilePicture: null }));
-          },
-          style: 'destructive',
-        },
-        {
-          text: 'Cancel', 
-          style: 'cancel',
-          onPress: () => console.log('Cancelled'),
-        },
-      ]);
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to select image');
-    }
+  const pickImage = () => {
+    setImageModalVisible(true);
   };
-  
-  
+
+  const handleTakePhoto = async () => {
+  try {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Permission Denied', 'Camera access is required to take a photo.');
+      return;
+    }
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      processImage(result.assets[0]);
+    }
+  } catch (error) {
+    console.error('Error taking photo:', error);
+  } finally {
+    setImageModalVisible(false);
+  }
+};
+
+const handleChooseFromGallery = async () => {
+  try {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      processImage(result.assets[0]);
+    }
+  } catch (error) {
+    console.error('Error choosing image:', error);
+  } finally {
+    setImageModalVisible(false);
+  }
+};
+
+const handleRemovePhoto = () => {
+  setUserData(prev => ({ ...prev, profilePicture: null }));
+  setImageModalVisible(false);
+};
   
   // Function to resize and update profile picture
   const processImage = async (selectedAsset) => {
@@ -621,7 +614,46 @@ const ProfileScreen = ({ navigation }) => {
 )}
       </ScrollView>
 
-
+      <Modal
+        transparent
+        visible={imageModalVisible}
+        animationType="fade"
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        {/* Dim background and dismiss on tap */}
+        <TouchableWithoutFeedback onPress={() => setImageModalVisible(false)}>
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            justifyContent: 'flex-end',
+          }}>
+            <TouchableWithoutFeedback>
+              <View style={{
+                backgroundColor: theme.card,
+                paddingVertical: 20,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+              }}>
+                <TouchableOpacity style={{ padding: 15, alignItems: 'center' }} onPress={handleTakePhoto}>
+                  <Text style={{ color: theme.text, fontSize: 16 }}>Take Photo</Text>
+                </TouchableOpacity>
+            
+                <TouchableOpacity style={{ padding: 15, alignItems: 'center' }} onPress={handleChooseFromGallery}>
+                  <Text style={{ color: theme.text, fontSize: 16 }}>Choose from Gallery</Text>
+                </TouchableOpacity>
+            
+                <TouchableOpacity style={{ padding: 15, alignItems: 'center' }} onPress={handleRemovePhoto}>
+                  <Text style={{ color: 'red', fontSize: 16 }}>Remove Photo</Text>
+                </TouchableOpacity>
+            
+                <TouchableOpacity style={{ padding: 15, alignItems: 'center' }} onPress={() => setImageModalVisible(false)}>
+                  <Text style={{ color: theme.text, fontSize: 16 }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
     </SafeAreaView>
   );

@@ -220,3 +220,38 @@ exports.getRestaurantStaff = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch restaurant staff' });
   }
 };
+
+// Get count of pending restaurant approvals
+exports.getPendingApprovalsCount = async (req, res) => {
+  try {
+    // Only count restaurants created by verified but not-yet-approved staff
+    const pendingRestaurants = await Restaurant.aggregate([
+      {
+        $lookup: {
+          from: 'users', // confirmed correct collection name
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator',
+        },
+      },
+      { $unwind: '$creator' },
+      {
+        $match: {
+          'creator.userType': 'staff',
+          'creator.isEmailVerified': true,   // staff has verified Gmail
+          'creator.isApproved': false,       // not yet approved by admin
+          'creator.approvalStatus': 'pending',
+          'creator.isActive': false,         // not active until approved
+          isActive: false,                   // restaurant not yet active
+        },
+      },
+      { $count: 'count' },
+    ]);
+
+    const count = pendingRestaurants.length > 0 ? pendingRestaurants[0].count : 0;
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error('Error fetching pending approvals count:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
