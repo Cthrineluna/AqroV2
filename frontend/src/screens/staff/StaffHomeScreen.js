@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontFamily: 'Arial',
     lineHeight: 30,
-    fontWeight: 'semibold',
+    fontWeight: 'bold',
   },
   scrollContent: {
     padding: 16,

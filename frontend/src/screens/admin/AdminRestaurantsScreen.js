@@ -702,30 +702,30 @@ const pickBannerImage = async () => {
       return true;
     };
     
-    // const formatPHPhoneNumber = (text) => {
-    //   // Remove non-digit characters
-    //   let digits = text.replace(/\D/g, '');
+    const formatPHPhoneNumber = (text) => {
+      // Remove non-digit characters
+      let digits = text.replace(/\D/g, '');
     
-    //   // Remove leading 0
-    //   if (digits.startsWith('0')) {
-    //     digits = digits.slice(1);
-    //   }
+      // Remove leading 0
+      if (digits.startsWith('0')) {
+        digits = digits.slice(1);
+      }
     
-    //   // Remove leading 63 if exists
-    //   if (digits.startsWith('63')) {
-    //     digits = digits.slice(2);
-    //   }
+      // Remove leading 63 if exists
+      if (digits.startsWith('63')) {
+        digits = digits.slice(2);
+      }
     
-    //   // Limit to 10 digits (PH mobile numbers only)
-    //   digits = digits.slice(0, 10);
+      // Limit to 10 digits (PH mobile numbers only)
+      digits = digits.slice(0, 10);
     
-    //   // Format: 912 345 6789
-    //   const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-    //   if (!match) return '+63 ' + digits;
+      // Format: 912 345 6789
+      const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+      if (!match) return '+63 ' + digits;
     
-    //   const [, part1, part2, part3] = match;
-    //   return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
-    // };
+      const [, part1, part2, part3] = match;
+      return '+63 ' + [part1, part2, part3].filter(Boolean).join(' ');
+    };
     
     
 
@@ -934,7 +934,7 @@ const pickBannerImage = async () => {
                 placeholderTextColor={theme?.textMuted || '#888888'}
               />
 
-              {/* <TextInput
+              <TextInput
                 style={inputStyle}
                 placeholder="Contact Number (PH)"
                 value={localRestaurant.contactNumber}
@@ -948,7 +948,7 @@ const pickBannerImage = async () => {
                 editable={!viewOnly}
                 keyboardType="phone-pad"
                 placeholderTextColor={theme?.textMuted || '#888888'}
-              /> */}
+              />
 
               <TextInput
                 style={inputStyle}

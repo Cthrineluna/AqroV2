@@ -352,7 +352,7 @@ const SettingsScreen = ({ navigation }) => {
               <View style={styles.settingLabelContainer}>
                 <MediumText style={{color: theme.text}}>App Version</MediumText>
                 <RegularText style={{color: theme.text + '80', fontSize: 12}}>
-                  aQRo 1.0.0
+                  aQRo 2.0.0
                 </RegularText>
               </View>
             </View>
