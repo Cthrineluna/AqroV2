@@ -22,6 +22,7 @@ import {
   ThemedView 
 } from '../../components/StyledComponents';
 import { requestPasswordReset } from '../../services/authService';
+import RNChatWidget from "../../components/RNChatWidget";
 
 const { width } = Dimensions.get('window');
 
@@ -91,6 +92,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
   };
 
   return (
+    <>
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : null}
@@ -178,6 +180,8 @@ const ForgotPasswordScreen = ({ navigation }) => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    <RNChatWidget isLoggedIn={false} />
+    </>
   );
 };
 

@@ -29,6 +29,8 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { getApiUrl } from '../../services/apiConfig';
 import { getRecentActivities } from '../../services/activityService';
 import RestaurantCarousel from '../../components/RestaurantCarousel';
+import RNChatWidget from "../../components/RNChatWidget";
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -305,6 +307,7 @@ const fetchContainersForDerivedStats = async () => {
   };
 
   return (
+    <>
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar 
         backgroundColor={theme.background} 
@@ -444,6 +447,11 @@ const fetchContainersForDerivedStats = async () => {
         </View>
       </ScrollView>
     </SafeAreaView>
+      <RNChatWidget 
+        isLoggedIn={true} 
+        user={user}
+      />
+    </>
   );
 };
 

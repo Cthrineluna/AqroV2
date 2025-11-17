@@ -1,0 +1,27 @@
+[
+  {
+    "id": "login",
+    "keywords": ["login", "log in", "signin", "sign in", "can't login", "cannot login"],
+    "reply": "If you can't log in, please make sure your email and password are correct. If you forgot your password, use the 'Forgot password' link on the login page to reset it."
+  },
+  {
+    "id": "register",
+    "keywords": ["register", "signup", "sign up", "create account"],
+    "reply": "To create an account, go to the registration page and fill in the required fields. You will receive an email to confirm your account."
+  },
+  {
+    "id": "forgot_password",
+    "keywords": ["forgot", "reset password", "forgot password", "reset"],
+    "reply": "To reset your password, click 'Forgot password' on the login form and follow the instructions. Check your spam folder if you don't see the reset email."
+  },
+  {
+    "id": "loan_info",
+    "keywords": ["loan", "borrow", "borrower", "loan status"],
+    "reply": "Loan and borrowing details are available after you log in. Please log in to view your loans and their statuses."
+  },
+  {
+    "id": "general_help",
+    "keywords": ["help", "support", "question", "how to"],
+    "reply": "I can help with account or usage questions. For anything account-specific, please log in so I can access your details. Otherwise describe your question and I'll try to help."
+  }
+]

@@ -27,6 +27,7 @@ import {
 import * as NavigationBar from 'expo-navigation-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator } from 'react-native';
+import RNChatWidget from "../../components/RNChatWidget";
 
 // //added
 // // place this near the top of the file (replace your existing formatter)
@@ -253,6 +254,7 @@ const validateConfirmPassword = (text) => {
     }, [theme.background]);
 
   return (
+    <>
     <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
       <StatusBar 
         backgroundColor={theme.background} 
@@ -499,6 +501,8 @@ const validateConfirmPassword = (text) => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    <RNChatWidget isLoggedIn={false} />
+    </>
   );
 };
 

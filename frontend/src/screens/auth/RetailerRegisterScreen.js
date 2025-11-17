@@ -27,6 +27,7 @@ import {
   SemiBoldText 
 } from '../../components/StyledComponents';
 import * as NavigationBar from 'expo-navigation-bar';
+import RNChatWidget from "../../components/RNChatWidget";
 
 const RetailerRegisterScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -377,6 +378,7 @@ const pickImage = async () => {
   }, [theme.background]);
 
   return (
+    <>
     <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
       <StatusBar 
         backgroundColor={theme.background} 
@@ -695,6 +697,8 @@ const pickImage = async () => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    <RNChatWidget isLoggedIn={false} />
+    </>
   );
 };
 

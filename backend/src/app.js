@@ -16,6 +16,7 @@ const upload = multer({ dest: 'uploads/' });
 const path = require('path');
 const documentRoutes = require('./routes/documentRoutes');
 
+
 // Load environment variables
 dotenv.config();
 
@@ -56,6 +57,10 @@ const approvalRoutes = require('./routes/approvalRoutes');
 app.use('/api/auth', authRoutes);
 app.use('/api/approval', approvalRoutes);
 app.use('/api', approvalRoutes); // Add approval routes with /api prefix
+
+// Chat routes
+const chatRoutes = require('./routes/chat');
+app.use('/chat', chatRoutes);
 
 // Default route
 app.get('/', (req, res) => {

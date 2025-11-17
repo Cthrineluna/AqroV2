@@ -1,0 +1,62 @@
+[
+  {
+    "id": "greeting",
+    "keywords": ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"],
+    "reply": "Hello! 👋 I'm AQRO Assistant. How can I help you today? You can ask me about logging in, registering an account, loans, or how to use AQRO effectively."
+  },
+  {
+    "id": "what_is_aqro",
+    "keywords": ["what is aqro", "about aqro", "aqro app", "aqro platform", "aqro meaning"],
+    "reply": "AQRO is a platform designed to help users manage their accounts and loan activities efficiently. Through AQRO, you can register, log in, check your loan status, borrow items, and get assistance directly from our system. Our goal is to make managing your activities smooth, transparent, and convenient."
+  },
+  {
+    "id": "login",
+    "keywords": ["login", "log in", "signin", "sign in", "can't login", "cannot login", "unable to login"],
+    "reply": "If you're having trouble logging in, first make sure that your email address and password are correct. Remember that passwords are case-sensitive. If you’ve forgotten your password, click the 'Forgot password' link on the login page to reset it. If problems persist, please contact support for further assistance."
+  },
+  {
+    "id": "register",
+    "keywords": ["register", "signup", "sign up", "create account", "new account"],
+    "reply": "To create a new account, go to the registration page and fill out all the required fields. After registering, you’ll receive a confirmation email—click the link inside to verify your account. Once verified, you can log in and start using AQRO’s features. If you don’t receive the email, check your spam or junk folder."
+  },
+  {
+    "id": "forgot_password",
+    "keywords": ["forgot", "reset password", "forgot password", "reset", "can't access account"],
+    "reply": "If you forgot your password, click the 'Forgot password' option on the login form. Enter your registered email, and we will send you instructions to reset your password. Be sure to check your spam or junk folder if you don't see the email in your inbox. If you continue to experience issues, reach out to our support team for help."
+  },
+  {
+    "id": "loan_info",
+    "keywords": ["loan", "borrow", "borrower", "loan status", "check loan", "loan details", "borrowed items"],
+    "reply": "Loan and borrowing information is available once you log in to your AQRO account. You can view all your borrowed items, loan statuses, return deadlines, and history. To manage loans or request new ones, please log in to your account so that we can provide accurate and secure information."
+  },
+  {
+    "id": "general_help",
+    "keywords": ["help", "support", "question", "how to", "assistance", "guide"],
+    "reply": "I can assist you with questions about your AQRO account, logging in, registering, or using the platform effectively. For anything account-specific, please log in so I can access your details securely. If you’re unsure where to start, just describe your question and I’ll guide you step by step!"
+  },
+  {
+    "id": "account_locked",
+    "keywords": ["account locked", "can't access account", "suspended", "blocked account"],
+    "reply": "If your account is locked or suspended, it may be due to multiple incorrect login attempts or security reasons. Please contact AQRO support directly with your registered email address so our team can verify your identity and help restore access safely."
+  },
+  {
+    "id": "update_info",
+    "keywords": ["update profile", "change details", "edit account", "update info"],
+    "reply": "You can update your account information, such as your email, password, or personal details, by logging in and accessing your profile settings. Make sure to save any changes, and if you encounter issues, our support team is ready to assist you."
+  },
+  {
+    "id": "technical_issue",
+    "keywords": ["error", "bug", "technical issue", "problem", "not working", "app crash"],
+    "reply": "If you encounter a technical issue, please try the following steps: restart the app, clear the cache (if applicable), and ensure you have a stable internet connection. If the problem persists, take a screenshot of the error and contact AQRO support with details of what happened so we can assist you promptly."
+  },
+  {
+    "id": "faq_navigation",
+    "keywords": ["how to use", "navigation", "menu", "where to find"],
+    "reply": "AQRO is designed to be intuitive. The main dashboard shows your active loans, account details, and shortcuts to key features. Use the menu or navigation tabs to explore features like loan requests, account settings, and support options. If you need guidance, just ask me any specific question, and I’ll walk you through it."
+  },
+  {
+    "id": "goodbye",
+    "keywords": ["bye", "goodbye", "see you", "thanks", "thank you"],
+    "reply": "You're welcome! 🙂 If you have more questions, feel free to reach out anytime. Have a great day!"
+  }
+]

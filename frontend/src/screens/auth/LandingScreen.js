@@ -20,7 +20,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useEffect } from 'react';
-
+import RNChatWidget from "../../components/RNChatWidget";
 
 //for debugging
 const clearStorage = async () => {
@@ -48,6 +48,7 @@ const LandingScreen = ({ navigation }) => {
   }, [theme.background]);
 
   return (
+   <>
     <ThemedView style={styles.container}>
       <StatusBar 
         backgroundColor={theme.background} 
@@ -115,6 +116,8 @@ const LandingScreen = ({ navigation }) => {
         </View>
       </View>
     </ThemedView>
+    <RNChatWidget isLoggedIn={false} />
+    </>
   );
 };
 

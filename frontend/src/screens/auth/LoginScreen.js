@@ -27,7 +27,7 @@ import AndroidStatusBar from '../../components/AndroidStatusBar';
 import { getStatusBarHeight } from 'react-native-status-bar-height';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useEffect } from 'react';
-
+import RNChatWidget from "../../components/RNChatWidget";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -170,6 +170,7 @@ const formatLockDuration = (durationMs) => {
 
 <AndroidStatusBar color={theme.background} />
   return (
+    <>
     <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
       <StatusBar 
         backgroundColor={theme.background} 
@@ -294,6 +295,8 @@ const formatLockDuration = (durationMs) => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    <RNChatWidget isLoggedIn={false} />
+    </>
   );
 };
 
